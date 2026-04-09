@@ -82,8 +82,8 @@ export function ContactDialog({ open, onOpenChange, defaultService }: ContactDia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Get Started</DialogTitle>
-          <DialogDescription className="text-muted-foreground">
+          <DialogTitle className="text-2xl font-bold tracking-tight uppercase">Get Started</DialogTitle>
+          <DialogDescription className="text-muted-foreground font-mono">
             Tell us about your project and we'll get back to you with a custom quote.
           </DialogDescription>
         </DialogHeader>
@@ -91,7 +91,7 @@ export function ContactDialog({ open, onOpenChange, defaultService }: ContactDia
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name" className="font-mono uppercase text-xs tracking-wider">Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -103,7 +103,7 @@ export function ContactDialog({ open, onOpenChange, defaultService }: ContactDia
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email" className="font-mono uppercase text-xs tracking-wider">Email *</Label>
               <Input
                 id="email"
                 type="email"
@@ -117,7 +117,7 @@ export function ContactDialog({ open, onOpenChange, defaultService }: ContactDia
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="service">Service *</Label>
+            <Label htmlFor="service" className="font-mono uppercase text-xs tracking-wider">Service *</Label>
             <Select
               value={formData.service}
               onValueChange={(value) => setFormData({ ...formData, service: value })}
@@ -135,7 +135,7 @@ export function ContactDialog({ open, onOpenChange, defaultService }: ContactDia
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="genre">Genre</Label>
+              <Label htmlFor="genre" className="font-mono uppercase text-xs tracking-wider">Genre</Label>
               <Input
                 id="genre"
                 value={formData.genre}
@@ -146,7 +146,7 @@ export function ContactDialog({ open, onOpenChange, defaultService }: ContactDia
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="track-count">Number of Tracks</Label>
+              <Label htmlFor="track-count" className="font-mono uppercase text-xs tracking-wider">Number of Tracks</Label>
               <Input
                 id="track-count"
                 type="number"
@@ -159,7 +159,7 @@ export function ContactDialog({ open, onOpenChange, defaultService }: ContactDia
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="timeline">Timeline</Label>
+            <Label htmlFor="timeline" className="font-mono uppercase text-xs tracking-wider">Timeline</Label>
             <Input
               id="timeline"
               value={formData.timeline}
@@ -170,7 +170,7 @@ export function ContactDialog({ open, onOpenChange, defaultService }: ContactDia
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="message">Additional Details</Label>
+            <Label htmlFor="message" className="font-mono uppercase text-xs tracking-wider">Additional Details</Label>
             <Textarea
               id="message"
               value={formData.message}
@@ -186,13 +186,13 @@ export function ContactDialog({ open, onOpenChange, defaultService }: ContactDia
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="border-input"
+              className="border-input font-mono uppercase tracking-wider"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="bg-accent hover:bg-accent/90 text-accent-foreground"
+              className="bg-accent hover:bg-accent/90 text-accent-foreground font-mono uppercase tracking-wider"
             >
               Submit Request
             </Button>
