@@ -124,7 +124,7 @@ function App() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <Waveform className="h-6 w-6 text-accent" weight="bold" />
-              <span className="font-bold text-xl tracking-tighter">SONIC FORGE</span>
+              <span className="font-bold text-xl tracking-tighter">SONORATIVA</span>
             </div>
 
             <div className="hidden md:flex items-center gap-6">
@@ -426,7 +426,7 @@ function App() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Waveform className="h-5 w-5 text-accent" weight="bold" />
-              <span className="font-bold tracking-tighter">SONIC FORGE</span>
+              <span className="font-bold tracking-tighter">SONORATIVA</span>
             </div>
             <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
               © 2024 Professional Audio Engineering
