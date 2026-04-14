@@ -8,6 +8,8 @@ import { AudioPlayer } from '@/components/AudioPlayer'
 import { ServicePackages } from '@/components/ServicePackages'
 import { ContactDialog } from '@/components/ContactDialog'
 import { Toaster } from '@/components/ui/sonner'
+import { useLenis } from '@/hooks/use-lenis'
+import { ScrollVideo } from '@/components/ScrollVideo'
 
 interface DemoTrack {
   id: string
@@ -99,6 +101,8 @@ function App() {
   const [selectedService, setSelectedService] = useState<string>('')
   const [modalView, setModalView] = useState<ModalView>('none')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  useLenis()
 
   const handleServiceSelect = (serviceId: string) => {
     setSelectedService(serviceId)
@@ -205,37 +209,15 @@ function App() {
         </AnimatePresence>
       </nav>
 
-      <main className="pt-16 min-h-screen flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-accent/5" />
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `
-                repeating-linear-gradient(
-                  90deg,
-                  transparent,
-                  transparent 100px,
-                  oklch(0.75 0.20 160 / 0.03) 100px,
-                  oklch(0.75 0.20 160 / 0.03) 101px
-                ),
-                repeating-linear-gradient(
-                  0deg,
-                  transparent,
-                  transparent 100px,
-                  oklch(0.75 0.20 160 / 0.03) 100px,
-                  oklch(0.75 0.20 160 / 0.03) 101px
-                )
-              `,
-            }}
-          />
-        </div>
+      <ScrollVideo />
 
-        <div className="container max-w-5xl mx-auto px-4 md:px-6 lg:px-8 relative z-10">
-          <div className="text-center">
+      <main className="relative z-10 bg-background">
+        <section className="container max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-20 md:py-32">
+          <div className="text-center mb-16">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
               <Badge className="mb-6 bg-accent/20 text-accent border-accent/50 px-4 py-1 font-mono uppercase tracking-wider">
@@ -246,7 +228,8 @@ function App() {
             <motion.h1
               className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-none tracking-tighter"
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
               PRECISION
@@ -259,7 +242,8 @@ function App() {
             <motion.p
               className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto font-mono"
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
               Industrial-grade mixing and mastering services for the modern producer.
@@ -269,7 +253,8 @@ function App() {
             <motion.div
               className="flex flex-col sm:flex-row gap-4 justify-center"
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.3 }}
             >
               <Button
@@ -291,7 +276,7 @@ function App() {
               </Button>
             </motion.div>
           </div>
-        </div>
+        </section>
       </main>
 
       <AnimatePresence>
