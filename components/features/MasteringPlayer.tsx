@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
+import { SpectrumAnalyser } from '@/components/features/SpectrumAnalyser'
 import { showcaseTrackSchema, type ShowcaseTrack } from '@/lib/schemas/showcase'
 import { cn } from '@/lib/utils'
 
@@ -82,16 +83,27 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
     setIosHintDismissed(true)
   }
 
-  // Canvas DPR scaling
+  // Canvas DPR scaling with ResizeObserver to keep pixels crisp on resize
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
-    const ctx = canvas.getContext('2d')
-    ctx?.scale(dpr, dpr)
+
+    const applyDpr = (): void => {
+      const dpr = window.devicePixelRatio || 1
+      const rect = canvas.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
+      // Setting canvas.width/height resets the 2D context state (clears transform)
+      canvas.width = rect.width * dpr
+      canvas.height = rect.height * dpr
+      const ctx = canvas.getContext('2d')
+      ctx?.scale(dpr, dpr)
+    }
+
+    applyDpr()
+
+    const ro = new ResizeObserver(applyDpr)
+    ro.observe(canvas)
+    return () => ro.disconnect()
   }, [])
 
   const drawVisualizer = useCallback(() => {
@@ -208,6 +220,14 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
               <div className="mb-4 rounded overflow-hidden bg-secondary/30">
                 <canvas ref={canvasRef} className="w-full h-[120px] block" />
               </div>
+
+              {/* FFT Spectrum Analyser – A/B overlay */}
+              <SpectrumAnalyser
+                analyserBefore={engine.analyserBefore}
+                analyserAfter={engine.analyserAfter}
+                activeTrack={engine.activeTrack}
+                className="mb-4"
+              />
 
               {/* LUFS Meter */}
               <div className="flex gap-6 mb-4 font-mono text-xs">
