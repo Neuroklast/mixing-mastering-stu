@@ -23,6 +23,9 @@ export interface AudioEngineState {
   frequencyData: Uint8Array | null
   errorMessage: string | null
   gainCompensationEnabled: boolean
+  /** Per-track AnalyserNodes for A/B spectrum comparison (null until audio graph is initialised) */
+  analyserBefore: AnalyserNode | null
+  analyserAfter: AnalyserNode | null
 }
 
 interface AudioEngineTracks {
@@ -104,6 +107,8 @@ export function useAudioEngine(
 
   // ── Refs (audio graph) ──
   const analyserRef = useRef<AnalyserNode | null>(null)
+  const analyserBeforeRef = useRef<AnalyserNode | null>(null)
+  const analyserAfterRef = useRef<AnalyserNode | null>(null)
   const gainNodesRef = useRef<Record<'before' | 'after', GainNode> | null>(null)
   const sourceNodesRef = useRef<Map<HTMLAudioElement, MediaElementAudioSourceNode>>(new Map())
   const audioElementsRef = useRef<Record<'before' | 'after', HTMLAudioElement> | null>(null)
@@ -111,6 +116,7 @@ export function useAudioEngine(
   const statusRef = useRef<PlayerStatus>('idle')
   const rafIdRef = useRef<number | undefined>(undefined)
   const gainMatchRef = useRef<number>(1) // ratio to apply to 'before' when compensation on
+  const gainCompRef = useRef<boolean>(options.gainCompensation ?? false) // mirror of gainCompensationEnabled for stale-closure-safe access
 
   // Helper: keep statusRef in sync
   const updateStatus = useCallback((s: PlayerStatus) => {
@@ -121,9 +127,9 @@ export function useAudioEngine(
   // ── Audio graph setup ──
   const getOrCreateGraph = useCallback(() => {
     const ctx = getAudioContext()
+    const isMobile = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1
     if (!analyserRef.current) {
       const analyser = ctx.createAnalyser()
-      const isMobile = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1
       analyser.fftSize = isMobile ? 512 : 2048
       analyser.smoothingTimeConstant = 0.8
       analyser.connect(ctx.destination)
@@ -135,6 +141,21 @@ export function useAudioEngine(
       gainBefore.connect(analyserRef.current)
       gainAfter.connect(analyserRef.current)
       gainNodesRef.current = { before: gainBefore, after: gainAfter }
+    }
+    // Per-track analysers for A/B spectrum comparison (fan-out from each gain node)
+    if (!analyserBeforeRef.current) {
+      const ab = ctx.createAnalyser()
+      ab.fftSize = isMobile ? 512 : 4096
+      ab.smoothingTimeConstant = 0.8
+      gainNodesRef.current.before.connect(ab)
+      analyserBeforeRef.current = ab
+    }
+    if (!analyserAfterRef.current) {
+      const aa = ctx.createAnalyser()
+      aa.fftSize = isMobile ? 512 : 4096
+      aa.smoothingTimeConstant = 0.8
+      gainNodesRef.current.after.connect(aa)
+      analyserAfterRef.current = aa
     }
     return { ctx, analyser: analyserRef.current, gains: gainNodesRef.current }
   }, [])
@@ -175,7 +196,7 @@ export function useAudioEngine(
 
   // ── Crossfade helper (5 ms linear ramp) ──
   const crossfade = useCallback(
-    (from: 'before' | 'after', to: 'before' | 'after'): void => {
+    (from: 'before' | 'after', to: 'before' | 'after', toTargetGain: number = 1): void => {
       const gains = gainNodesRef.current
       if (!gains) return
       const ctx = getAudioContext()
@@ -188,8 +209,9 @@ export function useAudioEngine(
       fromGain.gain.setValueAtTime(fromGain.gain.value, now)
       fromGain.gain.linearRampToValueAtTime(0, now + FADE)
 
+      toGain.gain.cancelScheduledValues(now)
       toGain.gain.setValueAtTime(0, now)
-      toGain.gain.linearRampToValueAtTime(1, now + FADE)
+      toGain.gain.linearRampToValueAtTime(toTargetGain, now + FADE)
     },
     [],
   )
@@ -366,7 +388,7 @@ export function useAudioEngine(
     if (ctx.state === 'suspended') await ctx.resume()
     // Ensure the active track's gain is at 1 (or gain-compensated value for 'before')
     const targetGain =
-      activeTrackRef.current === 'before' && gainCompensationEnabled
+      activeTrackRef.current === 'before' && gainCompRef.current
         ? gainMatchRef.current
         : 1
     gains[activeTrackRef.current].gain.value = targetGain
@@ -375,7 +397,7 @@ export function useAudioEngine(
     startRaf()
     updateStatus('playing')
     setDuration(audio.duration || 0)
-  }, [connectAudioElement, gainCompensationEnabled, getOrCreateGraph, startRaf, updateStatus])
+  }, [connectAudioElement, getOrCreateGraph, startRaf, updateStatus])
 
   const pause = useCallback((): void => {
     if (!audioElementsRef.current) return
@@ -420,18 +442,15 @@ export function useAudioEngine(
         return
       }
 
-      // Crossfade: ramp out old, ramp in new
-      crossfade(prevTrack, track)
+      // Compute target gain using ref (safe against stale closures)
+      const targetGain = track === 'before' && gainCompRef.current ? gainMatchRef.current : 1
 
-      // Set gain compensation for the new active track
-      const { gains } = getOrCreateGraph()
-      const targetGain =
-        track === 'before' && gainCompensationEnabled ? gainMatchRef.current : 1
+      // Crossfade: ramp out old, ramp in new — with correct target gain for compensation
+      crossfade(prevTrack, track, targetGain)
 
       const ctx = getAudioContext()
       const startPlay = (): void => {
         void nextAudio.play().then(() => {
-          gains[track].gain.value = targetGain
           updateStatus('playing')
         })
       }
@@ -445,12 +464,13 @@ export function useAudioEngine(
       // Fade out previous after crossfade window
       setTimeout(() => prevAudio.pause(), CROSSFADE_CLEANUP_DELAY_MS)
     },
-    [connectAudioElement, crossfade, gainCompensationEnabled, getOrCreateGraph, updateStatus],
+    [connectAudioElement, crossfade, getOrCreateGraph, updateStatus],
   )
 
   const toggleGainCompensation = useCallback((): void => {
     setGainCompensationEnabled((prev) => {
       const next = !prev
+      gainCompRef.current = next
       void applyGainCompensation(next)
       return next
     })
@@ -467,6 +487,8 @@ export function useAudioEngine(
     frequencyData,
     errorMessage,
     gainCompensationEnabled,
+    analyserBefore: analyserBeforeRef.current,
+    analyserAfter: analyserAfterRef.current,
     play,
     pause,
     seek,

@@ -40,6 +40,7 @@ const VideoSkeleton = (): JSX.Element => (
 export const VideoBackground = (): JSX.Element => {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const pendingRafRef = useRef<boolean>(false)
   const [isVideoReady, setIsVideoReady] = useState(false)
   const prefersReducedMotion = useReducedMotion()
 
@@ -61,11 +62,17 @@ export const VideoBackground = (): JSX.Element => {
 
     const syncVideoToScroll = (): void => {
       if (!video.duration) return
-      const scrollProgress = buildScrollProgress(container)
-      const targetTime = scrollProgress * video.duration
-      if (Math.abs(video.currentTime - targetTime) > 0.033) {
-        video.currentTime = targetTime
-      }
+      if (pendingRafRef.current) return
+      pendingRafRef.current = true
+      requestAnimationFrame(() => {
+        pendingRafRef.current = false
+        if (!video.duration) return
+        const scrollProgress = buildScrollProgress(container)
+        const targetTime = scrollProgress * video.duration
+        if (Math.abs(video.currentTime - targetTime) > 0.033) {
+          video.currentTime = targetTime
+        }
+      })
     }
 
     lenis.on('scroll', syncVideoToScroll)
@@ -88,13 +95,13 @@ export const VideoBackground = (): JSX.Element => {
 
   return (
     <div ref={containerRef} className="relative w-full h-[300vh]">
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-black" style={{ transform: 'translateZ(0)' }}>
         {!isVideoReady && <VideoSkeleton />}
         <video
           ref={videoRef}
           src="/video/background.mp4"
           className="w-full h-full object-cover opacity-40"
-          style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
+          style={{ transform: 'translateZ(0)', willChange: 'transform', backfaceVisibility: 'hidden' }}
           autoPlay={false}
           muted
           playsInline
