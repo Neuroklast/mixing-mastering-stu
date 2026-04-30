@@ -32,3 +32,18 @@ pids
 .devcontainer/
 
 .spark-workbench-id
+
+# Next.js build output
+.next/
+out/
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Debug logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
