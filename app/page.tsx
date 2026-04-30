@@ -5,13 +5,13 @@ import { Footer } from '@/components/features/Footer'
 import { ErrorBoundary } from '@/components/features/ErrorBoundary'
 import { CreditsSection } from '@/components/features/CreditsSection'
 import { ProfileSection } from '@/components/features/ProfileSection'
-import { ReviewsSection, type Review } from '@/components/features/ReviewsSection'
+import { ReviewsSection } from '@/components/features/ReviewsSection'
 import { GallerySection } from '@/components/features/GallerySection'
 import { ClientMasteringPlayer } from '@/components/features/ClientMasteringPlayer'
 import { Toaster } from 'sonner'
 import type { ShowcaseTrack } from '@/lib/schemas/showcase'
 import type { Profile } from '@/types/profile'
-import { MOCK_CREDITS } from '@/lib/mockData'
+import { MOCK_CREDITS, DEMO_REVIEWS, DEMO_GALLERY } from '@/lib/mockData'
 import { getActiveShowcaseTrack } from '@/services/showcaseService'
 
 const isDev = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
@@ -45,9 +45,6 @@ const PROFILE_KAIO: Profile = {
   awards: [],
 }
 
-const DEMO_REVIEWS: Review[] = []
-const DEMO_GALLERY: { src: string; alt: string; width: number; height: number }[] = []
-
 export default async function HomePage(): Promise<JSX.Element> {
   const cmsTrack = await getActiveShowcaseTrack()
   const showcaseTrack = cmsTrack ?? FALLBACK_TRACK
@@ -77,10 +74,10 @@ export default async function HomePage(): Promise<JSX.Element> {
             <ProfileSection profile={PROFILE_KAIO} />
           </ErrorBoundary>
           <ErrorBoundary>
-            <ReviewsSection reviews={DEMO_REVIEWS} />
+            <ReviewsSection reviews={isDev ? DEMO_REVIEWS : []} />
           </ErrorBoundary>
           <ErrorBoundary>
-            <GallerySection images={DEMO_GALLERY} />
+            <GallerySection images={isDev ? DEMO_GALLERY : []} />
           </ErrorBoundary>
         </div>
       </main>
