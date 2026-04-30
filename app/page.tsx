@@ -21,16 +21,24 @@ const DEMO_TRACK: ShowcaseTrack = {
   afterUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
 }
 
-const DEMO_PROFILE: Profile = {
-  name: 'Alex Sonorativa',
-  title: 'Mixing & Mastering Engineer',
-  bio: 'With over 15 years of experience in professional audio engineering, Alex has worked with artists across genres from ambient electronic to heavy metal. Trained at the prestigious SAE Institute and mentored by industry veterans, Alex brings a technical precision and creative sensibility to every project. Specializing in the critical transition from mix to master, Alex ensures every release achieves commercial loudness standards while retaining the dynamic range and emotional impact the music demands.',
+const PROFILE_ZARDONIC: Profile = {
+  name: 'Federico „Zardonic" Ágreda Álvarez',
+  title: 'Mixing & Mastering Engineer · Sound Designer',
+  bio: 'Pionier des Genres „Metal & Bass" mit über 20 Jahren Branchenerfahrung. Geboren in Venezuela, ansässig in Deutschland. Über 100 Millionen Streams weltweit. Platz 1 in den Beatport Drum & Bass Releases und Amazon Hard Rock & Metal Bestsellern. Remixes und Produktionen für Nine Inch Nails, Bullet For My Valentine, Fear Factory, Pop Evil, Sonic Syndicate, The Qemists und Gorgoroth. Erster lateinamerikanischer Musiker als spielbarer Charakter in einem Videospiel (Warlocks Vs Shadows). Soundtracks für Superhot: Mind Control Delete und Redout 2. Factory Presets für Arturia, Slate Digital, Brainworx und Baby Audio. DAW: FL Studio. Monitoring: Quested v2108, PMC result6. Synth: Sequential Pro 2.',
   portraitSrc: '/placeholder-portrait.png',
   awards: [
-    { name: 'Best Mastering Engineer', year: 2023 },
-    { name: 'Platinum Record', year: 2022 },
-    { name: 'Industry Excellence', year: 2021 },
+    { name: 'Artist Of The Year', year: 2016 },
+    { name: 'Best DJ Award', year: 2015 },
+    { name: 'Best Keyboardist (Metal Hecho en Venezuela)', year: 2014 },
   ],
+}
+
+const PROFILE_KAIO: Profile = {
+  name: 'Daniel „Kaio" Soto',
+  title: 'Mixing & Mastering Engineer · Visual Media Artist',
+  bio: 'Spezialist für Mixing, High-End Mastering und visuelle Medienkunst. Gründer und Chef-Engineer von Mixbucket USA. Spezialisiert auf extreme Genres: Black Metal, Thrash und Industrial. Full Mixing & Mastering für Necrobeast (Alben: Promethean Flame, Iron Baphomet). Ersteller offizieller Lyric Videos für internationale Metal-Acts, darunter Necrobeast – „In Communion with Satan". Technischer Fokus: Maximale Lautheit bei Erhalt der transienten Dynamik (Loudness Management). Zusatzleistungen: Professionelles Video-Design und Lyric Video-Produktion.',
+  portraitSrc: '/placeholder-portrait.png',
+  awards: [],
 }
 
 const DEMO_REVIEWS: Review[] = []
@@ -56,7 +64,10 @@ export default function HomePage(): JSX.Element {
             <CreditsSection credits={[]} />
           </ErrorBoundary>
           <ErrorBoundary>
-            <ProfileSection profile={DEMO_PROFILE} />
+            <ProfileSection profile={PROFILE_ZARDONIC} />
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <ProfileSection profile={PROFILE_KAIO} />
           </ErrorBoundary>
           <ErrorBoundary>
             <ReviewsSection reviews={DEMO_REVIEWS} />
