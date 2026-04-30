@@ -2,12 +2,18 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 export interface AudioTrack {
   label: 'before' | 'after'
   url: string
 }
 
+export type PlayerStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'switching' | 'error'
+
 export interface AudioEngineState {
+  status: PlayerStatus
+  /** @deprecated use status instead */
   isPlaying: boolean
   activeTrack: 'before' | 'after'
   currentTime: number
@@ -15,6 +21,8 @@ export interface AudioEngineState {
   lufsIntegrated: number | null
   lufsShortTerm: number | null
   frequencyData: Uint8Array | null
+  errorMessage: string | null
+  gainCompensationEnabled: boolean
 }
 
 interface AudioEngineTracks {
@@ -22,21 +30,38 @@ interface AudioEngineTracks {
   after: AudioTrack
 }
 
+interface AudioEngineOptions {
+  startMarker?: number
+  gainCompensation?: boolean
+}
+
 type AudioEngineControls = {
   play: () => Promise<void>
   pause: () => void
   seek: (time: number) => void
   switchTrack: (track: 'before' | 'after') => void
+  toggleGainCompensation: () => void
 }
+
+// ─── Singleton AudioContext ───────────────────────────────────────────────────
+
+let sharedAudioContext: AudioContext | null = null
+
+function getAudioContext(): AudioContext {
+  if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
+    sharedAudioContext = new AudioContext()
+  }
+  return sharedAudioContext
+}
+
+// ─── LUFS helpers ─────────────────────────────────────────────────────────────
 
 // ITU-R BS.1770-4 reference offset for LUFS calculation
 const LUFS_REFERENCE_OFFSET = -0.691
 
-function computeIntegratedLufs(samples: Float32Array): number {
+export function computeIntegratedLufs(samples: Float32Array): number {
   let sum = 0
-  for (let i = 0; i < samples.length; i++) {
-    sum += samples[i] * samples[i]
-  }
+  for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i]
   const meanSquare = sum / samples.length
   if (meanSquare === 0) return -Infinity
   return LUFS_REFERENCE_OFFSET + 10 * Math.log10(meanSquare)
@@ -45,222 +70,369 @@ function computeIntegratedLufs(samples: Float32Array): number {
 function computeShortTermLufsFromFreqData(data: Uint8Array): number {
   let sum = 0
   for (let i = 0; i < data.length; i++) {
-    const normalized = data[i] / 255
-    sum += normalized * normalized
+    const n = data[i] / 255
+    sum += n * n
   }
   const meanSquare = sum / data.length
   if (meanSquare === 0) return -Infinity
   return LUFS_REFERENCE_OFFSET + 10 * Math.log10(meanSquare)
 }
 
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
 export function useAudioEngine(
   tracks: AudioEngineTracks,
+  options: AudioEngineOptions = {},
 ): AudioEngineState & AudioEngineControls {
-  const [isPlaying, setIsPlaying] = useState(false)
+  const { startMarker = 0 } = options
+
+  // ── State (React-visible) ──
+  const [status, setStatus] = useState<PlayerStatus>('idle')
   const [activeTrack, setActiveTrack] = useState<'before' | 'after'>('before')
-  const [currentTime, setCurrentTime] = useState(0)
+  const [currentTime, setCurrentTime] = useState(startMarker)
   const [duration, setDuration] = useState(0)
   const [lufsIntegrated, setLufsIntegrated] = useState<number | null>(null)
   const [lufsShortTerm, setLufsShortTerm] = useState<number | null>(null)
   const [frequencyData, setFrequencyData] = useState<Uint8Array | null>(null)
-
-  const audioCtx = useRef<AudioContext | null>(null)
-  const analyserNode = useRef<AnalyserNode | null>(null)
-  const sourceNodes = useRef<Map<HTMLAudioElement, MediaElementAudioSourceNode>>(new Map())
-  const rafId = useRef<number | undefined>(undefined)
-  const audioElements = useRef<Record<'before' | 'after', HTMLAudioElement> | null>(null)
-  const activeTrackRef = useRef<'before' | 'after'>('before')
-  const isPlayingRef = useRef(false)
-
-  const getOrCreateAudioContext = useCallback((): AudioContext => {
-    if (!audioCtx.current) audioCtx.current = new AudioContext()
-    return audioCtx.current
-  }, [])
-
-  const getOrCreateAnalyser = useCallback((): AnalyserNode => {
-    if (analyserNode.current) return analyserNode.current
-    const ctx = getOrCreateAudioContext()
-    const analyser = ctx.createAnalyser()
-    analyser.fftSize = 2048
-    analyser.smoothingTimeConstant = 0.8
-    analyser.connect(ctx.destination)
-    analyserNode.current = analyser
-    return analyser
-  }, [getOrCreateAudioContext])
-
-  const connectAudioElement = useCallback(
-    (audio: HTMLAudioElement): void => {
-      if (sourceNodes.current.has(audio)) return
-      const ctx = getOrCreateAudioContext()
-      const analyser = getOrCreateAnalyser()
-      const source = ctx.createMediaElementSource(audio)
-      source.connect(analyser)
-      sourceNodes.current.set(audio, source)
-    },
-    [getOrCreateAudioContext, getOrCreateAnalyser],
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [gainCompensationEnabled, setGainCompensationEnabled] = useState(
+    options.gainCompensation ?? false,
   )
 
-  const stopRaf = useCallback((): void => {
-    if (rafId.current !== undefined) {
-      cancelAnimationFrame(rafId.current)
-      rafId.current = undefined
+  // ── Refs (audio graph) ──
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const gainNodesRef = useRef<Record<'before' | 'after', GainNode> | null>(null)
+  const sourceNodesRef = useRef<Map<HTMLAudioElement, MediaElementAudioSourceNode>>(new Map())
+  const audioElementsRef = useRef<Record<'before' | 'after', HTMLAudioElement> | null>(null)
+  const activeTrackRef = useRef<'before' | 'after'>('before')
+  const statusRef = useRef<PlayerStatus>('idle')
+  const rafIdRef = useRef<number | undefined>(undefined)
+  const gainMatchRef = useRef<number>(1) // ratio to apply to 'before' when compensation on
+
+  // Helper: keep statusRef in sync
+  const updateStatus = useCallback((s: PlayerStatus) => {
+    statusRef.current = s
+    setStatus(s)
+  }, [])
+
+  // ── Audio graph setup ──
+  const getOrCreateGraph = useCallback(() => {
+    const ctx = getAudioContext()
+    if (!analyserRef.current) {
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 2048
+      analyser.smoothingTimeConstant = 0.8
+      analyser.connect(ctx.destination)
+      analyserRef.current = analyser
+    }
+    if (!gainNodesRef.current) {
+      const gainBefore = ctx.createGain()
+      const gainAfter = ctx.createGain()
+      gainBefore.connect(analyserRef.current)
+      gainAfter.connect(analyserRef.current)
+      gainNodesRef.current = { before: gainBefore, after: gainAfter }
+    }
+    return { ctx, analyser: analyserRef.current, gains: gainNodesRef.current }
+  }, [])
+
+  const connectAudioElement = useCallback(
+    (audio: HTMLAudioElement, track: 'before' | 'after'): void => {
+      if (sourceNodesRef.current.has(audio)) return
+      const { ctx, gains } = getOrCreateGraph()
+      const source = ctx.createMediaElementSource(audio)
+      source.connect(gains[track])
+      sourceNodesRef.current.set(audio, source)
+    },
+    [getOrCreateGraph],
+  )
+
+  // ── RAF loop ──
+  const stopRaf = useCallback(() => {
+    if (rafIdRef.current !== undefined) {
+      cancelAnimationFrame(rafIdRef.current)
+      rafIdRef.current = undefined
     }
   }, [])
 
-  const startRaf = useCallback((): void => {
+  const startRaf = useCallback(() => {
     stopRaf()
-    const analyser = getOrCreateAnalyser()
+    const analyser = analyserRef.current
+    if (!analyser) return
     const data = new Uint8Array(analyser.frequencyBinCount)
-
     const tick = (): void => {
       analyser.getByteFrequencyData(data)
       setFrequencyData(new Uint8Array(data))
       const stLufs = computeShortTermLufsFromFreqData(data)
       setLufsShortTerm(isFinite(stLufs) ? stLufs : null)
-      rafId.current = requestAnimationFrame(tick)
+      rafIdRef.current = requestAnimationFrame(tick)
     }
-    rafId.current = requestAnimationFrame(tick)
-  }, [getOrCreateAnalyser, stopRaf])
+    rafIdRef.current = requestAnimationFrame(tick)
+  }, [stopRaf])
 
+  // ── Crossfade helper (5 ms linear ramp) ──
+  const crossfade = useCallback(
+    (from: 'before' | 'after', to: 'before' | 'after'): void => {
+      const gains = gainNodesRef.current
+      if (!gains) return
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+      const FADE = 0.005 // 5 ms
+
+      const fromGain = gains[from]
+      const toGain = gains[to]
+
+      fromGain.gain.setValueAtTime(fromGain.gain.value, now)
+      fromGain.gain.linearRampToValueAtTime(0, now + FADE)
+
+      toGain.gain.setValueAtTime(0, now)
+      toGain.gain.linearRampToValueAtTime(1, now + FADE)
+    },
+    [],
+  )
+
+  // ── Gain compensation calculation ──
+  const applyGainCompensation = useCallback(
+    async (enabled: boolean): Promise<void> => {
+      const gains = gainNodesRef.current
+      if (!gains) return
+
+      if (!enabled) {
+        gains.before.gain.value = 1
+        return
+      }
+
+      try {
+        const ctx = new AudioContext()
+        const [bufA, bufB] = await Promise.all([
+          fetch(tracks.before.url)
+            .then((r) => r.arrayBuffer())
+            .then((ab) => ctx.decodeAudioData(ab)),
+          fetch(tracks.after.url)
+            .then((r) => r.arrayBuffer())
+            .then((ab) => ctx.decodeAudioData(ab)),
+        ])
+        const rms = (buf: AudioBuffer): number => {
+          const ch = buf.getChannelData(0)
+          let sum = 0
+          for (let i = 0; i < ch.length; i++) sum += ch[i] * ch[i]
+          return Math.sqrt(sum / ch.length)
+        }
+        const ratio = rms(bufB) / (rms(bufA) || 1)
+        gainMatchRef.current = ratio
+        if (activeTrackRef.current === 'before') {
+          gains.before.gain.value = ratio
+        }
+        await ctx.close()
+      } catch {
+        // Gain compensation silently unavailable
+      }
+    },
+    [tracks.before.url, tracks.after.url],
+  )
+
+  // ── Mount effect ──
   useEffect(() => {
     if (typeof window === 'undefined') return
-    sourceNodes.current = new Map()
-    audioElements.current = {
+
+    updateStatus('loading')
+
+    const elements: Record<'before' | 'after', HTMLAudioElement> = {
       before: new Audio(tracks.before.url),
       after: new Audio(tracks.after.url),
     }
-    const elements = audioElements.current
     elements.before.preload = 'metadata'
     elements.after.preload = 'metadata'
 
-    const handleMetadata = (version: 'before' | 'after') => () => {
-      if (version === activeTrackRef.current) {
-        setDuration(elements[version].duration)
-      }
+    // Jump to startMarker on first load
+    if (startMarker > 0) {
+      ;(['before', 'after'] as const).forEach((v) => {
+        const seekOnce = (): void => {
+          elements[v].currentTime = startMarker
+          elements[v].removeEventListener('loadedmetadata', seekOnce)
+        }
+        elements[v].addEventListener('loadedmetadata', seekOnce)
+      })
     }
 
-    const handleTimeUpdate = (version: 'before' | 'after') => () => {
-      if (version === activeTrackRef.current) {
-        setCurrentTime(elements[version].currentTime)
-      }
+    audioElementsRef.current = elements
+    sourceNodesRef.current = new Map()
+
+    let metadataLoaded = 0
+    const onMetadata = (v: 'before' | 'after') => () => {
+      if (v === 'before') setDuration(elements[v].duration)
+      metadataLoaded++
+      if (metadataLoaded >= 2) updateStatus('ready')
     }
 
-    const handleEnded = (): void => {
-      setIsPlaying(false)
-      isPlayingRef.current = false
+    const onTimeUpdate = (v: 'before' | 'after') => () => {
+      if (v === activeTrackRef.current) setCurrentTime(elements[v].currentTime)
+    }
+
+    const onEnded = (): void => {
+      updateStatus('paused')
       stopRaf()
       setFrequencyData(null)
       setLufsShortTerm(null)
     }
 
-    ;(['before', 'after'] as const).forEach((version) => {
-      elements[version].addEventListener('loadedmetadata', handleMetadata(version))
-      elements[version].addEventListener('timeupdate', handleTimeUpdate(version))
-      elements[version].addEventListener('ended', handleEnded)
+    const onError = (v: 'before' | 'after') => () => {
+      console.error(`Audio element error for track: ${v}`)
+      updateStatus('error')
+      setErrorMessage(`Failed to load ${v} audio file. Check the URL is accessible.`)
+    }
+
+    ;(['before', 'after'] as const).forEach((v) => {
+      elements[v].addEventListener('loadedmetadata', onMetadata(v))
+      elements[v].addEventListener('timeupdate', onTimeUpdate(v))
+      elements[v].addEventListener('ended', onEnded)
+      elements[v].addEventListener('error', onError(v))
     })
 
     return () => {
-      ;(['before', 'after'] as const).forEach((version) => {
-        elements[version].pause()
-        elements[version].src = ''
+      ;(['before', 'after'] as const).forEach((v) => {
+        elements[v].pause()
+        elements[v].src = ''
       })
       stopRaf()
-      audioCtx.current?.close()
+      // Do NOT close the shared AudioContext here (singleton)
     }
-    // Run once on mount only; tracks.before.url / tracks.after.url are
-    // treated as immutable after mount (audio elements are created once).
-    // stopRaf is stable (useCallback with no deps) but would cause an
-    // unnecessary re-mount if listed, so we intentionally omit it here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ── LUFS integrated (background computation on mount) ──
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const computeLufs = async (): Promise<void> => {
+    const compute = async (): Promise<void> => {
       try {
         const ctx = new AudioContext()
-        const response = await fetch(tracks.after.url)
-        const arrayBuffer = await response.arrayBuffer()
-        const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-        const channelData = audioBuffer.getChannelData(0)
-        const lufs = computeIntegratedLufs(channelData)
+        const resp = await fetch(tracks.after.url)
+        const ab = await resp.arrayBuffer()
+        const decoded = await ctx.decodeAudioData(ab)
+        const lufs = computeIntegratedLufs(decoded.getChannelData(0))
         setLufsIntegrated(isFinite(lufs) ? lufs : null)
         await ctx.close()
       } catch {
-        // Ignore LUFS computation errors (e.g. CORS, decode failure)
+        // silently ignore
       }
     }
-    void computeLufs()
+    void compute()
   }, [tracks.after.url])
 
+  // ── Controls ──
   const play = useCallback(async (): Promise<void> => {
-    if (!audioElements.current) return
-    const audio = audioElements.current[activeTrackRef.current]
-    connectAudioElement(audio)
-    const ctx = getOrCreateAudioContext()
+    if (!audioElementsRef.current) return
+    if (statusRef.current === 'loading') return
+    const audio = audioElementsRef.current[activeTrackRef.current]
+    connectAudioElement(audio, activeTrackRef.current)
+    const { ctx, gains } = getOrCreateGraph()
     if (ctx.state === 'suspended') await ctx.resume()
+    // Ensure the active track's gain is at 1 (or gain-compensated value for 'before')
+    const targetGain =
+      activeTrackRef.current === 'before' && gainCompensationEnabled
+        ? gainMatchRef.current
+        : 1
+    gains[activeTrackRef.current].gain.value = targetGain
+    gains[activeTrackRef.current === 'before' ? 'after' : 'before'].gain.value = 0
     await audio.play()
     startRaf()
-    setIsPlaying(true)
-    isPlayingRef.current = true
+    updateStatus('playing')
     setDuration(audio.duration || 0)
-  }, [connectAudioElement, getOrCreateAudioContext, startRaf])
+  }, [connectAudioElement, gainCompensationEnabled, getOrCreateGraph, startRaf, updateStatus])
 
   const pause = useCallback((): void => {
-    if (!audioElements.current) return
-    audioElements.current[activeTrackRef.current].pause()
+    if (!audioElementsRef.current) return
+    audioElementsRef.current[activeTrackRef.current].pause()
     stopRaf()
-    setIsPlaying(false)
-    isPlayingRef.current = false
+    updateStatus('paused')
     setFrequencyData(null)
     setLufsShortTerm(null)
-  }, [stopRaf])
+  }, [stopRaf, updateStatus])
 
   const seek = useCallback((time: number): void => {
-    if (!audioElements.current) return
-    const audio = audioElements.current[activeTrackRef.current]
+    if (!audioElementsRef.current) return
+    const audio = audioElementsRef.current[activeTrackRef.current]
     audio.currentTime = time
     setCurrentTime(time)
   }, [])
 
   const switchTrack = useCallback(
     (track: 'before' | 'after'): void => {
-      if (!audioElements.current) return
-      const prevAudio = audioElements.current[activeTrackRef.current]
-      const nextAudio = audioElements.current[track]
-      const savedTime = prevAudio.currentTime
-      const wasPlaying = isPlayingRef.current
+      if (!audioElementsRef.current) return
+      if (statusRef.current === 'loading') return
+      if (activeTrackRef.current === track) return
 
-      prevAudio.pause()
+      const prevTrack = activeTrackRef.current
+      const prevAudio = audioElementsRef.current[prevTrack]
+      const nextAudio = audioElementsRef.current[track]
+      const savedTime = prevAudio.currentTime
+      const wasPlaying = statusRef.current === 'playing'
+
+      updateStatus('switching')
+
+      connectAudioElement(nextAudio, track)
       nextAudio.currentTime = savedTime
       activeTrackRef.current = track
       setActiveTrack(track)
       setDuration(nextAudio.duration || 0)
       setCurrentTime(savedTime)
 
-      if (!wasPlaying) return
-      connectAudioElement(nextAudio)
-      const ctx = getOrCreateAudioContext()
-      if (ctx.state === 'suspended') {
-        void ctx.resume().then(() => nextAudio.play())
-      } else {
-        void nextAudio.play()
+      if (!wasPlaying) {
+        prevAudio.pause()
+        updateStatus('paused')
+        return
       }
+
+      // Crossfade: ramp out old, ramp in new
+      crossfade(prevTrack, track)
+
+      // Set gain compensation for the new active track
+      const { gains } = getOrCreateGraph()
+      const targetGain =
+        track === 'before' && gainCompensationEnabled ? gainMatchRef.current : 1
+
+      const ctx = getAudioContext()
+      const startPlay = (): void => {
+        void nextAudio.play().then(() => {
+          gains[track].gain.value = targetGain
+          updateStatus('playing')
+        })
+      }
+
+      if (ctx.state === 'suspended') {
+        void ctx.resume().then(startPlay)
+      } else {
+        startPlay()
+      }
+
+      // Fade out previous after crossfade window
+      setTimeout(() => prevAudio.pause(), 20)
     },
-    [connectAudioElement, getOrCreateAudioContext],
+    [connectAudioElement, crossfade, gainCompensationEnabled, getOrCreateGraph, updateStatus],
   )
 
+  const toggleGainCompensation = useCallback((): void => {
+    setGainCompensationEnabled((prev) => {
+      const next = !prev
+      void applyGainCompensation(next)
+      return next
+    })
+  }, [applyGainCompensation])
+
   return {
-    isPlaying,
+    status,
+    isPlaying: status === 'playing',
     activeTrack,
     currentTime,
     duration,
     lufsIntegrated,
     lufsShortTerm,
     frequencyData,
+    errorMessage,
+    gainCompensationEnabled,
     play,
     pause,
     seek,
     switchTrack,
+    toggleGainCompensation,
   }
 }
