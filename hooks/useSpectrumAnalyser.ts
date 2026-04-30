@@ -31,10 +31,33 @@ const F_MIN = 20
 const F_MAX = 20000
 
 // Colours matching the industrial/cyber aesthetic
-const COLOR_A = 'rgba(0, 212, 255, 0.9)'     // cyan  – Mixdown
-const COLOR_B = 'rgba(255, 107, 53, 0.9)'     // orange – Master
 const COLOR_DELTA = 'rgba(0, 255, 128, 0.7)'  // green  – Δ (B − A)
 const COLOR_ACTIVE_BAR = '#D94848'            // red accent – active track bars
+const COLOR_INACTIVE_BAR = 'rgba(120,120,120,0.5)' // grey – inactive track bars
+
+// Active curve colours
+const COLOR_ACTIVE_STROKE = '#D94848'
+const COLOR_ACTIVE_FILL = 'rgba(217,72,72,0.12)'
+const COLOR_ACTIVE_LINE_WIDTH = 2
+
+// Inactive curve colours
+const COLOR_INACTIVE_STROKE = 'rgba(160,160,160,0.7)'
+const COLOR_INACTIVE_FILL = 'rgba(160,160,160,0.08)'
+const COLOR_INACTIVE_LINE_WIDTH = 1.5
+
+// Frequency axis labels
+const FREQ_AXIS_LABELS: { f: number; label: string }[] = [
+  { f: 20, label: '20' },
+  { f: 50, label: '50' },
+  { f: 100, label: '100' },
+  { f: 200, label: '200' },
+  { f: 500, label: '500' },
+  { f: 1000, label: '1k' },
+  { f: 2000, label: '2k' },
+  { f: 5000, label: '5k' },
+  { f: 10000, label: '10k' },
+  { f: 20000, label: '20k' },
+]
 
 // Peak-hold parameters
 const PEAK_HOLD_FRAMES = 60   // frames to hold before decay
@@ -67,18 +90,7 @@ const smoothArray = (arr: Float32Array): void => {
 
 // ─── Bar-gradient cache ───────────────────────────────────────────────────────
 
-let cachedGradientWidth = 0
-let cachedGradient: CanvasGradient | null = null
-
-const getBarGradient = (ctx: CanvasRenderingContext2D, width: number): CanvasGradient => {
-  if (cachedGradient && cachedGradientWidth === width) return cachedGradient
-  const g = ctx.createLinearGradient(0, 0, width, 0)
-  g.addColorStop(0, '#ff6b35')   // bass – orange
-  g.addColorStop(1, '#00d4ff')   // highs – cyan
-  cachedGradient = g
-  cachedGradientWidth = width
-  return g
-}
+// (gradient removed – inactive bars now use solid grey)
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -206,6 +218,7 @@ export function useSpectrumAnalyser({
       h: number,
       strokeColor: string,
       fillColor: string,
+      lineWidth: number,
     ): void => {
       analyser.getFloatFrequencyData(freqBuf)
 
@@ -272,7 +285,7 @@ export function useSpectrumAnalyser({
         }
       }
       ctx.strokeStyle = strokeColor
-      ctx.lineWidth = 1.5
+      ctx.lineWidth = lineWidth
       ctx.stroke()
     },
     [],
@@ -315,24 +328,47 @@ export function useSpectrumAnalyser({
 
   const drawLegend = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, at: 'before' | 'after', vm: ViewMode): void => {
-      const items: { color: string; label: string; alpha: number }[] = [
-        { color: COLOR_A, label: 'Mixdown', alpha: at === 'before' ? 1.0 : 0.35 },
-        { color: COLOR_B, label: 'Master', alpha: at === 'after' ? 1.0 : 0.35 },
+      const items: { color: string; label: string }[] = [
+        { color: at === 'before' ? COLOR_ACTIVE_STROKE : COLOR_INACTIVE_STROKE, label: 'Mixdown' },
+        { color: at === 'after' ? COLOR_ACTIVE_STROKE : COLOR_INACTIVE_STROKE, label: 'Master' },
       ]
-      if (vm === 'curve') items.push({ color: COLOR_DELTA, label: 'Δ', alpha: 1.0 })
+      if (vm === 'curve') items.push({ color: COLOR_DELTA, label: 'Δ' })
 
       ctx.font = '10px monospace'
       let rx = w - 8
       for (let i = items.length - 1; i >= 0; i--) {
         const item = items[i]!
         const tw = ctx.measureText(item.label).width
-        ctx.globalAlpha = item.alpha
+        ctx.globalAlpha = 1
         ctx.fillStyle = item.color
         ctx.fillText(item.label, rx - tw, 14)
         ctx.fillRect(rx - tw - 14, 7, 10, 3)
         rx -= tw + 22
       }
       ctx.globalAlpha = 1
+    },
+    [],
+  )
+
+  const drawFreqAxis = useCallback(
+    (ctx: CanvasRenderingContext2D, w: number, h: number): void => {
+      ctx.save()
+      ctx.font = '9px monospace'
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)'
+      ctx.lineWidth = 1
+      for (const { f, label } of FREQ_AXIS_LABELS) {
+        const x = freqToX(f, w)
+        // 4 px tick upward from h-14
+        ctx.beginPath()
+        ctx.moveTo(x, h - 14)
+        ctx.lineTo(x, h - 18)
+        ctx.stroke()
+        // Label centred below tick
+        const tw = ctx.measureText(label).width
+        ctx.fillText(label, x - tw / 2, h - 3)
+      }
+      ctx.restore()
     },
     [],
   )
@@ -364,8 +400,9 @@ export function useSpectrumAnalyser({
 
       const vm = viewModeRef.current
       const at = activeTrackRef.current
-      const alphaA = at === 'before' ? 1.0 : 0.35
-      const alphaB = at === 'after' ? 1.0 : 0.35
+
+      // 18 px bottom padding reserved for frequency-axis labels
+      const hDraw = h - 18
 
       const aBefore = analyserBefore
       const aAfter = analyserAfter
@@ -379,38 +416,60 @@ export function useSpectrumAnalyser({
       const phB = peakHoldBRef.current
 
       if (vm === 'bars') {
-        const gradInactive = getBarGradient(ctx2d, w)
-        if (aBefore && fbA && pkA && phA) {
-          drawBars(ctx2d, aBefore, fbA, pkA, phA, w, h, alphaA === 1.0 ? COLOR_ACTIVE_BAR : gradInactive, alphaA)
-        }
-        if (aAfter && fbB && pkB && phB) {
-          drawBars(ctx2d, aAfter, fbB, pkB, phB, w, h, alphaB === 1.0 ? COLOR_ACTIVE_BAR : gradInactive, alphaB)
+        if (at === 'before') {
+          // Inactive (after) drawn first, active (before) on top
+          if (aAfter && fbB && pkB && phB) {
+            drawBars(ctx2d, aAfter, fbB, pkB, phB, w, hDraw, COLOR_INACTIVE_BAR, 1.0)
+          }
+          if (aBefore && fbA && pkA && phA) {
+            drawBars(ctx2d, aBefore, fbA, pkA, phA, w, hDraw, COLOR_ACTIVE_BAR, 1.0)
+          }
+        } else {
+          // Inactive (before) drawn first, active (after) on top
+          if (aBefore && fbA && pkA && phA) {
+            drawBars(ctx2d, aBefore, fbA, pkA, phA, w, hDraw, COLOR_INACTIVE_BAR, 1.0)
+          }
+          if (aAfter && fbB && pkB && phB) {
+            drawBars(ctx2d, aAfter, fbB, pkB, phB, w, hDraw, COLOR_ACTIVE_BAR, 1.0)
+          }
         }
       } else {
-        // Curve mode – draw both tracks; active full, inactive dimmed
-        if (aBefore && fbA && sbA) {
-          ctx2d.globalAlpha = alphaA
-          drawCurve(ctx2d, aBefore, fbA, sbA, w, h, COLOR_A, 'rgba(0,212,255,0.15)')
-          ctx2d.globalAlpha = 1
+        // Curve mode – draw inactive first, active on top
+        if (at === 'before') {
+          if (aAfter && fbB && sbB) {
+            drawCurve(ctx2d, aAfter, fbB, sbB, w, hDraw, COLOR_INACTIVE_STROKE, COLOR_INACTIVE_FILL, COLOR_INACTIVE_LINE_WIDTH)
+          }
+          if (aBefore && fbA && sbA) {
+            drawCurve(ctx2d, aBefore, fbA, sbA, w, hDraw, COLOR_ACTIVE_STROKE, COLOR_ACTIVE_FILL, COLOR_ACTIVE_LINE_WIDTH)
+          }
+        } else {
+          if (aBefore && fbA && sbA) {
+            drawCurve(ctx2d, aBefore, fbA, sbA, w, hDraw, COLOR_INACTIVE_STROKE, COLOR_INACTIVE_FILL, COLOR_INACTIVE_LINE_WIDTH)
+          }
+          if (aAfter && fbB && sbB) {
+            drawCurve(ctx2d, aAfter, fbB, sbB, w, hDraw, COLOR_ACTIVE_STROKE, COLOR_ACTIVE_FILL, COLOR_ACTIVE_LINE_WIDTH)
+          }
         }
-        if (aAfter && fbB && sbB) {
-          ctx2d.globalAlpha = alphaB
-          drawCurve(ctx2d, aAfter, fbB, sbB, w, h, COLOR_B, 'rgba(255,107,53,0.15)')
-          ctx2d.globalAlpha = 1
-        }
-        // Delta always visible in curve mode
+        // Delta: faint 0 dB reference line, then delta curve on top
         if (aBefore && sbA && sbB) {
-          drawDelta(ctx2d, sbA, sbB, aBefore, w, h)
+          ctx2d.strokeStyle = 'rgba(255,255,255,0.15)'
+          ctx2d.lineWidth = 1
+          ctx2d.beginPath()
+          ctx2d.moveTo(0, hDraw / 2)
+          ctx2d.lineTo(w, hDraw / 2)
+          ctx2d.stroke()
+          drawDelta(ctx2d, sbA, sbB, aBefore, w, hDraw)
         }
       }
 
       drawLegend(ctx2d, w, at, vm)
+      drawFreqAxis(ctx2d, w, h)
 
       rafIdRef.current = requestAnimationFrame(tick)
     }
 
     rafIdRef.current = requestAnimationFrame(tick)
-  }, [analyserBefore, analyserAfter, canvasRef, drawBars, drawCurve, drawDelta, drawLegend])
+  }, [analyserBefore, analyserAfter, canvasRef, drawBars, drawCurve, drawDelta, drawFreqAxis, drawLegend])
 
   const stopRaf = useCallback((): void => {
     if (rafIdRef.current !== undefined) {
