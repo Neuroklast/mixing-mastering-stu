@@ -58,7 +58,7 @@ export const getOrderById = async (orderId: string): Promise<ServiceResult<Order
   if (isDev) {
     await new Promise((res) => setTimeout(res, 300))
     const order = MOCK_ORDERS.find((o) => o.id === orderId) ?? MOCK_ORDERS[0]
-    return order ? { success: true, data: order } : { success: false, error: 'Order not found' }
+    return { success: true, data: order }
   }
 
   const supabase = await createClient()
