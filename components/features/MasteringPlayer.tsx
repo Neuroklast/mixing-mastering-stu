@@ -97,7 +97,7 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
                     : 'bg-transparent border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10',
                 )}
               >
-                {t === 'before' ? 'MIX' : 'MASTER'}
+                {t === 'before' ? 'MIXDOWN' : 'FINAL TRACK'}
               </button>
             ))}
           </div>
