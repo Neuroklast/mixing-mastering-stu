@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── SONORATIVA design tokens ── */
+:root {
+  --color-bg: #121212;
+  --color-bg-card: #1E1E1E;
+  --color-fg: #F5F5F5;
+  --color-accent: #D94848;
+  --color-border: #2E2E2E;
+  --color-muted: #2A2A2A;
+  --color-muted-fg: #888888;
+  --color-secondary: #1A1A1A;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: auto; /* Lenis handles smooth scroll */
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .font-heading {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+}
+
+/* ── Atmospheric overlays ── */
+@layer utilities {
+  /* Vignette */
+  .vignette::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 0%,
+      transparent 50%,
+      rgba(18, 18, 18, 0.3) 80%,
+      rgba(18, 18, 18, 0.6) 100%
+    );
+    z-index: 9998;
+  }
+
+  /* Scanlines */
+  .scanlines::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+    z-index: 9997;
+  }
+
+  /* Film grain */
+  .grain::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+    z-index: 9999;
+    mix-blend-mode: overlay;
+  }
+
+  /* Accent glow utilities */
+  .glow-accent {
+    box-shadow:
+      0 0 20px rgba(217, 72, 72, 0.4),
+      0 0 40px rgba(217, 72, 72, 0.2);
+  }
+
+  .glow-accent-strong {
+    box-shadow:
+      0 0 30px rgba(217, 72, 72, 0.6),
+      0 0 60px rgba(217, 72, 72, 0.3),
+      inset 0 0 20px rgba(217, 72, 72, 0.15);
+  }
+}
