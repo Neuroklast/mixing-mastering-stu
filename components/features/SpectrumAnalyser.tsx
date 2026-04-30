@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
-import { useSpectrumAnalyser, type ViewMode, type AbMode } from '@/hooks/useSpectrumAnalyser'
+import { useSpectrumAnalyser, type ViewMode } from '@/hooks/useSpectrumAnalyser'
 
 interface SpectrumAnalyserProps {
   analyserBefore: AnalyserNode | null
@@ -19,7 +19,7 @@ export const SpectrumAnalyser = ({
 }: SpectrumAnalyserProps): JSX.Element => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  const { viewMode, setViewMode, abMode, setAbMode, showDelta, setShowDelta } =
+  const { viewMode, setViewMode } =
     useSpectrumAnalyser({ analyserBefore, analyserAfter, canvasRef, activeTrack })
 
   // DPR-correct sizing with ResizeObserver
@@ -48,12 +48,6 @@ export const SpectrumAnalyser = ({
     { key: 'curve', label: 'Curve' },
   ]
 
-  const abButtons: { key: AbMode; label: string }[] = [
-    { key: 'A', label: 'A' },
-    { key: 'B', label: 'B' },
-    { key: 'AB', label: 'A+B' },
-  ]
-
   return (
     <div className={cn('flex flex-col gap-3', className)}>
       {/* Controls */}
@@ -79,43 +73,6 @@ export const SpectrumAnalyser = ({
             </button>
           ))}
         </div>
-
-        {/* A/B mode selector */}
-        <div
-          className="flex rounded overflow-hidden border border-border"
-          role="group"
-          aria-label="Signal selection"
-        >
-          {abButtons.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setAbMode(key)}
-              className={cn(
-                'px-3 py-1 min-h-[44px] font-mono text-xs uppercase tracking-wider transition-colors',
-                abMode === key
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'bg-transparent text-muted-foreground hover:text-[var(--color-accent)]',
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Delta toggle (only meaningful in A+B mode) */}
-        {abMode === 'AB' && viewMode === 'curve' && (
-          <button
-            onClick={() => setShowDelta(!showDelta)}
-            className={cn(
-              'px-3 py-1 min-h-[44px] rounded border font-mono text-xs uppercase tracking-wider transition-colors',
-              showDelta
-                ? 'bg-[rgba(0,255,128,0.15)] border-[rgba(0,255,128,0.5)] text-[rgba(0,255,128,1)]'
-                : 'border-border text-muted-foreground hover:text-[var(--color-accent)]',
-            )}
-          >
-            Δ Delta
-          </button>
-        )}
       </div>
 
       {/* Canvas */}
