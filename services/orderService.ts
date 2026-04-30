@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabaseServer'
 import { z } from 'zod'
 import type { Order } from '@/types'
+import { MOCK_ORDERS } from '@/lib/mockData'
+
+const isDev = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
 
 export const createOrderSchema = z.object({
   clientName: z.string().min(1, 'Name is required'),
@@ -25,6 +28,11 @@ export const createOrder = async (
     return { success: false, error: parsed.error.errors.map((e) => e.message).join(', ') }
   }
 
+  if (isDev) {
+    await new Promise((res) => setTimeout(res, 500))
+    return { success: true, data: { orderId: 'mock-order-1' } }
+  }
+
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('orders')
@@ -47,6 +55,12 @@ export const createOrder = async (
 export const getOrderById = async (orderId: string): Promise<ServiceResult<Order>> => {
   if (!orderId) return { success: false, error: 'orderId is required' }
 
+  if (isDev) {
+    await new Promise((res) => setTimeout(res, 300))
+    const order = MOCK_ORDERS.find((o) => o.id === orderId) ?? MOCK_ORDERS[0]
+    return order ? { success: true, data: order } : { success: false, error: 'Order not found' }
+  }
+
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('orders')
@@ -63,6 +77,11 @@ export const updateOrderStatus = async (
   status: Order['status'],
 ): Promise<ServiceResult<void>> => {
   if (!orderId) return { success: false, error: 'orderId is required' }
+
+  if (isDev) {
+    await new Promise((res) => setTimeout(res, 300))
+    return { success: true, data: undefined }
+  }
 
   const supabase = await createClient()
   const { error } = await supabase

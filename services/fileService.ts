@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabaseServer'
 import { z } from 'zod'
 import type { AudioFile } from '@/types'
+import { MOCK_FILES } from '@/lib/mockData'
+
+const isDev = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
 
 const ALLOWED_MIME_TYPES = ['audio/wav', 'audio/mpeg'] as const
 const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024
@@ -37,6 +40,11 @@ export const uploadAudioFile = async (
     }
   }
 
+  if (isDev) {
+    await new Promise((res) => setTimeout(res, 800))
+    return { success: true, data: { publicUrl: '/demo/incinerate-mixdown.wav' } }
+  }
+
   const supabase = await createClient()
   const storagePath = buildStoragePath(orderId, file.name)
 
@@ -69,6 +77,11 @@ export const getFilesByOrderId = async (
   orderId: string,
 ): Promise<ServiceResult<AudioFile[]>> => {
   if (!orderId) return { success: false, error: 'orderId is required' }
+
+  if (isDev) {
+    await new Promise((res) => setTimeout(res, 300))
+    return { success: true, data: MOCK_FILES.filter((f) => f.order_id === orderId) }
+  }
 
   const supabase = await createClient()
   const { data, error } = await supabase
