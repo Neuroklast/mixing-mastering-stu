@@ -19,6 +19,26 @@ const formatTime = (totalSeconds: number): string => {
   return `${minutes}:${seconds}`
 }
 
+const LoadingSkeleton = (): JSX.Element => (
+  <section className="w-full bg-card border border-border rounded overflow-hidden">
+    <div className="p-6">
+      <div className="animate-pulse space-y-4">
+        <div className="h-5 bg-secondary/50 rounded w-1/3" />
+        <div className="h-[120px] bg-secondary/30 rounded" />
+        <div className="h-12 bg-secondary/30 rounded" />
+      </div>
+    </div>
+  </section>
+)
+
+const ErrorDisplay = ({ message }: { message: string | null }): JSX.Element => (
+  <div className="bg-card border border-border rounded p-6 text-center">
+    <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">
+      {message ?? 'Audio error'}
+    </p>
+  </div>
+)
+
 export const MasteringPlayer = ({ track }: MasteringPlayerProps): JSX.Element => {
   const validation = showcaseTrackSchema.safeParse(track)
 
@@ -37,10 +57,10 @@ export const MasteringPlayer = ({ track }: MasteringPlayerProps): JSX.Element =>
 }
 
 const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element => {
-  const engine = useAudioEngine({
-    before: { label: 'before', url: track.beforeUrl },
-    after: { label: 'after', url: track.afterUrl },
-  })
+  const engine = useAudioEngine(
+    { before: { label: 'before', url: track.beforeUrl }, after: { label: 'after', url: track.afterUrl } },
+    { startMarker: track.startMarker, gainCompensation: false },
+  )
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -66,10 +86,16 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
     drawVisualizer()
   }, [drawVisualizer])
 
+  if (engine.status === 'loading') return <LoadingSkeleton />
+  if (engine.status === 'error') return <ErrorDisplay message={engine.errorMessage} />
+
   const lufsIntegrated = engine.lufsIntegrated
   const lufsShortTerm = engine.lufsShortTerm
   const lufsImproved =
     lufsIntegrated !== null && lufsShortTerm !== null && lufsShortTerm > lufsIntegrated
+
+  const labelBefore = track.labelBefore ?? 'MIXDOWN'
+  const labelAfter = track.labelAfter ?? 'MASTER'
 
   return (
     <section className="w-full bg-card border border-border rounded overflow-hidden">
@@ -90,14 +116,15 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
               <button
                 key={t}
                 onClick={() => engine.switchTrack(t)}
+                disabled={engine.status === 'switching'}
                 className={cn(
                   'px-6 py-2 rounded font-mono text-sm font-bold uppercase tracking-wider border-2 transition-all duration-200',
                   engine.activeTrack === t
                     ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white glow-accent-strong'
                     : 'bg-transparent border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10',
-                )}
-              >
-                {t === 'before' ? 'MIXDOWN' : 'FINAL TRACK'}
+                  engine.status === 'switching' && 'opacity-50 cursor-not-allowed',
+                )}              >
+                {t === 'before' ? labelBefore : labelAfter}
               </button>
             ))}
           </div>
@@ -137,7 +164,8 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
           <Button
             size="icon"
             onClick={engine.isPlaying ? engine.pause : engine.play}
-            className="h-12 w-12 rounded bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white transition-all hover:scale-105 active:scale-95 glow-accent-strong flex-shrink-0"
+            disabled={engine.status === 'switching'}
+            className="h-12 w-12 rounded bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white transition-all hover:scale-105 active:scale-95 glow-accent-strong flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
           >
             {engine.isPlaying ? (
               <Pause weight="fill" className="h-5 w-5" />
@@ -159,6 +187,20 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
               <span>{formatTime(engine.duration)}</span>
             </div>
           </div>
+
+          {/* Gain Compensation Toggle */}
+          <button
+            onClick={engine.toggleGainCompensation}
+            className={cn(
+              'px-3 py-1.5 rounded font-mono text-xs font-bold uppercase tracking-wider border transition-all duration-200',
+              engine.gainCompensationEnabled
+                ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white'
+                : 'bg-transparent border-border text-muted-foreground hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]',
+            )}
+            title="Match loudness between Mix and Master"
+          >
+            {engine.gainCompensationEnabled ? 'GAIN COMP ON' : 'GAIN COMP OFF'}
+          </button>
         </div>
       </div>
 

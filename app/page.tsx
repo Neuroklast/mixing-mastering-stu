@@ -11,7 +11,8 @@ import { ClientMasteringPlayer } from '@/components/features/ClientMasteringPlay
 import { Toaster } from 'sonner'
 import type { ShowcaseTrack } from '@/lib/schemas/showcase'
 import type { Profile } from '@/types/profile'
-import { MOCK_SHOWCASE_TRACK, MOCK_CREDITS } from '@/lib/mockData'
+import { MOCK_CREDITS } from '@/lib/mockData'
+import { getActiveShowcaseTrack } from '@/services/showcaseService'
 
 const isDev = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
 
@@ -23,8 +24,6 @@ const FALLBACK_TRACK: ShowcaseTrack = {
   beforeUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
   afterUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
 }
-
-const showcaseTrack: ShowcaseTrack = isDev ? MOCK_SHOWCASE_TRACK : FALLBACK_TRACK
 
 const PROFILE_ZARDONIC: Profile = {
   name: 'Federico „Zardonic" Ágreda Álvarez',
@@ -49,7 +48,10 @@ const PROFILE_KAIO: Profile = {
 const DEMO_REVIEWS: Review[] = []
 const DEMO_GALLERY: { src: string; alt: string; width: number; height: number }[] = []
 
-export default function HomePage(): JSX.Element {
+export default async function HomePage(): Promise<JSX.Element> {
+  const cmsTrack = await getActiveShowcaseTrack()
+  const showcaseTrack = cmsTrack ?? FALLBACK_TRACK
+
   return (
     <>
       <Toaster position="top-right" theme="dark" richColors />
