@@ -5,7 +5,6 @@ import { useRef, useEffect, useCallback, useState } from 'react'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ViewMode = 'bars' | 'curve'
-export type AbMode = 'A' | 'B' | 'AB'
 
 interface UseSpectrumAnalyserOptions {
   analyserBefore: AnalyserNode | null
@@ -17,10 +16,6 @@ interface UseSpectrumAnalyserOptions {
 export interface UseSpectrumAnalyserReturn {
   viewMode: ViewMode
   setViewMode: (m: ViewMode) => void
-  abMode: AbMode
-  setAbMode: (m: AbMode) => void
-  showDelta: boolean
-  setShowDelta: (v: boolean) => void
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -39,6 +34,7 @@ const F_MAX = 20000
 const COLOR_A = 'rgba(0, 212, 255, 0.9)'     // cyan  – Mixdown
 const COLOR_B = 'rgba(255, 107, 53, 0.9)'     // orange – Master
 const COLOR_DELTA = 'rgba(0, 255, 128, 0.7)'  // green  – Δ (B − A)
+const COLOR_ACTIVE_BAR = '#D94848'            // red accent – active track bars
 
 // Peak-hold parameters
 const PEAK_HOLD_FRAMES = 60   // frames to hold before decay
@@ -93,19 +89,13 @@ export function useSpectrumAnalyser({
   activeTrack,
 }: UseSpectrumAnalyserOptions): UseSpectrumAnalyserReturn {
   const [viewMode, setViewMode] = useState<ViewMode>('bars')
-  const [abMode, setAbMode] = useState<AbMode>('AB')
-  const [showDelta, setShowDelta] = useState(false)
 
   // Stable refs so the RAF loop never closes over stale state
   const viewModeRef = useRef<ViewMode>('bars')
-  const abModeRef = useRef<AbMode>('AB')
-  const showDeltaRef = useRef(false)
   const activeTrackRef = useRef<'before' | 'after'>(activeTrack)
 
   // Keep refs in sync with state
   useEffect(() => { viewModeRef.current = viewMode }, [viewMode])
-  useEffect(() => { abModeRef.current = abMode }, [abMode])
-  useEffect(() => { showDeltaRef.current = showDelta }, [showDelta])
   useEffect(() => { activeTrackRef.current = activeTrack }, [activeTrack])
 
   // Pre-allocated Float32Array buffers (allocated once, never inside RAF)
@@ -154,17 +144,17 @@ export function useSpectrumAnalyser({
       peakHoldBuf: Int32Array,
       w: number,
       h: number,
-      gradient: CanvasGradient,
+      fillStyle: string | CanvasGradient,
       alpha: number,
     ): void => {
-      analyser.getByteFrequencyData(freqBuf as unknown as Uint8Array)
+      analyser.getFloatFrequencyData(freqBuf as Float32Array<ArrayBuffer>)
       const sampleRate = analyser.context.sampleRate
       const binWidth = sampleRate / 2 / analyser.frequencyBinCount
       const nBars = THIRD_OCTAVE_CENTRES.length
       const barW = w / nBars - 1
 
       ctx.globalAlpha = alpha
-      ctx.fillStyle = gradient
+      ctx.fillStyle = fillStyle
 
       for (let i = 0; i < nBars; i++) {
         const fc = THIRD_OCTAVE_CENTRES[i]!
@@ -177,27 +167,27 @@ export function useSpectrumAnalyser({
         let sum = 0
         let count = 0
         for (let b = binLo; b <= binHi; b++) {
-          sum += (freqBuf[b] ?? 0)
+          sum += (freqBuf[b] ?? -100)
           count++
         }
-        const avg = count > 0 ? sum / count : 0
-        const norm = avg / 255
-        const barH = norm * h
+        const avgDb = count > 0 ? sum / count : -100
+        const clamped = Math.max(-100, Math.min(0, avgDb))
+        const barH = ((clamped + 100) / 100) * h
 
         const x = (i / nBars) * w
         ctx.fillRect(x, h - barH, barW, barH)
 
         // Peak hold
-        const db = byteToDb(avg)
-        if (db > (peakBuf[i] ?? -100)) {
-          peakBuf[i] = db
+        if (avgDb > (peakBuf[i] ?? -100)) {
+          peakBuf[i] = avgDb
           peakHoldBuf[i] = PEAK_HOLD_FRAMES
         } else if ((peakHoldBuf[i] ?? 0) > 0) {
           peakHoldBuf[i]!--
         } else {
           peakBuf[i] = Math.max(-100, (peakBuf[i] ?? -100) - PEAK_DECAY_DB)
         }
-        const peakY = h - dbToY(peakBuf[i] ?? -100, h)
+        const peakDb = Math.max(-100, Math.min(0, peakBuf[i] ?? -100))
+        const peakY = h - ((peakDb + 100) / 100) * h
         ctx.fillRect(x, peakY - 1, barW, 2)
       }
 
@@ -324,22 +314,25 @@ export function useSpectrumAnalyser({
   )
 
   const drawLegend = useCallback(
-    (ctx: CanvasRenderingContext2D, w: number, abMode: AbMode, showDelta: boolean): void => {
-      const items: { color: string; label: string }[] = []
-      if (abMode === 'A' || abMode === 'AB') items.push({ color: COLOR_A, label: 'A (Mix)' })
-      if (abMode === 'B' || abMode === 'AB') items.push({ color: COLOR_B, label: 'B (Master)' })
-      if (showDelta && abMode === 'AB') items.push({ color: COLOR_DELTA, label: 'Δ' })
+    (ctx: CanvasRenderingContext2D, w: number, at: 'before' | 'after', vm: ViewMode): void => {
+      const items: { color: string; label: string; alpha: number }[] = [
+        { color: COLOR_A, label: 'Mixdown', alpha: at === 'before' ? 1.0 : 0.35 },
+        { color: COLOR_B, label: 'Master', alpha: at === 'after' ? 1.0 : 0.35 },
+      ]
+      if (vm === 'curve') items.push({ color: COLOR_DELTA, label: 'Δ', alpha: 1.0 })
 
       ctx.font = '10px monospace'
       let rx = w - 8
       for (let i = items.length - 1; i >= 0; i--) {
         const item = items[i]!
         const tw = ctx.measureText(item.label).width
+        ctx.globalAlpha = item.alpha
         ctx.fillStyle = item.color
         ctx.fillText(item.label, rx - tw, 14)
         ctx.fillRect(rx - tw - 14, 7, 10, 3)
         rx -= tw + 22
       }
+      ctx.globalAlpha = 1
     },
     [],
   )
@@ -370,8 +363,9 @@ export function useSpectrumAnalyser({
       ctx2d.clearRect(0, 0, w, h)
 
       const vm = viewModeRef.current
-      const ab = abModeRef.current
-      const delta = showDeltaRef.current
+      const at = activeTrackRef.current
+      const alphaA = at === 'before' ? 1.0 : 0.35
+      const alphaB = at === 'after' ? 1.0 : 0.35
 
       const aBefore = analyserBefore
       const aAfter = analyserAfter
@@ -385,27 +379,32 @@ export function useSpectrumAnalyser({
       const phB = peakHoldBRef.current
 
       if (vm === 'bars') {
-        const grad = getBarGradient(ctx2d, w)
-        if ((ab === 'A' || ab === 'AB') && aBefore && fbA && pkA && phA) {
-          drawBars(ctx2d, aBefore, fbA as unknown as Float32Array, pkA, phA, w, h, grad, ab === 'AB' ? 0.6 : 1)
+        const gradInactive = getBarGradient(ctx2d, w)
+        if (aBefore && fbA && pkA && phA) {
+          drawBars(ctx2d, aBefore, fbA, pkA, phA, w, h, alphaA === 1.0 ? COLOR_ACTIVE_BAR : gradInactive, alphaA)
         }
-        if ((ab === 'B' || ab === 'AB') && aAfter && fbB && pkB && phB) {
-          drawBars(ctx2d, aAfter, fbB as unknown as Float32Array, pkB, phB, w, h, grad, ab === 'AB' ? 0.9 : 1)
+        if (aAfter && fbB && pkB && phB) {
+          drawBars(ctx2d, aAfter, fbB, pkB, phB, w, h, alphaB === 1.0 ? COLOR_ACTIVE_BAR : gradInactive, alphaB)
         }
       } else {
-        // Curve mode
-        if ((ab === 'A' || ab === 'AB') && aBefore && fbA && sbA) {
+        // Curve mode – draw both tracks; active full, inactive dimmed
+        if (aBefore && fbA && sbA) {
+          ctx2d.globalAlpha = alphaA
           drawCurve(ctx2d, aBefore, fbA, sbA, w, h, COLOR_A, 'rgba(0,212,255,0.15)')
+          ctx2d.globalAlpha = 1
         }
-        if ((ab === 'B' || ab === 'AB') && aAfter && fbB && sbB) {
+        if (aAfter && fbB && sbB) {
+          ctx2d.globalAlpha = alphaB
           drawCurve(ctx2d, aAfter, fbB, sbB, w, h, COLOR_B, 'rgba(255,107,53,0.15)')
+          ctx2d.globalAlpha = 1
         }
-        if (delta && ab === 'AB' && aBefore && sbA && sbB) {
+        // Delta always visible in curve mode
+        if (aBefore && sbA && sbB) {
           drawDelta(ctx2d, sbA, sbB, aBefore, w, h)
         }
       }
 
-      drawLegend(ctx2d, w, ab, delta)
+      drawLegend(ctx2d, w, at, vm)
 
       rafIdRef.current = requestAnimationFrame(tick)
     }
@@ -431,9 +430,5 @@ export function useSpectrumAnalyser({
   return {
     viewMode,
     setViewMode,
-    abMode,
-    setAbMode,
-    showDelta,
-    setShowDelta,
   }
 }
