@@ -104,6 +104,8 @@ export function useAudioEngine(
   const [gainCompensationEnabled, setGainCompensationEnabled] = useState(
     options.gainCompensation ?? false,
   )
+  const [analyserBefore, setAnalyserBefore] = useState<AnalyserNode | null>(null)
+  const [analyserAfter, setAnalyserAfter] = useState<AnalyserNode | null>(null)
 
   // ── Refs (audio graph) ──
   const analyserRef = useRef<AnalyserNode | null>(null)
@@ -149,6 +151,7 @@ export function useAudioEngine(
       ab.smoothingTimeConstant = 0.8
       gainNodesRef.current.before.connect(ab)
       analyserBeforeRef.current = ab
+      setAnalyserBefore(ab)
     }
     if (!analyserAfterRef.current) {
       const aa = ctx.createAnalyser()
@@ -156,6 +159,7 @@ export function useAudioEngine(
       aa.smoothingTimeConstant = 0.8
       gainNodesRef.current.after.connect(aa)
       analyserAfterRef.current = aa
+      setAnalyserAfter(aa)
     }
     return { ctx, analyser: analyserRef.current, gains: gainNodesRef.current }
   }, [])
@@ -228,7 +232,7 @@ export function useAudioEngine(
       }
 
       try {
-        const ctx = new AudioContext()
+        const ctx = getAudioContext()
         const [bufA, bufB] = await Promise.all([
           fetch(tracks.before.url)
             .then((r) => r.arrayBuffer())
@@ -248,7 +252,6 @@ export function useAudioEngine(
         if (activeTrackRef.current === 'before') {
           gains.before.gain.value = ratio
         }
-        await ctx.close()
       } catch {
         // Gain compensation silently unavailable
       }
@@ -325,6 +328,34 @@ export function useAudioEngine(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ── Pre-compute gain-match ratio on mount (Bug #7A) ──
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const prefetchGainRatio = async (): Promise<void> => {
+      try {
+        const ctx = getAudioContext()
+        const [bufA, bufB] = await Promise.all([
+          fetch(tracks.before.url)
+            .then((r) => r.arrayBuffer())
+            .then((ab) => ctx.decodeAudioData(ab)),
+          fetch(tracks.after.url)
+            .then((r) => r.arrayBuffer())
+            .then((ab) => ctx.decodeAudioData(ab)),
+        ])
+        const rms = (buf: AudioBuffer): number => {
+          const ch = buf.getChannelData(0)
+          let sum = 0
+          for (let i = 0; i < ch.length; i++) sum += ch[i] * ch[i]
+          return Math.sqrt(sum / ch.length)
+        }
+        gainMatchRef.current = rms(bufB) / (rms(bufA) || 1)
+      } catch {
+        // Silently unavailable
+      }
+    }
+    void prefetchGainRatio()
+  }, [tracks.before.url, tracks.after.url])
+
   // ── LUFS integrated (background computation on mount) ──
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -396,7 +427,6 @@ export function useAudioEngine(
     await audio.play()
     startRaf()
     updateStatus('playing')
-    setDuration(audio.duration || 0)
   }, [connectAudioElement, getOrCreateGraph, startRaf, updateStatus])
 
   const pause = useCallback((): void => {
@@ -419,7 +449,14 @@ export function useAudioEngine(
     (track: 'before' | 'after'): void => {
       if (!audioElementsRef.current) return
       if (statusRef.current === 'loading') return
-      if (activeTrackRef.current === track) return
+      if (activeTrackRef.current === track) {
+        // If status got stuck in switching for any reason, correct it
+        if (statusRef.current === 'switching') {
+          const audio = audioElementsRef.current?.[track]
+          updateStatus(audio && !audio.paused ? 'playing' : 'paused')
+        }
+        return
+      }
 
       const prevTrack = activeTrackRef.current
       const prevAudio = audioElementsRef.current[prevTrack]
@@ -471,10 +508,13 @@ export function useAudioEngine(
     setGainCompensationEnabled((prev) => {
       const next = !prev
       gainCompRef.current = next
-      void applyGainCompensation(next)
+      const gains = gainNodesRef.current
+      if (gains) {
+        gains.before.gain.value = next ? gainMatchRef.current : 1
+      }
       return next
     })
-  }, [applyGainCompensation])
+  }, [])
 
   return {
     status,
@@ -487,8 +527,8 @@ export function useAudioEngine(
     frequencyData,
     errorMessage,
     gainCompensationEnabled,
-    analyserBefore: analyserBeforeRef.current,
-    analyserAfter: analyserAfterRef.current,
+    analyserBefore,
+    analyserAfter,
     play,
     pause,
     seek,

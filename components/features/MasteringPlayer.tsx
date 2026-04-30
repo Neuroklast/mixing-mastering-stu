@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useState } from 'react'
 import { Play, Pause } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -69,7 +69,6 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
     { startMarker: track.startMarker, gainCompensation: false },
   )
 
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const [iosHintDismissed, setIosHintDismissed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true
     return sessionStorage.getItem('ios-audio-hint-dismissed') === '1'
@@ -82,53 +81,6 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
     sessionStorage.setItem('ios-audio-hint-dismissed', '1')
     setIosHintDismissed(true)
   }
-
-  // Canvas DPR scaling with ResizeObserver to keep pixels crisp on resize
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const applyDpr = (): void => {
-      const dpr = window.devicePixelRatio || 1
-      const rect = canvas.getBoundingClientRect()
-      if (rect.width === 0 || rect.height === 0) return
-      // Setting canvas.width/height resets the 2D context state (clears transform)
-      canvas.width = rect.width * dpr
-      canvas.height = rect.height * dpr
-      const ctx = canvas.getContext('2d')
-      ctx?.scale(dpr, dpr)
-    }
-
-    applyDpr()
-
-    const ro = new ResizeObserver(applyDpr)
-    ro.observe(canvas)
-    return () => ro.disconnect()
-  }, [])
-
-  const drawVisualizer = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas || !engine.frequencyData) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    const dpr = window.devicePixelRatio || 1
-    const w = canvas.width / dpr
-    const h = canvas.height / dpr
-    ctx.clearRect(0, 0, w, h)
-    const data = engine.frequencyData
-    const barCount = Math.min(64, data.length)
-    const barWidth = w / barCount
-    ctx.fillStyle = '#D94848'
-    for (let i = 0; i < barCount; i++) {
-      const value = data[i] / 255
-      const barHeight = value * h
-      ctx.fillRect(i * barWidth, h - barHeight, barWidth - 1, barHeight)
-    }
-  }, [engine.frequencyData])
-
-  useEffect(() => {
-    drawVisualizer()
-  }, [drawVisualizer])
 
   if (engine.status === 'loading') return <LoadingSkeleton />
   if (engine.status === 'error') return <ErrorDisplay message={engine.errorMessage} />
@@ -146,7 +98,7 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
       {/* Section heading – aligned with all other sections */}
       <div className="mb-10">
         <h2 className="text-4xl md:text-5xl font-bold tracking-tight font-mono uppercase inline-block">
-          A/B PLAYER
+          EXAMPLE SOUNDS
         </h2>
         <div className="h-0.5 w-16 bg-[var(--color-accent)] mt-2" />
       </div>
@@ -216,11 +168,6 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
 
             {/* Controls row: visualizer + transport */}
             <div>
-              {/* Canvas Visualizer */}
-              <div className="mb-4 rounded overflow-hidden bg-secondary/30">
-                <canvas ref={canvasRef} className="w-full h-[120px] block" />
-              </div>
-
               {/* FFT Spectrum Analyser – A/B overlay */}
               <SpectrumAnalyser
                 analyserBefore={engine.analyserBefore}
