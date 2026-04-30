@@ -123,7 +123,8 @@ export function useAudioEngine(
     const ctx = getAudioContext()
     if (!analyserRef.current) {
       const analyser = ctx.createAnalyser()
-      analyser.fftSize = 2048
+      const isMobile = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1
+      analyser.fftSize = isMobile ? 512 : 2048
       analyser.smoothingTimeConstant = 0.8
       analyser.connect(ctx.destination)
       analyserRef.current = analyser
@@ -320,6 +321,40 @@ export function useAudioEngine(
     }
     void compute()
   }, [tracks.after.url])
+
+  // ── One-time user-gesture listener to resume suspended AudioContext (Safari/iOS) ──
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const resume = (): void => {
+      if (sharedAudioContext && sharedAudioContext.state === 'suspended') {
+        void sharedAudioContext.resume()
+      }
+      document.removeEventListener('click', resume)
+      document.removeEventListener('touchstart', resume)
+    }
+    document.addEventListener('click', resume)
+    document.addEventListener('touchstart', resume)
+    return () => {
+      document.removeEventListener('click', resume)
+      document.removeEventListener('touchstart', resume)
+    }
+  }, [])
+
+  // ── Auto-suspend when page goes hidden ──
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const handleVisibilityChange = (): void => {
+      if (document.visibilityState === 'hidden') {
+        if (statusRef.current === 'playing') {
+          audioElementsRef.current?.[activeTrackRef.current]?.pause()
+          stopRaf()
+          updateStatus('paused')
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [stopRaf, updateStatus])
 
   // ── Controls ──
   const play = useCallback(async (): Promise<void> => {

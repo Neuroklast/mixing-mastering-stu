@@ -21,6 +21,6 @@ test.describe('Homepage', () => {
     await page.goto('/')
     await page.getByRole('button', { name: /get started/i }).click()
     await expect(page.getByText('Get Started')).toBeVisible()
-    await expect(page.getByLabelText(/name/i)).toBeVisible()
+    await expect(page.getByLabel(/name/i)).toBeVisible()
   })
 })

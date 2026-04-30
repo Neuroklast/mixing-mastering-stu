@@ -1,6 +1,7 @@
 import type { ShowcaseTrack } from '@/lib/schemas/showcase'
 import type { Credit } from '@/lib/schemas/credits'
 import type { Order, AudioFile, Product } from '@/types'
+import type { Review } from '@/components/features/ReviewsSection'
 
 export const MOCK_SHOWCASE_TRACK: ShowcaseTrack = {
   title: 'Neuroklast – INCINERATE',
@@ -12,16 +13,104 @@ export const MOCK_SHOWCASE_TRACK: ShowcaseTrack = {
 }
 
 export const MOCK_CREDITS: Credit[] = [
-  { id: '1', name: 'Bullet For My Valentine', role: 'Mix & Master', year: 2022 },
-  { id: '2', name: 'Fear Factory', role: 'Mix & Master', year: 2021 },
-  { id: '3', name: 'Nine Inch Nails', role: 'Producing', year: 2020 },
+  { id: '1', name: 'Bullet For My Valentine', role: 'Mix & Master', year: 2022, featured: true },
+  { id: '2', name: 'Fear Factory', role: 'Mix & Master', year: 2021, featured: true },
+  { id: '3', name: 'Nine Inch Nails', role: 'Producing', year: 2020, featured: true },
   { id: '4', name: 'Smash Into Pieces – Boomerang (Zardonic Remix)', role: 'Mix & Master', year: 2019 },
   { id: '5', name: 'Smash Into Pieces – Higher (Zardonic Remix)', role: 'Mix & Master', year: 2018 },
-  { id: '6', name: 'Necrobeast – Iron Baphomet', role: 'Mix & Master', year: 2023 },
+  { id: '6', name: 'Necrobeast – Iron Baphomet', role: 'Mix & Master', year: 2023, featured: true },
   { id: '7', name: 'Necrobeast – Promethean Flame', role: 'Mix & Master', year: 2022 },
   { id: '8', name: 'Pop Evil', role: 'Mix', year: 2021 },
   { id: '9', name: 'Gorgoroth', role: 'Master', year: 2020 },
-  { id: '10', name: 'Kernel Breaker feat. Noisesmith', role: 'Mix & Master', year: 2026 },
+  { id: '10', name: 'Kernel Breaker feat. Noisesmith', role: 'Mix & Master', year: 2026, featured: true },
+]
+
+export const DEMO_REVIEWS: Review[] = [
+  {
+    id: 'r1',
+    clientName: 'Marcus T.',
+    rating: 5,
+    text: 'Absolute killer mastering job. My track went from "sounding good" to "sounding like a major-label release" overnight. Zardonic heard details I had completely missed.',
+    service: 'Master',
+    date: '2025-11-12',
+  },
+  {
+    id: 'r2',
+    clientName: 'Sofia K.',
+    rating: 5,
+    text: 'Daniel Kaio mixed our entire EP in one week without sacrificing a single detail. The low end is tighter than anything I have ever heard. 10/10.',
+    service: 'Mix',
+    date: '2025-10-03',
+  },
+  {
+    id: 'r3',
+    clientName: 'Thrash United (band)',
+    rating: 5,
+    text: 'We sent a rough mix with 48 tracks and got back a master that destroyed us emotionally – in the best way possible. Will never go anywhere else.',
+    service: 'Mix & Master',
+    date: '2025-09-18',
+  },
+  {
+    id: 'r4',
+    clientName: 'Alex H.',
+    rating: 4.5,
+    text: 'Fast turnaround, honest feedback and an ear for dynamics that most engineers simply do not have. The A/B player on the site already sold me before I even contacted them.',
+    service: 'Master',
+    date: '2025-08-27',
+  },
+  {
+    id: 'r5',
+    clientName: 'Ironclad Records',
+    rating: 5,
+    text: 'We send every release through Sonorativa now. Consistency, tone and loudness are always on point across the whole roster.',
+    service: 'Mix & Master',
+    date: '2025-07-14',
+  },
+  {
+    id: 'r6',
+    clientName: 'DJ Blacksun',
+    rating: 5,
+    text: 'Zardonic remixed and mastered my EP. The energy is insane. Beatport chart position #3 in the first week.',
+    service: 'Mix & Master',
+    date: '2025-06-30',
+  },
+  {
+    id: 'r7',
+    clientName: 'Noisesmith',
+    rating: 5,
+    text: 'Industrial/Noise is a notoriously difficult genre to mix. Daniel just "got it". No back-and-forth revisions needed.',
+    service: 'Mix',
+    date: '2025-05-22',
+  },
+  {
+    id: 'r8',
+    clientName: 'Velvet Void',
+    rating: 4.5,
+    text: 'Stunning spatial mixing on our Black Metal record. Rare to find someone who can balance raw atmosphere with technical precision.',
+    service: 'Mix & Master',
+    date: '2025-04-10',
+  },
+]
+
+export const DEMO_GALLERY = [
+  {
+    src: 'https://images.unsplash.com/photo-1598653222000-6b7b7a552625?w=1200&q=80',
+    alt: 'Mixing console in the studio',
+    width: 1200,
+    height: 800,
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&q=80',
+    alt: 'DAW session on dual monitors',
+    width: 1200,
+    height: 800,
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=1200&q=80',
+    alt: 'Studio monitors and recording setup',
+    width: 1200,
+    height: 800,
+  },
 ]
 
 export const MOCK_ORDERS: Order[] = [

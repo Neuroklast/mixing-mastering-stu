@@ -37,6 +37,13 @@ export const Showcase: CollectionConfig = {
       defaultValue: -14,
       admin: { description: 'Target integrated loudness (LUFS), e.g. -14 for Spotify' },
     },
+    {
+      name: 'mobileAudioUrl',
+      type: 'text',
+      admin: {
+        description: 'Optional compressed audio URL (MP3/AAC 320kbps) for mobile devices. Falls back to beforeUrl if omitted.',
+      },
+    },
     { name: 'beforeFile', type: 'upload', relationTo: 'media', required: true },
     { name: 'afterFile', type: 'upload', relationTo: 'media', required: true },
     { name: 'order', type: 'number', defaultValue: 0 },
