@@ -167,6 +167,10 @@ export function useAudioEngine(
       stopRaf()
       audioCtx.current?.close()
     }
+    // Run once on mount only; tracks.before.url / tracks.after.url are
+    // treated as immutable after mount (audio elements are created once).
+    // stopRaf is stable (useCallback with no deps) but would cause an
+    // unnecessary re-mount if listed, so we intentionally omit it here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -187,7 +191,6 @@ export function useAudioEngine(
       }
     }
     void computeLufs()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tracks.after.url])
 
   const play = useCallback(async (): Promise<void> => {
