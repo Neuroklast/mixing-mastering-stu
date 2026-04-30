@@ -7,6 +7,7 @@ export const creditSchema = z.object({
   year: z.number().optional(),
   spotifyUrl: z.string().url().optional().or(z.literal('')),
   coverImage: z.object({ url: z.string() }).nullable().optional(),
+  featured: z.boolean().optional(),
 })
 
 export type Credit = z.infer<typeof creditSchema>

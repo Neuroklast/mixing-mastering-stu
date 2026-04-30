@@ -47,25 +47,48 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
           No gallery images yet.
         </p>
       ) : (
-        <div className="[column-count:1] sm:[column-count:2] lg:[column-count:3] gap-4">
-          {images.map((img, i) => (
-            <div
-              key={i}
-              className="break-inside-avoid mb-4 relative overflow-hidden rounded cursor-pointer group"
-              style={{ aspectRatio: `${img.width}/${img.height}` }}
-              onClick={() => open(i)}
-            >
-              <Image
-                src={img.src}
-                alt={img.alt}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300" />
-            </div>
-          ))}
-        </div>
+        <>
+          {/* Mobile: horizontal snap slider */}
+          <div className="flex md:hidden gap-4 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 scroll-smooth">
+            {images.map((img, i) => (
+              <div
+                key={i}
+                className="snap-center flex-shrink-0 w-[85vw] relative rounded overflow-hidden cursor-pointer"
+                style={{ aspectRatio: '4/3' }}
+                onClick={() => open(i)}
+              >
+                <Image
+                  src={img.src}
+                  alt={img.alt}
+                  fill
+                  className="object-cover"
+                  sizes="85vw"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: masonry grid */}
+          <div className="hidden md:block [column-count:1] sm:[column-count:2] lg:[column-count:3] gap-4">
+            {images.map((img, i) => (
+              <div
+                key={i}
+                className="break-inside-avoid mb-4 relative overflow-hidden rounded cursor-pointer group"
+                style={{ aspectRatio: `${img.width}/${img.height}` }}
+                onClick={() => open(i)}
+              >
+                <Image
+                  src={img.src}
+                  alt={img.alt}
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300" />
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Lightbox */}
@@ -96,14 +119,14 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
                     <>
                       <button
                         onClick={prev}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded bg-black/50 hover:bg-black/80 transition-colors text-white"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 p-3 min-h-[44px] min-w-[44px] rounded bg-black/50 hover:bg-black/80 transition-colors text-white flex items-center justify-center"
                         aria-label="Previous"
                       >
                         <CaretLeft weight="bold" className="h-6 w-6" />
                       </button>
                       <button
                         onClick={next}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded bg-black/50 hover:bg-black/80 transition-colors text-white"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-3 min-h-[44px] min-w-[44px] rounded bg-black/50 hover:bg-black/80 transition-colors text-white flex items-center justify-center"
                         aria-label="Next"
                       >
                         <CaretRight weight="bold" className="h-6 w-6" />
@@ -113,7 +136,7 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
 
                   <Dialog.Close asChild>
                     <button
-                      className="absolute top-2 right-2 p-2 rounded bg-black/50 hover:bg-black/80 transition-colors text-white"
+                      className="absolute top-2 right-2 p-3 min-h-[44px] min-w-[44px] rounded bg-black/50 hover:bg-black/80 transition-colors text-white flex items-center justify-center"
                       aria-label="Close"
                     >
                       <X weight="bold" className="h-5 w-5" />
