@@ -13,7 +13,7 @@ export type PlayerStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' |
 
 export interface AudioEngineState {
   status: PlayerStatus
-  /** @deprecated use status instead */
+  /** @deprecated use `status` instead; will be removed in a future release */
   isPlaying: boolean
   activeTrack: 'before' | 'after'
   currentTime: number
@@ -43,7 +43,10 @@ type AudioEngineControls = {
   toggleGainCompensation: () => void
 }
 
-// ─── Singleton AudioContext ───────────────────────────────────────────────────
+// Duration to wait (ms) for the crossfade ramp to complete before pausing the
+// faded-out element. Slightly longer than the 5 ms FADE constant to account for
+// scheduling jitter.
+const CROSSFADE_CLEANUP_DELAY_MS = 20
 
 let sharedAudioContext: AudioContext | null = null
 
@@ -405,7 +408,7 @@ export function useAudioEngine(
       }
 
       // Fade out previous after crossfade window
-      setTimeout(() => prevAudio.pause(), 20)
+      setTimeout(() => prevAudio.pause(), CROSSFADE_CLEANUP_DELAY_MS)
     },
     [connectAudioElement, crossfade, gainCompensationEnabled, getOrCreateGraph, updateStatus],
   )

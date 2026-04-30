@@ -108,10 +108,10 @@ describe('computeIntegratedLufs', () => {
   })
 
   it('full-scale signal produces expected LUFS ballpark', () => {
-    // Full-scale sine approximated as 0.707 RMS → roughly -3 dBFS + reference offset
+    // Math.SQRT1_2 ≈ 0.7071; meanSquare = 0.5
+    // LUFS = −0.691 + 10*log10(0.5) ≈ −0.691 + (−3.010) ≈ −3.70 LUFS
     const signal = new Float32Array(1024).fill(Math.SQRT1_2)
     const lufs = computeIntegratedLufs(signal)
-    // Should be approximately -3.7 LUFS (−0.691 + 10*log10(0.5))
-    expect(lufs).toBeCloseTo(-3.69, 1)
+    expect(lufs).toBeCloseTo(-3.70, 1)
   })
 })
