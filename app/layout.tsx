@@ -4,20 +4,23 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'SONORATIVA – Professional Audio Engineering',
   description:
-    'Industrial-grade mixing and mastering services for the modern producer. Crafted with technical precision and creative vision.',
-  keywords: ['mixing', 'mastering', 'audio engineering', 'music production', 'studio'],
+    'Industrial-grade mixing and mastering services for the modern producer. Crafted with technical precision.',
+  keywords: ['mixing', 'mastering', 'audio engineering', 'music production'],
   openGraph: {
     title: 'SONORATIVA – Professional Audio Engineering',
-    description: 'Industrial-grade mixing and mastering services for the modern producer.',
+    description: 'Industrial-grade mixing and mastering for the modern producer.',
     type: 'website',
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}): JSX.Element {
   return (
     <html lang="de">
       <head>
-        {/* Google Fonts – loaded at runtime, falls back to system fonts in this environment */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}

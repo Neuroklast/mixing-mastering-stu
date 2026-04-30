@@ -1,58 +1,94 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* ── SONORATIVA design tokens ── */
-:root {
-  --color-bg: #121212;
-  --color-bg-card: #1E1E1E;
-  --color-fg: #F5F5F5;
+/* ── SONORATIVA design tokens (Tailwind v4 CSS-first config) ── */
+@theme {
+  /* Colors */
+  --color-background: #121212;
+  --color-foreground: #F5F5F5;
+  --color-card: #1E1E1E;
+  --color-card-foreground: #F5F5F5;
   --color-accent: #D94848;
+  --color-accent-foreground: #FFFFFF;
   --color-border: #2E2E2E;
+  --color-input: #2E2E2E;
+  --color-ring: #D94848;
   --color-muted: #2A2A2A;
-  --color-muted-fg: #888888;
+  --color-muted-foreground: #888888;
   --color-secondary: #1A1A1A;
+  --color-secondary-foreground: #F5F5F5;
+  --color-primary: #D94848;
+  --color-primary-foreground: #FFFFFF;
+  --color-popover: #1E1E1E;
+  --color-popover-foreground: #F5F5F5;
+  --color-destructive: #D94848;
+  --color-destructive-foreground: #FFFFFF;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Radius */
+  --radius: 0.25rem;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.75rem;
+  --radius-full: 9999px;
+}
+
+/* ── CSS variables for Shadcn/UI compatibility ── */
+:root {
+  --background: #121212;
+  --foreground: #F5F5F5;
+  --card: #1E1E1E;
+  --card-foreground: #F5F5F5;
+  --popover: #1E1E1E;
+  --popover-foreground: #F5F5F5;
+  --primary: #D94848;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1A1A1A;
+  --secondary-foreground: #F5F5F5;
+  --muted: #2A2A2A;
+  --muted-foreground: #888888;
+  --accent: #D94848;
+  --accent-foreground: #FFFFFF;
+  --destructive: #D94848;
+  --destructive-foreground: #FFFFFF;
+  --border: #2E2E2E;
+  --input: #2E2E2E;
+  --ring: #D94848;
+  --radius: 0.25rem;
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
     box-sizing: border-box;
   }
 
   html {
-    scroll-behavior: auto; /* Lenis handles smooth scroll */
+    /* Lenis takes over smooth scrolling */
+    scroll-behavior: auto;
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
     position: relative;
     overflow-x: hidden;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: 'Space Grotesk', system-ui, sans-serif;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
     letter-spacing: -0.02em;
-  }
-
-  .font-mono {
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  .font-heading {
-    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
 }
 
 /* ── Atmospheric overlays ── */
 @layer utilities {
-  /* Vignette */
   .vignette::after {
     content: '';
     position: fixed;
@@ -68,7 +104,6 @@
     z-index: 9998;
   }
 
-  /* Scanlines */
   .scanlines::before {
     content: '';
     position: fixed;
@@ -84,7 +119,6 @@
     z-index: 9997;
   }
 
-  /* Film grain */
   .grain::after {
     content: '';
     position: fixed;
@@ -95,7 +129,6 @@
     mix-blend-mode: overlay;
   }
 
-  /* Accent glow utilities */
   .glow-accent {
     box-shadow:
       0 0 20px rgba(217, 72, 72, 0.4),
@@ -107,5 +140,9 @@
       0 0 30px rgba(217, 72, 72, 0.6),
       0 0 60px rgba(217, 72, 72, 0.3),
       inset 0 0 20px rgba(217, 72, 72, 0.15);
+  }
+
+  .font-heading {
+    font-family: var(--font-heading);
   }
 }
