@@ -4,6 +4,10 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { Users } from '@/collections/Users'
 import { Orders } from '@/collections/Orders'
 import { Products } from '@/collections/Products'
+import { Showcase } from '@/collections/Showcase'
+import { Credits } from '@/collections/Credits'
+import { Reviews } from '@/collections/Reviews'
+import { Media } from '@/collections/Media'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -21,7 +25,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Orders, Products],
+  collections: [Users, Orders, Products, Media, Showcase, Credits, Reviews],
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI ?? '',
