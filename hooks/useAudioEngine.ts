@@ -46,11 +46,6 @@ type AudioEngineControls = {
   toggleGainCompensation: () => void
 }
 
-// Duration to wait (ms) for the crossfade ramp to complete before pausing the
-// faded-out element. Slightly longer than the 5 ms FADE constant to account for
-// scheduling jitter.
-const CROSSFADE_CLEANUP_DELAY_MS = 20
-
 let sharedAudioContext: AudioContext | null = null
 
 function getAudioContext(): AudioContext {
@@ -144,12 +139,15 @@ export function useAudioEngine(
       gainAfter.connect(analyserRef.current)
       gainNodesRef.current = { before: gainBefore, after: gainAfter }
     }
-    // Per-track analysers for A/B spectrum comparison (fan-out from each gain node)
+    // Per-track analysers for A/B spectrum comparison.
+    // These are connected directly from the MediaElementSource (pre-gain) in
+    // connectAudioElement so they always carry the raw signal regardless of
+    // the gain-compensation/crossfade state.  This is required for a correct
+    // delta curve and for the inactive-track background curve to update live.
     if (!analyserBeforeRef.current) {
       const ab = ctx.createAnalyser()
       ab.fftSize = isMobile ? 512 : 4096
       ab.smoothingTimeConstant = 0.8
-      gainNodesRef.current.before.connect(ab)
       analyserBeforeRef.current = ab
       setAnalyserBefore(ab)
     }
@@ -157,7 +155,6 @@ export function useAudioEngine(
       const aa = ctx.createAnalyser()
       aa.fftSize = isMobile ? 512 : 4096
       aa.smoothingTimeConstant = 0.8
-      gainNodesRef.current.after.connect(aa)
       analyserAfterRef.current = aa
       setAnalyserAfter(aa)
     }
@@ -170,6 +167,10 @@ export function useAudioEngine(
       const { ctx, gains } = getOrCreateGraph()
       const source = ctx.createMediaElementSource(audio)
       source.connect(gains[track])
+      // Connect per-track analyser directly from source, bypassing the gain
+      // node so the spectrum is visible regardless of crossfade/compensation gain.
+      const analyserPerTrack = track === 'before' ? analyserBeforeRef.current : analyserAfterRef.current
+      if (analyserPerTrack) source.connect(analyserPerTrack)
       sourceNodesRef.current.set(audio, source)
     },
     [getOrCreateGraph],
@@ -297,7 +298,12 @@ export function useAudioEngine(
       if (v === activeTrackRef.current) setCurrentTime(elements[v].currentTime)
     }
 
-    const onEnded = (): void => {
+    const onEnded = (v: 'before' | 'after') => (): void => {
+      // Only the active track ending should trigger a state transition; ignore
+      // the inactive track's ended event to avoid duplicate transitions.
+      if (v !== activeTrackRef.current) return
+      elements['before'].pause()
+      elements['after'].pause()
       updateStatus('paused')
       stopRaf()
       setFrequencyData(null)
@@ -313,7 +319,7 @@ export function useAudioEngine(
     ;(['before', 'after'] as const).forEach((v) => {
       elements[v].addEventListener('loadedmetadata', onMetadata(v))
       elements[v].addEventListener('timeupdate', onTimeUpdate(v))
-      elements[v].addEventListener('ended', onEnded)
+      elements[v].addEventListener('ended', onEnded(v))
       elements[v].addEventListener('error', onError(v))
     })
 
@@ -399,7 +405,8 @@ export function useAudioEngine(
     const handleVisibilityChange = (): void => {
       if (document.visibilityState === 'hidden') {
         if (statusRef.current === 'playing') {
-          audioElementsRef.current?.[activeTrackRef.current]?.pause()
+          audioElementsRef.current?.['before']?.pause()
+          audioElementsRef.current?.['after']?.pause()
           stopRaf()
           updateStatus('paused')
         }
@@ -413,25 +420,42 @@ export function useAudioEngine(
   const play = useCallback(async (): Promise<void> => {
     if (!audioElementsRef.current) return
     if (statusRef.current === 'loading') return
-    const audio = audioElementsRef.current[activeTrackRef.current]
-    connectAudioElement(audio, activeTrackRef.current)
+    const active = activeTrackRef.current
+    const inactive: 'before' | 'after' = active === 'before' ? 'after' : 'before'
+    const activeAudio = audioElementsRef.current[active]
+    const inactiveAudio = audioElementsRef.current[inactive]
+
+    // Connect both elements to the audio graph (no-op if already connected)
+    connectAudioElement(activeAudio, active)
+    connectAudioElement(inactiveAudio, inactive)
+
     const { ctx, gains } = getOrCreateGraph()
     if (ctx.state === 'suspended') await ctx.resume()
-    // Ensure the active track's gain is at 1 (or gain-compensated value for 'before')
+
+    // Active track is heard; inactive track is silent but must keep running so
+    // its per-track analyser (connected pre-gain) produces live spectrum data.
     const targetGain =
-      activeTrackRef.current === 'before' && gainCompRef.current
+      active === 'before' && gainCompRef.current
         ? gainMatchRef.current
         : 1
-    gains[activeTrackRef.current].gain.value = targetGain
-    gains[activeTrackRef.current === 'before' ? 'after' : 'before'].gain.value = 0
-    await audio.play()
+    gains[active].gain.value = targetGain
+    gains[inactive].gain.value = 0
+
+    // Sync inactive to the same playback position as the active track
+    inactiveAudio.currentTime = activeAudio.currentTime
+
+    await activeAudio.play()
+    // Inactive play errors are non-fatal (background visualisation only)
+    void inactiveAudio.play().catch(() => undefined)
+
     startRaf()
     updateStatus('playing')
   }, [connectAudioElement, getOrCreateGraph, startRaf, updateStatus])
 
   const pause = useCallback((): void => {
     if (!audioElementsRef.current) return
-    audioElementsRef.current[activeTrackRef.current].pause()
+    audioElementsRef.current['before'].pause()
+    audioElementsRef.current['after'].pause()
     stopRaf()
     updateStatus('paused')
     setFrequencyData(null)
@@ -440,8 +464,8 @@ export function useAudioEngine(
 
   const seek = useCallback((time: number): void => {
     if (!audioElementsRef.current) return
-    const audio = audioElementsRef.current[activeTrackRef.current]
-    audio.currentTime = time
+    audioElementsRef.current['before'].currentTime = time
+    audioElementsRef.current['after'].currentTime = time
     setCurrentTime(time)
   }, [])
 
@@ -474,7 +498,6 @@ export function useAudioEngine(
       setCurrentTime(savedTime)
 
       if (!wasPlaying) {
-        prevAudio.pause()
         updateStatus('paused')
         return
       }
@@ -498,8 +521,9 @@ export function useAudioEngine(
         startPlay()
       }
 
-      // Fade out previous after crossfade window
-      setTimeout(() => prevAudio.pause(), CROSSFADE_CLEANUP_DELAY_MS)
+      // Both tracks remain playing; prevTrack continues silently (gain = 0)
+      // so its per-track analyser keeps producing spectrum data for the
+      // background curve overlay.
     },
     [connectAudioElement, crossfade, getOrCreateGraph, updateStatus],
   )
