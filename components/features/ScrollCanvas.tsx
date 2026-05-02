@@ -7,7 +7,6 @@ import Lenis from 'lenis'
 const PRELOAD_BATCH_SIZE = 16
 
 // ── Module-level cache ─────────────────────────────────────────────────────────
-// Lives outside the component so it persists across remounts and HMR cycles.
 const frameCache = new Map<number, HTMLImageElement>()
 
 function loadFrame(n: number, urls: string[]): Promise<HTMLImageElement> {
@@ -40,13 +39,7 @@ async function preloadFrames(
   }
 }
 
-// ── Drawing helpers ────────────────────────────────────────────────────────────
-
-/** Draw an image onto the canvas using object-fit: cover semantics. */
-function drawFrameCover(
-  ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
-): void {
+function drawFrameCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement): void {
   const { width: cw, height: ch } = ctx.canvas
   const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight)
   const sw = img.naturalWidth * scale
@@ -54,12 +47,10 @@ function drawFrameCover(
   ctx.drawImage(img, (cw - sw) / 2, (ch - sh) / 2, sw, sh)
 }
 
-/** Map a [0, 1] scroll-progress to a 1-based frame index. */
 function progressToFrame(progress: number, frameCount: number): number {
   return Math.max(1, Math.min(frameCount, Math.round(progress * (frameCount - 1)) + 1))
 }
 
-/** Compute [0, 1] scroll progress of a container element. */
 function buildScrollProgress(container: HTMLElement): number {
   const rect = container.getBoundingClientRect()
   const total = window.innerHeight + rect.height
@@ -67,7 +58,6 @@ function buildScrollProgress(container: HTMLElement): number {
   return Math.max(0, Math.min(1, scrolled / total))
 }
 
-// ── prefers-reduced-motion hook ────────────────────────────────────────────────
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false)
   useEffect(() => {
@@ -80,7 +70,6 @@ function useReducedMotion(): boolean {
   return reduced
 }
 
-// ── Fallback / skeleton UI ─────────────────────────────────────────────────────
 const StaticGradientFallback = (): JSX.Element => (
   <div className="relative w-full h-[300vh]">
     <div className="sticky top-0 h-screen w-full overflow-hidden">
@@ -93,7 +82,6 @@ const CanvasSkeleton = (): JSX.Element => (
   <div className="absolute inset-0 animate-pulse bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900" />
 )
 
-// ── ScrollCanvas ───────────────────────────────────────────────────────────────
 export const ScrollCanvas = (): JSX.Element => {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef    = useRef<HTMLCanvasElement>(null)
@@ -102,32 +90,28 @@ export const ScrollCanvas = (): JSX.Element => {
   const frameUrls    = useRef<string[]>([])
   const [frameCount, setFrameCount] = useState(0)
   const [ready, setReady] = useState(false)
-  const [frameLoadError, setFrameLoadError] = useState(false)
   const prefersReducedMotion = useReducedMotion()
 
-  // ── Fetch dynamic frame list from the API ────────────────────────────────────
   useEffect(() => {
     fetch('/api/video-frames')
       .then((r) => r.json())
       .then(({ frames }: { frames: string[] }) => {
-        if (frames.length === 0) { setFrameLoadError(true); return }
         frameUrls.current = frames
         setFrameCount(frames.length)
       })
-      .catch(() => setFrameLoadError(true))
+      .catch(() => {})
   }, [])
 
-  // ── Canvas sizing: DPR-aware, always fills the viewport (mobile-safe) ────────
   const syncCanvasSize = useCallback((): void => {
     const canvas = canvasRef.current
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const w   = canvas.parentElement?.clientWidth ?? window.innerWidth
-    const h   = canvas.parentElement?.clientHeight ?? window.innerHeight
+    // Use the parent element's client dimensions — this is the actual CSS box
+    // size and never exceeds the viewport, preventing overflow on mobile.
+    const w = canvas.parentElement?.clientWidth ?? window.innerWidth
+    const h = canvas.parentElement?.clientHeight ?? window.innerHeight
     canvas.width  = Math.round(w * dpr)
     canvas.height = Math.round(h * dpr)
-
-    // Redraw the current frame after resize so there is no blank flash
     const frame = lastFrame.current
     if (frame > 0) {
       const img = frameCache.get(frame)
@@ -143,23 +127,19 @@ export const ScrollCanvas = (): JSX.Element => {
     return () => ro.disconnect()
   }, [syncCanvasSize])
 
-  // ── Batch-preload all frames ─────────────────────────────────────────────────
   useEffect(() => {
     if (prefersReducedMotion || frameCount === 0) return
     const urls = frameUrls.current
-    // Priority-load first frame before marking ready
     loadFrame(1, urls)
       .then(() => {
         setReady(true)
         preloadFrames(2, frameCount, PRELOAD_BATCH_SIZE, urls)
       })
       .catch(() => {
-        // If frame 1 fails, still attempt full preload
         preloadFrames(1, frameCount, PRELOAD_BATCH_SIZE, urls, () => setReady(true))
       })
   }, [prefersReducedMotion, frameCount])
 
-  // ── Draw a specific frame onto the canvas ────────────────────────────────────
   const drawFrame = useCallback((frameIndex: number): void => {
     const canvas = canvasRef.current
     const img    = frameCache.get(frameIndex)
@@ -171,7 +151,6 @@ export const ScrollCanvas = (): JSX.Element => {
     lastFrame.current = frameIndex
   }, [])
 
-  // ── Lenis smooth-scroll driver ───────────────────────────────────────────────
   useEffect(() => {
     if (prefersReducedMotion || !ready) return
     const container = containerRef.current
@@ -215,30 +194,18 @@ export const ScrollCanvas = (): JSX.Element => {
   }, [prefersReducedMotion, ready, frameCount, drawFrame])
 
   if (prefersReducedMotion) return <StaticGradientFallback />
-  if (frameLoadError) return <StaticGradientFallback />
 
   return (
     <div ref={containerRef} className="relative w-full h-[300vh]">
-      {/*
-       * sticky wrapper – full viewport, clips canvas to viewport bounds.
-       * overflow-hidden is required to prevent the canvas's large HTML
-       * width/height attributes from leaking into the CSS layout on mobile.
-       */}
-      <div
-        className="sticky top-0 h-screen w-full bg-black overflow-hidden"
-      >
+      <div className="sticky top-0 h-screen w-full bg-black overflow-hidden">
         {!ready && <CanvasSkeleton />}
-        {/*
-         * position:absolute + inset:0 stretches the canvas to fill the sticky
-         * wrapper via left/right/top/bottom = 0 — NO explicit width/height CSS
-         * is set, so the large HTML backing-store attributes (e.g. 1170px on
-         * a 3× mobile display) never influence the rendered CSS box size.
-         */}
         <canvas
           ref={canvasRef}
           style={{
             position: 'absolute',
             inset: 0,
+            width: '100%',
+            height: '100%',
             opacity: ready ? 0.4 : 0,
             transform: 'translateZ(0)',
             willChange: 'transform',
