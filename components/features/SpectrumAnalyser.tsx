@@ -41,7 +41,9 @@ export const SpectrumAnalyser = ({
       canvas.width = rect.width * dpr
       canvas.height = rect.height * dpr
       const ctx = canvas.getContext('2d')
-      ctx?.scale(dpr, dpr)
+      if (!ctx) return
+      ctx.resetTransform()
+      ctx.scale(dpr, dpr)
     }
 
     applyDpr()

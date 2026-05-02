@@ -1,14 +1,11 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import dynamic from 'next/dynamic'
 import { Navbar } from '@/components/features/Navbar'
 import { HeroSection } from '@/components/features/HeroSection'
 import { ScrollCanvas } from '@/components/features/ScrollCanvas'
 import { Footer } from '@/components/features/Footer'
 import { ErrorBoundary } from '@/components/features/ErrorBoundary'
-import { CreditsSection } from '@/components/features/CreditsSection'
-import { ProfileSection } from '@/components/features/ProfileSection'
-import { ReviewsSection } from '@/components/features/ReviewsSection'
-import { GallerySection } from '@/components/features/GallerySection'
 import { ClientMasteringPlayer } from '@/components/features/ClientMasteringPlayer'
 import { CookieBanner } from '@/components/features/CookieBanner'
 import { Toaster } from 'sonner'
@@ -16,6 +13,19 @@ import { showcaseTrackSchema, type ShowcaseTrack } from '@/lib/schemas/showcase'
 import type { Profile } from '@/types/profile'
 import { MOCK_CREDITS, DEMO_REVIEWS, DEMO_GALLERY } from '@/lib/mockData'
 import { getActiveShowcaseTrack, getAllShowcaseTracks } from '@/services/showcaseService'
+
+const CreditsSection = dynamic(() =>
+  import('@/components/features/CreditsSection').then((m) => ({ default: m.CreditsSection }))
+)
+const ProfileSection = dynamic(() =>
+  import('@/components/features/ProfileSection').then((m) => ({ default: m.ProfileSection }))
+)
+const ReviewsSection = dynamic(() =>
+  import('@/components/features/ReviewsSection').then((m) => ({ default: m.ReviewsSection }))
+)
+const GallerySection = dynamic(() =>
+  import('@/components/features/GallerySection').then((m) => ({ default: m.GallerySection }))
+)
 
 const FALLBACK_TRACK: ShowcaseTrack = {
   title: 'Demo Track',
