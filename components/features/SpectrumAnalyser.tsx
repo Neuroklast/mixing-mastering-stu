@@ -11,7 +11,7 @@ interface SpectrumAnalyserProps {
   analyserBefore: AnalyserNode | null
   analyserAfter: AnalyserNode | null
   activeTrack: 'before' | 'after'
-  /** When true the canvas wrapper gets a subtle green neon glow */
+  /** When true the canvas wrapper gets a subtle red neon glow */
   isMasterActive?: boolean
   className?: string
 }

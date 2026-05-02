@@ -13,7 +13,7 @@ const BORDER_COLOR_BY_STATUS: Record<UploadStatus, string> = {
   idle: 'border-border hover:border-accent/50',
   dragging: 'border-accent',
   uploading: 'border-accent/50',
-  success: 'border-green-500',
+  success: 'border-[var(--color-accent)]',
   error: 'border-red-500',
 }
 
@@ -48,7 +48,7 @@ const UploadProgress = ({ progressPercent }: UploadProgressProps): JSX.Element =
 interface SuccessMessageProps { publicUrl: string | null; onReset: () => void }
 const SuccessMessage = ({ publicUrl, onReset }: SuccessMessageProps): JSX.Element => (
   <div className="space-y-3">
-    <p className="text-lg font-mono text-green-400">Upload complete ✓</p>
+    <p className="text-lg font-mono text-[var(--color-accent)]">Upload complete ✓</p>
     {publicUrl && (
       <p className="text-xs font-mono text-muted-foreground break-all">{publicUrl}</p>
     )}

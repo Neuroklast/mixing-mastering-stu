@@ -64,7 +64,7 @@ const CreditCard = ({ credit }: CreditCardProps): JSX.Element => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="px-2 py-0.5 rounded border border-green-500 text-green-400 font-mono text-xs hover:bg-green-500/10 transition-colors"
+                  className="px-2 py-0.5 rounded border border-[var(--color-accent)] text-[var(--color-accent)] font-mono text-xs hover:bg-[var(--color-accent)]/10 transition-colors"
                 >
                   Spotify
                 </a>

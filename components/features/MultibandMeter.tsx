@@ -62,9 +62,9 @@ function drawMeter (
       const barLen = Math.abs(val) * (barArea / 2)
       const barY   = isPos ? centerY - barLen : centerY
 
-      // Glow colour: Sonorativa-green for positive, warning-red for negative
-      const barColor    = isPos ? 'rgba(74,222,128,0.92)' : 'rgba(217,72,72,0.92)'
-      const glowColor   = isPos ? 'rgba(74,222,128,0.75)' : 'rgba(217,72,72,0.75)'
+      // Glow colour: Sonorativa-red (accent) – bright for positive (in-phase), dimmer for negative
+      const barColor   = isPos ? 'rgba(217,72,72,0.92)' : 'rgba(217,72,72,0.65)'
+      const glowColor  = isPos ? 'rgba(217,72,72,0.75)' : 'rgba(217,72,72,0.45)'
       const glowRadius  = 4 + Math.abs(val) * 12  // stronger glow toward extremes
 
       ctx.save()
