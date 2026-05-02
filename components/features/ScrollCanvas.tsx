@@ -122,8 +122,8 @@ export const ScrollCanvas = (): JSX.Element => {
     const canvas = canvasRef.current
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const w   = window.innerWidth
-    const h   = window.innerHeight
+    const w   = canvas.parentElement?.clientWidth ?? window.innerWidth
+    const h   = canvas.parentElement?.clientHeight ?? window.innerHeight
     canvas.width  = Math.round(w * dpr)
     canvas.height = Math.round(h * dpr)
 
@@ -147,7 +147,7 @@ export const ScrollCanvas = (): JSX.Element => {
   useEffect(() => {
     if (prefersReducedMotion || frameCount === 0) return
     const urls = frameUrls.current
-    // Priority-load first batch synchronously before marking ready
+    // Priority-load first frame before marking ready
     loadFrame(1, urls)
       .then(() => {
         setReady(true)
@@ -220,30 +220,29 @@ export const ScrollCanvas = (): JSX.Element => {
   return (
     <div ref={containerRef} className="relative w-full h-[300vh]">
       {/*
-       * sticky wrapper – full viewport, no horizontal overflow.
-       * `w-full` (100%) keeps it within the parent's boundary so it never
-       * causes horizontal scrolling on mobile browsers. `100vw` was removed
-       * because it includes the scrollbar gutter and overflows on mobile.
+       * sticky wrapper – full viewport, clips canvas to viewport bounds.
+       * overflow-hidden is required to prevent the canvas's large HTML
+       * width/height attributes from leaking into the CSS layout on mobile.
        */}
       <div
         className="sticky top-0 h-screen w-full bg-black overflow-hidden"
       >
         {!ready && <CanvasSkeleton />}
         {/*
-         * The canvas backing store is sized in physical pixels (DPR-aware).
-         * CSS width/height use 100% so it always fills the sticky wrapper
-         * without overflowing the mobile viewport.
+         * position:absolute + inset:0 stretches the canvas to fill the sticky
+         * wrapper via left/right/top/bottom = 0 — NO explicit width/height CSS
+         * is set, so the large HTML backing-store attributes (e.g. 1170px on
+         * a 3× mobile display) never influence the rendered CSS box size.
          */}
         <canvas
           ref={canvasRef}
           style={{
             position: 'absolute',
             inset: 0,
-            width: '100%',
-            height: '100%',
             opacity: ready ? 0.4 : 0,
             transform: 'translateZ(0)',
             willChange: 'transform',
+            display: 'block',
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background pointer-events-none" />
