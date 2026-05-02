@@ -205,7 +205,6 @@ export const ScrollCanvas = (): JSX.Element => {
             position: 'absolute',
             inset: 0,
             width: '100%',
-            height: '100%',
             opacity: ready ? 0.4 : 0,
             transform: 'translateZ(0)',
             willChange: 'transform',
