@@ -201,7 +201,7 @@ export const ScrollCanvas = (): JSX.Element => {
        */}
       <div
         className="sticky top-0 h-screen bg-black overflow-hidden"
-        style={{ width: '100vw', left: 0 }}
+        style={{ width: '100vw' }}
       >
         {!ready && <CanvasSkeleton />}
         {/*
@@ -216,7 +216,7 @@ export const ScrollCanvas = (): JSX.Element => {
             inset: 0,
             width: '100vw',
             height: '100vh',
-            opacity: ready ? 0.5 : 0,
+            opacity: ready ? 0.4 : 0,
             transform: 'translateZ(0)',
             willChange: 'transform',
           }}
