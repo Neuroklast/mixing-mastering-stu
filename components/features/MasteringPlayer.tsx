@@ -227,7 +227,7 @@ const MasteringPlayerInner = ({
             {/* Multiband correlation meter – right sidebar */}
             <MultibandMeter
               correlation={engine.multibandCorrelation}
-              className="w-14 flex-shrink-0"
+              className="w-20 flex-shrink-0"
             />
           </div>
         </div>
