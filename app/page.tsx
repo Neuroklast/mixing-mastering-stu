@@ -94,11 +94,7 @@ const PROFILE_ZARDONIC: Profile = {
   title: 'Mixing & Mastering Engineer · Sound Designer',
   bio: 'Venezuelan-born electronic music producer, DJ, and mixing/mastering engineer with over 20 years of industry experience. Known for his work in industrial metal, drum & bass, and cyberpunk-influenced music, he has collaborated with major artists including Fear Factory, Bullet For My Valentine, Nine Inch Nails, Pop Evil, Sonic Syndicate, The Qemists, and Gorgoroth. His engineering style focuses on extreme clarity, surgical EQ, and cinematic low-end. #1 on Beatport Drum & Bass releases and Amazon Hard Rock & Metal charts with over 100 million streams worldwide. Factory presets for Arturia, Slate Digital, Brainworx, and Baby Audio. First Latin American musician as a playable character in a video game (Warlocks Vs Shadows). Soundtracks: Superhot: Mind Control Delete, Redout 2. DAW: FL Studio. Monitoring: Quested v2108, PMC result6. Synth: Sequential Pro 2.',
   portraitSrc: '/demo/zardonic.jpeg',
-  awards: [
-    { name: 'Artist Of The Year', year: 2016 },
-    { name: 'Best DJ Award', year: 2015 },
-    { name: 'Best Keyboardist (Metal Hecho en Venezuela)', year: 2014 },
-  ],
+  awards: [],
 }
 
 const PROFILE_KAIO: Profile = {
