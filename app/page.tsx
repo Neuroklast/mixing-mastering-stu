@@ -10,6 +10,7 @@ import { ProfileSection } from '@/components/features/ProfileSection'
 import { ReviewsSection } from '@/components/features/ReviewsSection'
 import { GallerySection } from '@/components/features/GallerySection'
 import { ClientMasteringPlayer } from '@/components/features/ClientMasteringPlayer'
+import { CookieBanner } from '@/components/features/CookieBanner'
 import { Toaster } from 'sonner'
 import { showcaseTrackSchema, type ShowcaseTrack } from '@/lib/schemas/showcase'
 import type { Profile } from '@/types/profile'
@@ -123,7 +124,7 @@ export default async function HomePage(): Promise<JSX.Element> {
     <>
       <Toaster position="top-right" theme="dark" richColors />
       <Navbar />
-      <main>
+      <main id="main-content">
         <ErrorBoundary>
           <VideoBackground />
         </ErrorBoundary>
@@ -152,6 +153,7 @@ export default async function HomePage(): Promise<JSX.Element> {
         </div>
       </main>
       <Footer />
+      <CookieBanner />
     </>
   )
 }

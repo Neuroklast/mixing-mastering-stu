@@ -21,13 +21,17 @@ Professional audio engineering studio – mixing & mastering services with futur
 ```
 /
 ├── app/                       # Next.js App Router
-│   ├── layout.tsx             # Root layout (Server Component)
+│   ├── layout.tsx             # Root layout – lang="en", skip-to-content, viewport
 │   ├── page.tsx               # Homepage (Server Component)
-│   ├── globals.css            # Tailwind v4 + SONORATIVA design tokens
+│   ├── globals.css            # Tailwind v4 + SONORATIVA design tokens (B/W/Red CI)
 │   ├── actions/               # Server Actions (thin orchestration layer)
 │   │   ├── createOrder.ts     # → delegates to services/orderService
 │   │   ├── uploadAudio.ts     # → delegates to services/fileService
 │   │   └── generateSignedUrl.ts
+│   ├── legal/                 # Legal pages (SSR, no JS required)
+│   │   ├── layout.tsx         # Minimal header + footer for legal pages
+│   │   ├── privacy/page.tsx   # Privacy Policy (GDPR)
+│   │   └── terms/page.tsx     # Terms of Service
 │   └── (payload)/             # Payload CMS admin panel
 │       └── admin-cms/         # Served at /admin-cms
 ├── components/
@@ -36,47 +40,55 @@ Professional audio engineering studio – mixing & mastering services with futur
 │   │   ├── Navbar.tsx
 │   │   ├── HeroSection.tsx
 │   │   ├── ServicesSection.tsx
-│   │   ├── ServicesModal.tsx
-│   │   ├── AudioPlayer.tsx      # Shell → useAudioPlayer hook
+│   │   ├── ServicesModal.tsx   # Uses BaseModal (variant="wide")
+│   │   ├── ContactDialog.tsx   # Uses BaseModal (variant="center")
+│   │   ├── CookieBanner.tsx    # GDPR cookie notice (localStorage persistence)
+│   │   ├── MasteringPlayer.tsx # A/B player with Tooltip controls, unified isBusy state
+│   │   ├── PlaylistPlayer.tsx  # Multi-track playlist navigation
+│   │   ├── SpectrumAnalyser.tsx
+│   │   ├── MultibandMeter.tsx
+│   │   ├── AudioPlayer.tsx
 │   │   ├── FrequencyVisualizer.tsx
-│   │   ├── UploadZone.tsx       # Shell → useUpload hook
-│   │   ├── ContactDialog.tsx
-│   │   ├── Footer.tsx
+│   │   ├── UploadZone.tsx
+│   │   ├── Footer.tsx          # Legal links + copyright
 │   │   └── ErrorBoundary.tsx
 │   └── ui/                    # Shadcn/UI primitives (no business logic)
-├── collections/               # Payload CMS collections
-│   ├── Users.ts               # Auth with roles (admin/engineer/client)
-│   ├── Orders.ts              # Studio orders
-│   └── Products.ts            # VST plugins / digital goods
-├── hooks/                     # Reusable client-side logic
-│   ├── useAudioPlayer.ts      # Audio playback + Web Audio API analyser
-│   ├── useUpload.ts           # Upload state machine
-│   ├── useLenis.ts            # Smooth scroll initialisation
-│   └── useScrollProgress.ts   # Framer Motion scroll progress
+│       ├── base-modal.tsx     # ★ Single source of truth for modal design
+│       ├── tooltip.tsx        # Radix Tooltip primitive
+│       ├── dialog.tsx
+│       └── …
+├── hooks/
+│   ├── useAudioEngine.ts      # FSM audio engine (generation-guarded load callbacks,
+│   │                          #   AbortController LUFS, proper listener cleanup)
+│   └── …
 ├── services/                  # Data access layer (no UI logic)
-│   ├── orderService.ts        # CRUD for orders table
-│   ├── fileService.ts         # Supabase Storage + files table
-│   └── productService.ts      # Read-only product queries
 ├── lib/
-│   ├── supabaseServer.ts      # Server-side Supabase client (SSR cookies)
-│   ├── supabaseClient.ts      # Browser Supabase client
-│   ├── supabase.ts            # Singleton browser client
-│   └── utils.ts               # cn() helper
-├── types/
-│   ├── index.ts               # Domain types (Order, AudioFile, Product, License)
-│   ├── database.ts            # Supabase DB schema types
-│   └── global.d.ts            # Global JSX namespace (React 19)
-├── supabase/
-│   └── schema.sql             # Full SQL schema with hardened RLS policies
+│   ├── constants.ts           # Central terminology + tooltip copy (SSOT)
+│   └── …
 ├── tests/
-│   ├── integration/           # Vitest – Zod schema unit tests
+│   ├── integration/           # Vitest – Zod schema + service unit tests
 │   └── e2e/                   # Playwright – full user journey tests
-├── env.mjs                    # Startup env validation (Zod)
-├── payload.config.ts          # Payload CMS configuration
-├── next.config.mjs            # Next.js + withPayload plugin
-├── postcss.config.js          # Tailwind v4 PostCSS plugin
-└── .env.local.example         # All required environment variables
+└── …
 ```
+
+## Design System
+
+The site enforces a single black/white/red CI defined in `app/globals.css`:
+
+| Token | Value | Usage |
+|---|---|---|
+| `--color-background` | `#121212` | Page background |
+| `--color-foreground` | `#F5F5F5` | Body text |
+| `--color-accent` | `#D94848` | CTA, highlights, borders |
+| `--color-card` | `#1E1E1E` | Card / modal background |
+| `--color-border` | `#2E2E2E` | Borders |
+| `--color-muted-foreground` | `#888888` | Secondary text |
+
+All modals use `BaseModal` (`components/ui/base-modal.tsx`) which is the single source of truth for:
+- Backdrop: `bg-black/85 backdrop-blur-md`
+- Animation: Radix data-state CSS animations
+- Close button: consistent ✕ with focus ring
+- Two variants: `center` (forms) and `wide` (full-page panels)
 
 ## Getting Started
 
@@ -118,8 +130,29 @@ npm test
 npm run test:e2e
 ```
 
+## Legal
+
+Legal pages are server-rendered under `/legal/`:
+
+- `/legal/privacy` – Privacy Policy (GDPR compliant)
+- `/legal/terms` – Terms of Service
+
+Both pages are linked from the site footer and the cookie consent banner.
+
 ## Admin CMS
 
 Payload CMS admin panel: `http://localhost:3000/admin-cms`
 
 Manage orders, products (VST plugins), and users from a fully type-safe headless CMS backed by Supabase PostgreSQL.
+
+## Audio Player
+
+The `useAudioEngine` hook manages a Web Audio API FSM with states `idle | loading | ready | playing | paused | switching | error`.
+
+Key correctness guarantees:
+- **Load generation guard**: a monotonic `loadGenerationRef` prevents stale `loadedmetadata` callbacks from older load cycles corrupting the FSM when tracks are skipped rapidly.
+- **Listener ordering**: `loadedmetadata` listeners are added *before* calling `.load()` to avoid missing the event when the file is served from browser cache.
+- **Proper cleanup**: all mount-effect event listeners are explicitly removed in the cleanup function.
+- **LUFS AbortController**: each URL change cancels the previous in-flight LUFS fetch via `AbortController`.
+- **Unified busy state**: `isBusy = status === 'loading' || status === 'switching'` is used consistently in the UI to disable controls and show the loading overlay.
+

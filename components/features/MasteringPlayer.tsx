@@ -4,6 +4,9 @@ import { useState, useRef } from 'react'
 import { Play, Pause, SkipBack, SkipForward } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
 import { SpectrumAnalyser } from '@/components/features/SpectrumAnalyser'
 import { MultibandMeter } from '@/components/features/MultibandMeter'
@@ -137,7 +140,9 @@ const MasteringPlayerInner = ({
   const lufsDelta  = mixLufs !== null && masterLufs !== null ? masterLufs - mixLufs : null
 
   const isMasterActive = engine.activeTrack === 'after'
-  const isSwitching = engine.status === 'loading'
+  // Cover both "loading new URLs" and "crossfading between A/B" states so UI
+  // consistently shows disabled / overlay during any non-interactive phase.
+  const isBusy = engine.status === 'loading' || engine.status === 'switching'
 
   return (
     <section className="container max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-20 md:py-32">
@@ -173,7 +178,7 @@ const MasteringPlayerInner = ({
         )}
       >
         {/* Loading overlay: shown while switching tracks (not on initial load) */}
-        {isSwitching && (
+        {isBusy && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-zinc-950/70 backdrop-blur-[2px]">
             <div className="flex gap-1.5">
               {[0, 1, 2].map((i) => (
@@ -213,24 +218,33 @@ const MasteringPlayerInner = ({
 
             {/* Centre – A/B toggle */}
             <div className="flex gap-2 flex-shrink-0">
-              {(['before', 'after'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => engine.switchTrack(t)}
-                  disabled={engine.status === 'switching'}
-                  className={cn(
-                    'px-5 py-2 min-h-[40px] rounded font-mono text-sm font-bold uppercase tracking-wider border-2 transition-all duration-200',
-                    engine.activeTrack === t
-                      ? t === 'after'
-                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-[0_0_16px_rgba(74,222,128,0.4)]'
-                        : 'bg-[var(--color-accent)]/20 border-[var(--color-accent)] text-[var(--color-accent)] glow-accent-strong'
-                      : 'bg-transparent border-white/20 text-white/40 hover:border-white/40 hover:text-white/70',
-                    engine.status === 'switching' && 'opacity-50 cursor-not-allowed',
-                  )}
-                >
-                  {t === 'before' ? labelBefore : labelAfter}
-                </button>
-              ))}
+              <TooltipProvider>
+                {(['before', 'after'] as const).map((t) => (
+                  <Tooltip key={t}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => engine.switchTrack(t)}
+                        disabled={isBusy}
+                        aria-pressed={engine.activeTrack === t}
+                        className={cn(
+                          'px-5 py-2 min-h-[44px] rounded font-mono text-sm font-bold uppercase tracking-wider border-2 transition-all duration-200',
+                          engine.activeTrack === t
+                            ? t === 'after'
+                              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-[0_0_16px_rgba(74,222,128,0.4)]'
+                              : 'bg-[var(--color-accent)]/20 border-[var(--color-accent)] text-[var(--color-accent)] glow-accent-strong'
+                            : 'bg-transparent border-white/20 text-white/40 hover:border-white/40 hover:text-white/70',
+                          isBusy && 'opacity-50 cursor-not-allowed',
+                        )}
+                      >
+                        {t === 'before' ? labelBefore : labelAfter}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {t === 'before' ? 'Listen to the unprocessed mix' : 'Listen to the mastered version'}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </TooltipProvider>
             </div>
           </div>
         </div>
@@ -288,46 +302,66 @@ const MasteringPlayerInner = ({
 
           {/* Transport: Prev + Play/Pause + Next + Progress Bar + Time */}
           <div className="flex items-center gap-3">
+            <TooltipProvider>
             {/* Previous button */}
             {onPrev && (
-              <button
-                onClick={onPrev}
-                aria-label="Previous track"
-                className="h-9 w-9 flex items-center justify-center rounded text-white/50 hover:text-white/90 transition-colors flex-shrink-0 hover:bg-white/5"
-              >
-                <SkipBack weight="fill" className="h-4 w-4" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onPrev}
+                    aria-label="Previous track"
+                    className="h-9 w-9 flex items-center justify-center rounded text-white/50 hover:text-white/90 transition-colors flex-shrink-0 hover:bg-white/5"
+                  >
+                    <SkipBack weight="fill" className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Previous track</TooltipContent>
+              </Tooltip>
             )}
 
             {/* Play / Pause */}
-            <Button
-              size="icon"
-              onClick={engine.isPlaying ? engine.pause : engine.play}
-              disabled={engine.status === 'switching'}
-              className={cn(
-                'h-11 w-11 min-h-[44px] min-w-[44px] rounded text-white transition-all hover:scale-105 active:scale-95 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100',
-                isMasterActive
-                  ? 'bg-emerald-500/80 hover:bg-emerald-500 shadow-[0_0_16px_rgba(74,222,128,0.4)]'
-                  : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 glow-accent-strong',
-              )}
-            >
-              {engine.isPlaying ? (
-                <Pause weight="fill" className="h-5 w-5" />
-              ) : (
-                <Play weight="fill" className="h-5 w-5 ml-0.5" />
-              )}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  onClick={engine.isPlaying ? engine.pause : engine.play}
+                  disabled={isBusy}
+                  aria-label={engine.isPlaying ? 'Pause' : 'Play'}
+                  className={cn(
+                    'h-11 w-11 min-h-[44px] min-w-[44px] rounded text-white transition-all hover:scale-105 active:scale-95 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100',
+                    isMasterActive
+                      ? 'bg-emerald-500/80 hover:bg-emerald-500 shadow-[0_0_16px_rgba(74,222,128,0.4)]'
+                      : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 glow-accent-strong',
+                  )}
+                >
+                  {engine.isPlaying ? (
+                    <Pause weight="fill" className="h-5 w-5" />
+                  ) : (
+                    <Play weight="fill" className="h-5 w-5 ml-0.5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {engine.isPlaying ? 'Pause playback' : 'Start playback'}
+              </TooltipContent>
+            </Tooltip>
 
             {/* Next button */}
             {onNext && (
-              <button
-                onClick={onNext}
-                aria-label="Next track"
-                className="h-9 w-9 flex items-center justify-center rounded text-white/50 hover:text-white/90 transition-colors flex-shrink-0 hover:bg-white/5"
-              >
-                <SkipForward weight="fill" className="h-4 w-4" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onNext}
+                    aria-label="Next track"
+                    className="h-9 w-9 flex items-center justify-center rounded text-white/50 hover:text-white/90 transition-colors flex-shrink-0 hover:bg-white/5"
+                  >
+                    <SkipForward weight="fill" className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Next track</TooltipContent>
+              </Tooltip>
             )}
+            </TooltipProvider>
 
             <div className="flex-1 space-y-1.5">
               <Slider
