@@ -152,3 +152,9 @@
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
+
+/* ── Hero button scanline sweep ── */
+@keyframes hero-scanline {
+  from { background-position: -100% 0; }
+  to   { background-position: 200% 0; }
+}

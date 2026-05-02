@@ -8,17 +8,16 @@ interface PlaylistPlayerProps {
   tracks: ShowcaseTrack[]
 }
 
-const CROSSFADE_MS = 50
+const FADE_MS = 150
 
 /**
  * Manages playlist state for a list of showcase tracks.
- * Wraps MasteringPlayer with Previous / Next navigation, a 50 ms CSS
- * crossfade on track change, and loop-back behaviour at list boundaries.
+ * Wraps MasteringPlayer with Previous / Next navigation and a CSS fade
+ * on track change.  The audio engine handles the actual URL switch in the
+ * background — the player never fully remounts, giving a seamless UX.
  */
 export const PlaylistPlayer = ({ tracks }: PlaylistPlayerProps): JSX.Element | null => {
   const [currentIndex, setCurrentIndex] = useState(0)
-  // Incrementing this key forces useAudioEngine to fully remount for a clean audio context
-  const [engineKey, setEngineKey] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -28,18 +27,10 @@ export const PlaylistPlayer = ({ tracks }: PlaylistPlayerProps): JSX.Element | n
 
       setTransitioning(true)
 
-      // After the CSS fade-out completes, swap the track and trigger a fade-in
       transitionTimerRef.current = setTimeout(() => {
-        setCurrentIndex((prev) => {
-          const next = (prev + delta + tracks.length) % tracks.length
-          return next
-        })
-        setEngineKey((k) => k + 1)
-        // Small additional tick to allow React to paint before fading back in
-        requestAnimationFrame(() => {
-          setTransitioning(false)
-        })
-      }, CROSSFADE_MS)
+        setCurrentIndex((prev) => (prev + delta + tracks.length) % tracks.length)
+        requestAnimationFrame(() => setTransitioning(false))
+      }, FADE_MS)
     },
     [transitioning, tracks.length],
   )
@@ -57,11 +48,10 @@ export const PlaylistPlayer = ({ tracks }: PlaylistPlayerProps): JSX.Element | n
       className="transition-opacity"
       style={{
         opacity: transitioning ? 0 : 1,
-        transitionDuration: `${CROSSFADE_MS}ms`,
+        transitionDuration: `${FADE_MS}ms`,
       }}
     >
       <MasteringPlayer
-        key={engineKey}
         track={currentTrack}
         currentTrackIndex={currentIndex}
         totalTracks={tracks.length}

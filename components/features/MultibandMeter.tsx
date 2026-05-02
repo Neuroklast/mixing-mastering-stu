@@ -1,7 +1,9 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
+import { Question } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { TOOLTIP_PHASE_METER } from '@/lib/constants'
 
 interface MultibandMeterProps {
   correlation: { low: number; mid: number; high: number } | null
@@ -101,6 +103,7 @@ function drawMeter (
 
 export const MultibandMeter = ({ correlation, className }: MultibandMeterProps): JSX.Element => {
   const canvasRef  = useRef<HTMLCanvasElement>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
   // Target values (updated from prop); display values (interpolated each RAF frame)
   const targetRef  = useRef({ low: 0, mid: 0, high: 0 })
   const displayRef = useRef({ low: 0, mid: 0, high: 0 })
@@ -153,9 +156,36 @@ export const MultibandMeter = ({ correlation, className }: MultibandMeterProps):
 
   return (
     <div className={cn('flex flex-col', className)}>
-      <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-1 text-center leading-none">
-        Phase
-      </p>
+      {/* Label + help */}
+      <div className="flex items-center justify-center gap-1 mb-1">
+        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground leading-none">
+          Phase
+        </p>
+        {/* Desktop tooltip */}
+        <span
+          className="hidden md:inline-flex"
+          title={TOOLTIP_PHASE_METER}
+          aria-label={TOOLTIP_PHASE_METER}
+        >
+          <Question className="w-2.5 h-2.5 text-muted-foreground/40 cursor-help" />
+        </span>
+        {/* Mobile help button */}
+        <button
+          className="md:hidden flex items-center justify-center"
+          aria-label="Phase meter info"
+          onClick={() => setHelpOpen((v) => !v)}
+        >
+          <Question className="w-2.5 h-2.5 text-muted-foreground/40" />
+        </button>
+      </div>
+
+      {/* Mobile help text */}
+      {helpOpen && (
+        <div className="md:hidden mb-1 rounded border border-white/10 bg-zinc-900/80 px-2 py-1.5 text-[10px] font-mono text-muted-foreground leading-relaxed">
+          {TOOLTIP_PHASE_METER}
+        </div>
+      )}
+
       <div className="rounded overflow-hidden bg-secondary/30">
         <canvas ref={canvasRef} className="w-full h-[180px] block" />
       </div>

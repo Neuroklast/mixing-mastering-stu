@@ -1,8 +1,10 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
+import { Question } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useSpectrumAnalyser, type ViewMode } from '@/hooks/useSpectrumAnalyser'
+import { TOOLTIP_SPECTRUM_CURVE } from '@/lib/constants'
 
 interface SpectrumAnalyserProps {
   analyserBefore: AnalyserNode | null
@@ -21,6 +23,7 @@ export const SpectrumAnalyser = ({
   className,
 }: SpectrumAnalyserProps): JSX.Element => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const { viewMode, setViewMode } =
     useSpectrumAnalyser({ analyserBefore, analyserAfter, canvasRef, activeTrack })
@@ -76,7 +79,30 @@ export const SpectrumAnalyser = ({
             </button>
           ))}
         </div>
+
+        {/* Desktop tooltip (title attr) + mobile help button */}
+        <span
+          className="hidden md:inline-flex items-center"
+          title={TOOLTIP_SPECTRUM_CURVE}
+          aria-label={TOOLTIP_SPECTRUM_CURVE}
+        >
+          <Question className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
+        </span>
+        <button
+          className="md:hidden flex items-center justify-center w-6 h-6 rounded-full border border-white/20 text-muted-foreground/50"
+          aria-label="Spectrum analyser info"
+          onClick={() => setHelpOpen((v) => !v)}
+        >
+          <Question className="w-3.5 h-3.5" />
+        </button>
       </div>
+
+      {/* Mobile help panel */}
+      {helpOpen && (
+        <div className="md:hidden rounded border border-white/10 bg-zinc-900/80 px-3 py-2 text-[11px] font-mono text-muted-foreground leading-relaxed">
+          {TOOLTIP_SPECTRUM_CURVE}
+        </div>
+      )}
 
       {/* Canvas */}
       <div

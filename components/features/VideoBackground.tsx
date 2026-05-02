@@ -52,12 +52,12 @@ export const VideoBackground = (): JSX.Element => {
     if (!video || !container) return
 
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 1.4,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 2,
+      wheelMultiplier: 0.8,
+      touchMultiplier: 1.5,
     })
 
     const syncVideoToScroll = (): void => {
@@ -95,12 +95,15 @@ export const VideoBackground = (): JSX.Element => {
 
   return (
     <div ref={containerRef} className="relative w-full h-[300vh]">
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-black" style={{ transform: 'translateZ(0)' }}>
+      <div
+        className="sticky top-0 h-screen overflow-hidden bg-black"
+        style={{ transform: 'translateZ(0)', width: '100vw', left: 0, position: 'sticky' }}
+      >
         {!isVideoReady && <VideoSkeleton />}
         <video
           ref={videoRef}
           src="/video/background.mp4"
-          className="w-full h-full object-cover opacity-40"
+          className="absolute inset-0 w-full h-full object-cover opacity-40"
           style={{ transform: 'translateZ(0)', willChange: 'transform', backfaceVisibility: 'hidden' }}
           autoPlay={false}
           muted
