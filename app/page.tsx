@@ -12,7 +12,7 @@ import { Toaster } from 'sonner'
 import type { ShowcaseTrack } from '@/lib/schemas/showcase'
 import type { Profile } from '@/types/profile'
 import { MOCK_CREDITS, DEMO_REVIEWS, DEMO_GALLERY } from '@/lib/mockData'
-import { getActiveShowcaseTrack } from '@/services/showcaseService'
+import { getActiveShowcaseTrack, getAllShowcaseTracks } from '@/services/showcaseService'
 
 const isDev = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
 
@@ -46,8 +46,13 @@ const PROFILE_KAIO: Profile = {
 }
 
 export default async function HomePage(): Promise<JSX.Element> {
-  const cmsTrack = await getActiveShowcaseTrack()
-  const showcaseTrack = cmsTrack ?? FALLBACK_TRACK
+  const allTracks = await getAllShowcaseTracks()
+  // Fall back to the single active track if getAllShowcaseTracks returns nothing,
+  // then to the hard-coded fallback
+  const tracks =
+    allTracks.length > 0
+      ? allTracks
+      : await getActiveShowcaseTrack().then((t) => (t ? [t] : [FALLBACK_TRACK]))
 
   return (
     <>
@@ -62,7 +67,7 @@ export default async function HomePage(): Promise<JSX.Element> {
             <HeroSection />
           </ErrorBoundary>
           <ErrorBoundary>
-            <ClientMasteringPlayer track={showcaseTrack} />
+            <ClientMasteringPlayer tracks={tracks} />
           </ErrorBoundary>
           <ErrorBoundary>
             <CreditsSection credits={isDev ? MOCK_CREDITS : []} />

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Play, Pause } from '@phosphor-icons/react'
+import { Play, Pause, SkipBack, SkipForward } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
@@ -13,6 +13,12 @@ import { cn } from '@/lib/utils'
 
 interface MasteringPlayerProps {
   track: ShowcaseTrack
+  /** Playlist navigation — provided by PlaylistPlayer when there are multiple tracks */
+  onPrev?: () => void
+  onNext?: () => void
+  /** Display hints for the track counter (e.g. 1/3) */
+  currentTrackIndex?: number
+  totalTracks?: number
 }
 
 const formatTime = (totalSeconds: number): string => {
@@ -48,7 +54,13 @@ const ErrorDisplay = ({ message }: { message: string | null }): JSX.Element => (
   </section>
 )
 
-export const MasteringPlayer = ({ track }: MasteringPlayerProps): JSX.Element => {
+export const MasteringPlayer = ({
+  track,
+  onPrev,
+  onNext,
+  currentTrackIndex,
+  totalTracks,
+}: MasteringPlayerProps): JSX.Element => {
   const validation = showcaseTrackSchema.safeParse(track)
 
   if (!validation.success) {
@@ -64,12 +76,32 @@ export const MasteringPlayer = ({ track }: MasteringPlayerProps): JSX.Element =>
   }
 
   const validTrack = validation.data
-  return <MasteringPlayerInner track={validTrack} />
+  return (
+    <MasteringPlayerInner
+      track={validTrack}
+      onPrev={onPrev}
+      onNext={onNext}
+      currentTrackIndex={currentTrackIndex}
+      totalTracks={totalTracks}
+    />
+  )
 }
 
 const PLATFORM_ORDER: PlatformKey[] = ['spotify', 'youtube', 'apple', 'club']
 
-const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element => {
+const MasteringPlayerInner = ({
+  track,
+  onPrev,
+  onNext,
+  currentTrackIndex,
+  totalTracks,
+}: {
+  track: ShowcaseTrack
+  onPrev?: () => void
+  onNext?: () => void
+  currentTrackIndex?: number
+  totalTracks?: number
+}): JSX.Element => {
   const engine = useAudioEngine(
     { before: { label: 'before', url: track.beforeUrl }, after: { label: 'after', url: track.afterUrl } },
     { startMarker: track.startMarker },
@@ -141,7 +173,14 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
 
             {/* Left – Track identity */}
             <div className="min-w-0 flex-1">
-              <h3 className="text-base font-bold tracking-tight font-heading truncate">{track.title}</h3>
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-base font-bold tracking-tight font-heading truncate">{track.title}</h3>
+                {totalTracks !== undefined && totalTracks > 1 && (
+                  <span className="text-[10px] font-mono text-muted-foreground/60 shrink-0">
+                    {(currentTrackIndex ?? 0) + 1}/{totalTracks}
+                  </span>
+                )}
+              </div>
               {track.artist && (
                 <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest mt-0.5 truncate">
                   {track.artist}
@@ -263,8 +302,20 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
             )}
           </div>
 
-          {/* Transport: Play + Progress Bar + Time */}
-          <div className="flex items-center gap-4">
+          {/* Transport: Prev + Play/Pause + Next + Progress Bar + Time */}
+          <div className="flex items-center gap-3">
+            {/* Previous button */}
+            {onPrev && (
+              <button
+                onClick={onPrev}
+                aria-label="Previous track"
+                className="h-9 w-9 flex items-center justify-center rounded text-white/50 hover:text-white/90 transition-colors flex-shrink-0 hover:bg-white/5"
+              >
+                <SkipBack weight="fill" className="h-4 w-4" />
+              </button>
+            )}
+
+            {/* Play / Pause */}
             <Button
               size="icon"
               onClick={engine.isPlaying ? engine.pause : engine.play}
@@ -282,6 +333,17 @@ const MasteringPlayerInner = ({ track }: { track: ShowcaseTrack }): JSX.Element 
                 <Play weight="fill" className="h-5 w-5 ml-0.5" />
               )}
             </Button>
+
+            {/* Next button */}
+            {onNext && (
+              <button
+                onClick={onNext}
+                aria-label="Next track"
+                className="h-9 w-9 flex items-center justify-center rounded text-white/50 hover:text-white/90 transition-colors flex-shrink-0 hover:bg-white/5"
+              >
+                <SkipForward weight="fill" className="h-4 w-4" />
+              </button>
+            )}
 
             <div className="flex-1 space-y-1.5">
               <Slider
