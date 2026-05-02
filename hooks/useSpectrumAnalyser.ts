@@ -304,20 +304,57 @@ export function useSpectrumAnalyser({
       const sampleRate = analyserA.context.sampleRate
       const nyquist = sampleRate / 2
 
+      // ── Filled delta area between mix (A) and master (B) curves ──────────────
+      // Green fill where master > mix (energy added), red where mix > master.
+      // Draw as two separate filled paths for the two directions.
+
+      const getY = (buf: Float32Array, x: number): number => {
+        const freq  = F_MIN * Math.pow(F_MAX / F_MIN, x / w)
+        const binF  = (freq / nyquist) * binCount
+        const binLo = Math.floor(binF)
+        const binHi = Math.min(binCount - 1, binLo + 1)
+        const t     = binF - binLo
+        const dB    = (buf[binLo] ?? -100) + ((buf[binHi] ?? -100) - (buf[binLo] ?? -100)) * t
+        const clamped = Math.max(-100, Math.min(0, dB))
+        return h - ((clamped + 100) / 100) * h
+      }
+
+      // Build point arrays once
+      const yA = new Float32Array(w)
+      const yB = new Float32Array(w)
+      for (let x = 0; x < w; x++) {
+        yA[x] = getY(smoothA, x)
+        yB[x] = getY(smoothB, x)
+      }
+
+      // Green fill: master (B) above mix (A), i.e. yB < yA in canvas coords
+      ctx.beginPath()
+      ctx.moveTo(0, yA[0]!)
+      for (let x = 1; x < w; x++) ctx.lineTo(x, yA[x]!)
+      for (let x = w - 1; x >= 0; x--) ctx.lineTo(x, yB[x]!)
+      ctx.closePath()
+      ctx.fillStyle = 'rgba(74,222,128,0.13)'
+      ctx.fill()
+
+      // Red fill: mix (A) above master (B)
+      ctx.beginPath()
+      ctx.moveTo(0, yB[0]!)
+      for (let x = 1; x < w; x++) ctx.lineTo(x, yB[x]!)
+      for (let x = w - 1; x >= 0; x--) ctx.lineTo(x, yA[x]!)
+      ctx.closePath()
+      ctx.fillStyle = 'rgba(217,72,72,0.10)'
+      ctx.fill()
+
+      // Thin delta line (original)
       ctx.beginPath()
       let started = false
       for (let x = 0; x < w; x++) {
         const freq = F_MIN * Math.pow(F_MAX / F_MIN, x / w)
-        const bin = Math.min(binCount - 1, Math.round((freq / nyquist) * binCount))
+        const bin  = Math.min(binCount - 1, Math.round((freq / nyquist) * binCount))
         const delta = Math.max(-50, Math.min(50, (smoothB[bin] ?? -100) - (smoothA[bin] ?? -100)))
-        // Map delta: centre = h/2, ±50dB = top/bottom
         const y = h / 2 - (delta / 50) * (h / 2)
-        if (!started) {
-          ctx.moveTo(x, y)
-          started = true
-        } else {
-          ctx.lineTo(x, y)
-        }
+        if (!started) { ctx.moveTo(x, y); started = true }
+        else ctx.lineTo(x, y)
       }
       ctx.strokeStyle = COLOR_DELTA
       ctx.lineWidth = 1.5
