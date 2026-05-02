@@ -55,7 +55,7 @@ export function Model({ config }: ModelProps): JSX.Element {
   })
 
   // Responsive scale: shrink proportionally on narrow viewports
-  const scale = Math.min(1, viewport.width / 6) * 1.2
+  const scale = Math.min(1, viewport.width / 6) * 0.6
 
   return (
     <group ref={groupRef}>
