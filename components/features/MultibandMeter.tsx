@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from 'react'
 import { Question } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { TOOLTIP_PHASE_METER } from '@/lib/constants'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface MultibandMeterProps {
   correlation: { low: number; mid: number; high: number } | null
@@ -162,13 +163,16 @@ export const MultibandMeter = ({ correlation, className }: MultibandMeterProps):
           Phase
         </p>
         {/* Desktop tooltip */}
-        <span
-          className="hidden md:inline-flex"
-          title={TOOLTIP_PHASE_METER}
-          aria-label={TOOLTIP_PHASE_METER}
-        >
-          <Question className="w-2.5 h-2.5 text-muted-foreground/40 cursor-help" />
-        </span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="hidden md:inline-flex" aria-label={TOOLTIP_PHASE_METER}>
+                <Question className="w-2.5 h-2.5 text-muted-foreground/40 cursor-help" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top">{TOOLTIP_PHASE_METER}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         {/* Mobile help button */}
         <button
           className="md:hidden flex items-center justify-center"

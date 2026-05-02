@@ -5,6 +5,7 @@ import { Question } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useSpectrumAnalyser, type ViewMode } from '@/hooks/useSpectrumAnalyser'
 import { TOOLTIP_SPECTRUM_CURVE } from '@/lib/constants'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface SpectrumAnalyserProps {
   analyserBefore: AnalyserNode | null
@@ -80,14 +81,17 @@ export const SpectrumAnalyser = ({
           ))}
         </div>
 
-        {/* Desktop tooltip (title attr) + mobile help button */}
-        <span
-          className="hidden md:inline-flex items-center"
-          title={TOOLTIP_SPECTRUM_CURVE}
-          aria-label={TOOLTIP_SPECTRUM_CURVE}
-        >
-          <Question className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
-        </span>
+        {/* Desktop tooltip (Radix) + mobile help button */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="hidden md:inline-flex items-center" aria-label={TOOLTIP_SPECTRUM_CURVE}>
+                <Question className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top">{TOOLTIP_SPECTRUM_CURVE}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <button
           className="md:hidden flex items-center justify-center w-6 h-6 rounded-full border border-white/20 text-muted-foreground/50"
           aria-label="Spectrum analyser info"
