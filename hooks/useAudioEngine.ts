@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { StereoFieldAnalyzer } from '@/lib/StereoFieldAnalyzer'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -11,53 +12,7 @@ export interface AudioTrack {
 
 export type PlayerStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'switching' | 'error'
 
-// ─── Loudness Penalty Strategy Pattern ───────────────────────────────────────
-
-export const PENALTY_PROFILES = {
-  spotify: { label: 'Spotify', targetLufs: -14 },
-  youtube: { label: 'YouTube', targetLufs: -14 },
-  apple:   { label: 'Apple',   targetLufs: -16 },
-  club:    { label: 'Club',    targetLufs: null }, // No penalty – full dynamic range
-} as const
-
-export type PlatformKey = keyof typeof PENALTY_PROFILES
-
-// ─── Multiband correlation helpers ───────────────────────────────────────────
-
-interface CorrBandPair {
-  analyserL: AnalyserNode
-  analyserR: AnalyserNode
-  bufL: Float32Array
-  bufR: Float32Array
-}
-
-interface TrackCorrNodes {
-  splitter: ChannelSplitterNode
-  low: CorrBandPair
-  mid: CorrBandPair
-  high: CorrBandPair
-}
-
-/** Pearson correlation between two time-domain buffers [-1, +1]. Returns +1 for mono (silent right channel). */
-function computeCorr(band: CorrBandPair): number {
-  band.analyserL.getFloatTimeDomainData(band.bufL)
-  band.analyserR.getFloatTimeDomainData(band.bufR)
-  let sumLR = 0, sumLL = 0, sumRR = 0
-  const n = band.bufL.length
-  for (let i = 0; i < n; i++) {
-    const l = band.bufL[i]!
-    const r = band.bufR[i]!
-    sumLR += l * r
-    sumLL += l * l
-    sumRR += r * r
-  }
-  // When right channel is silent (mono source → splitter output[1] = 0), treat as perfect mono
-  if (sumRR < 1e-10) return sumLL > 1e-10 ? 1 : 0
-  const denom = Math.sqrt(sumLL * sumRR)
-  return denom < 1e-10 ? 0 : Math.max(-1, Math.min(1, sumLR / denom))
-}
-
-const CORR_ALPHA = 0.15 // EMA smoothing factor for correlation display
+const CORR_ALPHA = 0.15 // EMA smoothing factor for correlation display (main thread)
 
 export interface AudioEngineState {
   status: PlayerStatus
@@ -78,10 +33,6 @@ export interface AudioEngineState {
   analyserAfter: AnalyserNode | null
   /** Phase correlation per frequency band (null until playback starts) */
   multibandCorrelation: { low: number; mid: number; high: number } | null
-  /** Currently selected loudness penalty platform */
-  activePlatform: PlatformKey | null
-  /** Gain reduction in dB applied by the selected platform (-x.x), or null when no platform active */
-  penaltyDb: number | null
 }
 
 interface AudioEngineTracks {
@@ -98,7 +49,6 @@ type AudioEngineControls = {
   pause: () => void
   seek: (time: number) => void
   switchTrack: (track: 'before' | 'after') => void
-  setPlatform: (key: PlatformKey | null) => void
 }
 
 let sharedAudioContext: AudioContext | null = null
@@ -155,21 +105,22 @@ export function useAudioEngine(
   const [analyserBefore, setAnalyserBefore] = useState<AnalyserNode | null>(null)
   const [analyserAfter, setAnalyserAfter] = useState<AnalyserNode | null>(null)
   const [multibandCorrelation, setMultibandCorrelation] = useState<{ low: number; mid: number; high: number } | null>(null)
-  const [activePlatform, setActivePlatform] = useState<PlatformKey | null>(null)
 
   // ── Refs (audio graph) ──
   const analyserRef = useRef<AnalyserNode | null>(null)
   const analyserBeforeRef = useRef<AnalyserNode | null>(null)
   const analyserAfterRef = useRef<AnalyserNode | null>(null)
   const gainNodesRef = useRef<Record<'before' | 'after', GainNode> | null>(null)
-  const penaltyGainRef = useRef<GainNode | null>(null)
   const sourceNodesRef = useRef<Map<HTMLAudioElement, MediaElementAudioSourceNode>>(new Map())
   const audioElementsRef = useRef<Record<'before' | 'after', HTMLAudioElement> | null>(null)
   const activeTrackRef = useRef<'before' | 'after'>('before')
   const statusRef = useRef<PlayerStatus>('idle')
   const rafIdRef = useRef<number | undefined>(undefined)
-  const corrNodesRef = useRef<Partial<Record<'before' | 'after', TrackCorrNodes>>>({})
-  const corrSmoothRef = useRef({ low: 0, mid: 0, high: 0 })
+  const sfaRef = useRef<Partial<Record<'before' | 'after', StereoFieldAnalyzer>>>({})
+  const corrSmoothRef = useRef({
+    before: { low: 0, mid: 0, high: 0 },
+    after:  { low: 0, mid: 0, high: 0 },
+  })
 
   // Helper: keep statusRef in sync
   const updateStatus = useCallback((s: PlayerStatus) => {
@@ -185,13 +136,8 @@ export function useAudioEngine(
       const analyser = ctx.createAnalyser()
       analyser.fftSize = isMobile ? 512 : 2048
       analyser.smoothingTimeConstant = 0.8
-      // Insert penalty gain node between analyser and destination
-      const penaltyGain = ctx.createGain()
-      penaltyGain.gain.value = 1
-      analyser.connect(penaltyGain)
-      penaltyGain.connect(ctx.destination)
+      analyser.connect(ctx.destination)
       analyserRef.current = analyser
-      penaltyGainRef.current = penaltyGain
     }
     if (!gainNodesRef.current) {
       const gainBefore = ctx.createGain()
@@ -233,36 +179,20 @@ export function useAudioEngine(
       const analyserPerTrack = track === 'before' ? analyserBeforeRef.current : analyserAfterRef.current
       if (analyserPerTrack) source.connect(analyserPerTrack)
 
-      // ── Multiband correlation nodes (desktop only) ──────────────────────────
-      const isMobile = navigator.maxTouchPoints > 1
-      if (!isMobile && !corrNodesRef.current[track]) {
-        const CORR_FFT = 256
-        const splitter = ctx.createChannelSplitter(2)
-        source.connect(splitter)
-
-        const makeBand = (type: BiquadFilterType, freq: number, q: number): CorrBandPair => {
-          const filterL = ctx.createBiquadFilter()
-          filterL.type = type; filterL.frequency.value = freq; filterL.Q.value = q
-          const filterR = ctx.createBiquadFilter()
-          filterR.type = type; filterR.frequency.value = freq; filterR.Q.value = q
-          splitter.connect(filterL, 0)
-          splitter.connect(filterR, 1)
-          const analyserL = ctx.createAnalyser(); analyserL.fftSize = CORR_FFT
-          const analyserR = ctx.createAnalyser(); analyserR.fftSize = CORR_FFT
-          filterL.connect(analyserL); filterR.connect(analyserR)
-          return {
-            analyserL, analyserR,
-            bufL: new Float32Array(CORR_FFT),
-            bufR: new Float32Array(CORR_FFT),
-          }
-        }
-
-        corrNodesRef.current[track] = {
-          splitter,
-          low:  makeBand('lowpass',  200,  0.707),
-          mid:  makeBand('bandpass', 1000, 0.5),
-          high: makeBand('highpass', 5000, 0.707),
-        }
+      // ── Multiband correlation (StereoFieldAnalyzer, desktop only) ────────────
+      const isMobile = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1
+      if (!isMobile && !sfaRef.current[track]) {
+        const sfa = new StereoFieldAnalyzer(ctx)
+        sfaRef.current[track] = sfa
+        void sfa.attach(source, (corr) => {
+          // Ignore results from the inactive track
+          if (activeTrackRef.current !== track) return
+          const s = corrSmoothRef.current[track]
+          s.low  = s.low  * (1 - CORR_ALPHA) + corr.low  * CORR_ALPHA
+          s.mid  = s.mid  * (1 - CORR_ALPHA) + corr.mid  * CORR_ALPHA
+          s.high = s.high * (1 - CORR_ALPHA) + corr.high * CORR_ALPHA
+          setMultibandCorrelation({ low: s.low, mid: s.mid, high: s.high })
+        }).catch(console.error)
       }
 
       sourceNodesRef.current.set(audio, source)
@@ -288,19 +218,6 @@ export function useAudioEngine(
       setFrequencyData(new Uint8Array(data))
       const stLufs = computeShortTermLufsFromFreqData(data)
       setLufsShortTerm(isFinite(stLufs) ? stLufs : null)
-
-      // ── Multiband correlation ─────────────────────────────────────────────
-      const corrNodes = corrNodesRef.current[activeTrackRef.current]
-      if (corrNodes) {
-        const lowCorr  = computeCorr(corrNodes.low)
-        const midCorr  = computeCorr(corrNodes.mid)
-        const highCorr = computeCorr(corrNodes.high)
-        const s = corrSmoothRef.current
-        s.low  = s.low  * (1 - CORR_ALPHA) + lowCorr  * CORR_ALPHA
-        s.mid  = s.mid  * (1 - CORR_ALPHA) + midCorr  * CORR_ALPHA
-        s.high = s.high * (1 - CORR_ALPHA) + highCorr * CORR_ALPHA
-        setMultibandCorrelation({ low: s.low, mid: s.mid, high: s.high })
-      }
 
       rafIdRef.current = requestAnimationFrame(tick)
     }
@@ -398,6 +315,9 @@ export function useAudioEngine(
         elements[v].src = ''
       })
       stopRaf()
+      // Detach correlation callbacks (analysis nodes stay alive with the singleton context)
+      sfaRef.current.before?.dispose()
+      sfaRef.current.after?.dispose()
       // Do NOT close the shared AudioContext here (singleton)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -576,37 +496,6 @@ export function useAudioEngine(
     [connectAudioElement, crossfade, getOrCreateGraph, updateStatus],
   )
 
-  // ── Loudness Penalty control ──
-  const setPlatform = useCallback((key: PlatformKey | null): void => {
-    setActivePlatform(key)
-  }, [])
-
-  // Apply penalty gain whenever platform or lufsIntegrated changes
-  useEffect(() => {
-    const penaltyGain = penaltyGainRef.current
-    if (!penaltyGain) return
-    if (!activePlatform || activePlatform === 'club') {
-      penaltyGain.gain.value = 1
-      return
-    }
-    const profile = PENALTY_PROFILES[activePlatform]
-    if (profile.targetLufs === null || lufsIntegrated === null) {
-      penaltyGain.gain.value = 1
-      return
-    }
-    const db = profile.targetLufs - lufsIntegrated
-    // Only attenuate (never amplify) to prevent clipping
-    penaltyGain.gain.value = Math.pow(10, Math.min(0, db) / 20)
-  }, [activePlatform, lufsIntegrated])
-
-  // Derived penalty display value
-  const penaltyDb: number | null = (() => {
-    if (!activePlatform || activePlatform === 'club') return null
-    const profile = PENALTY_PROFILES[activePlatform]
-    if (profile.targetLufs === null || lufsIntegrated === null) return null
-    return profile.targetLufs - lufsIntegrated
-  })()
-
   return {
     status,
     isPlaying: status === 'playing',
@@ -621,12 +510,9 @@ export function useAudioEngine(
     analyserBefore,
     analyserAfter,
     multibandCorrelation,
-    activePlatform,
-    penaltyDb,
     play,
     pause,
     seek,
     switchTrack,
-    setPlatform,
   }
 }
