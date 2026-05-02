@@ -97,7 +97,7 @@ export const VideoBackground = (): JSX.Element => {
     <div ref={containerRef} className="relative w-full h-[300vh]">
       <div
         className="sticky top-0 h-screen overflow-hidden bg-black"
-        style={{ transform: 'translateZ(0)', width: '100vw', left: 0, position: 'sticky' }}
+        style={{ transform: 'translateZ(0)', width: '100%', left: 0, position: 'sticky' }}
       >
         {!isVideoReady && <VideoSkeleton />}
         <video
