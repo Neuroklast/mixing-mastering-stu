@@ -108,7 +108,7 @@ export const SpectrumAnalyser = ({
       <div
         className={cn(
           'rounded overflow-hidden bg-secondary/30 transition-all duration-500',
-          isMasterActive && 'shadow-[0_0_20px_rgba(74,222,128,0.15),inset_0_0_20px_rgba(74,222,128,0.04)]',
+          isMasterActive && 'shadow-[0_0_20px_rgba(217,72,72,0.12),inset_0_0_20px_rgba(217,72,72,0.04)]',
         )}
         style={{ transform: 'translateZ(0)', willChange: 'transform' }}
       >

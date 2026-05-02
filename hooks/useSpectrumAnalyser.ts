@@ -411,6 +411,49 @@ export function useSpectrumAnalyser({
     [],
   )
 
+  /**
+   * Draw a subtle background grid: horizontal dB lines and faint vertical
+   * frequency lines.  Called once per frame, before the spectrum curves.
+   */
+  const drawGrid = useCallback(
+    (ctx: CanvasRenderingContext2D, w: number, h: number): void => {
+      ctx.save()
+
+      // ── Horizontal dB lines ────────────────────────────────────────────────
+      const DB_LINES = [-20, -40, -60, -80]
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+      ctx.lineWidth = 1
+      ctx.font = '8px monospace'
+      ctx.fillStyle = 'rgba(255,255,255,0.22)'
+      ctx.textAlign = 'left'
+
+      for (const db of DB_LINES) {
+        const y = h - ((db + 100) / 100) * h
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(w, y)
+        ctx.stroke()
+        ctx.fillText(`${db}`, 3, y - 2)
+      }
+
+      // ── Vertical frequency lines ───────────────────────────────────────────
+      const GRID_FREQS = [50, 100, 500, 1000, 5000, 10000]
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)'
+      ctx.lineWidth = 1
+
+      for (const f of GRID_FREQS) {
+        const x = freqToX(f, w)
+        ctx.beginPath()
+        ctx.moveTo(x, 0)
+        ctx.lineTo(x, h)
+        ctx.stroke()
+      }
+
+      ctx.restore()
+    },
+    [],
+  )
+
   // ── RAF draw loop ─────────────────────────────────────────────────────────────
 
   const startRaf = useCallback(() => {
@@ -441,6 +484,9 @@ export function useSpectrumAnalyser({
 
       // 18 px bottom padding reserved for frequency-axis labels
       const hDraw = h - 18
+
+      // Draw background grid first (below spectrum curves)
+      drawGrid(ctx2d, w, hDraw)
 
       const aBefore = analyserBefore
       const aAfter = analyserAfter
@@ -507,7 +553,7 @@ export function useSpectrumAnalyser({
     }
 
     rafIdRef.current = requestAnimationFrame(tick)
-  }, [analyserBefore, analyserAfter, canvasRef, drawBars, drawCurve, drawDelta, drawFreqAxis, drawLegend])
+  }, [analyserBefore, analyserAfter, canvasRef, drawBars, drawCurve, drawDelta, drawFreqAxis, drawGrid, drawLegend])
 
   const stopRaf = useCallback((): void => {
     if (rafIdRef.current !== undefined) {

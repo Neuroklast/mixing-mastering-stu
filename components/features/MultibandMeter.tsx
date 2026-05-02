@@ -75,7 +75,7 @@ function drawMeter (
     }
 
     // ── ±1 tick marks ────────────────────────────────────────────────────────
-    ctx.strokeStyle = 'rgba(255,255,255,0.09)'
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(x, LABEL_H + 2);          ctx.lineTo(x + barW, LABEL_H + 2)
@@ -90,13 +90,13 @@ function drawMeter (
   })
 
   // ── Scale labels: +1 / 0 / -1 (right edge) ──────────────────────────────
-  ctx.fillStyle = 'rgba(255,255,255,0.20)'
-  ctx.font = '6px monospace'
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'
+  ctx.font = '7px monospace'
   ctx.textAlign = 'right'
   const rEdge = w - 1
-  ctx.fillText('+1', rEdge, LABEL_H + 6)
+  ctx.fillText('+1', rEdge, LABEL_H + 7)
   ctx.fillText(' 0', rEdge, LABEL_H + 2 + barArea / 2 + 3)
-  ctx.fillText('-1', rEdge, LABEL_H + 2 + barArea + 6)
+  ctx.fillText('-1', rEdge, LABEL_H + 2 + barArea + 7)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

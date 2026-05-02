@@ -184,16 +184,27 @@ export function useAudioEngine(
 
   const connectAudioElement = useCallback(
     (audio: HTMLAudioElement, track: 'before' | 'after'): void => {
-      if (sourceNodesRef.current.has(audio)) return
       const { ctx, gains } = getOrCreateGraph()
-      const source = ctx.createMediaElementSource(audio)
-      source.connect(gains[track])
-      // Connect per-track analyser directly from source, bypassing the gain
-      // node so the spectrum is visible regardless of crossfade gain.
-      const analyserPerTrack = track === 'before' ? analyserBeforeRef.current : analyserAfterRef.current
-      if (analyserPerTrack) source.connect(analyserPerTrack)
+
+      // Get or create the MediaElementAudioSourceNode.
+      // Each HTMLAudioElement can only be wrapped once — reuse the existing node
+      // on subsequent calls (e.g. after a song-URL change that reuses the same elements).
+      let source = sourceNodesRef.current.get(audio)
+      if (!source) {
+        source = ctx.createMediaElementSource(audio)
+        source.connect(gains[track])
+        // Connect per-track analyser directly from source, bypassing the gain
+        // node so the spectrum is visible regardless of crossfade gain.
+        const analyserPerTrack = track === 'before' ? analyserBeforeRef.current : analyserAfterRef.current
+        if (analyserPerTrack) source.connect(analyserPerTrack)
+        sourceNodesRef.current.set(audio, source)
+      }
 
       // ── Multiband correlation (StereoFieldAnalyzer) ──────────────────────────
+      // This check is intentionally separate from the source-node guard above:
+      // after a song change, sfaRef is cleared but the source node may already
+      // exist.  We must re-attach the SFA whenever it is missing, regardless of
+      // whether we just created the source node.
       if (!sfaRef.current[track]) {
         const sfa = new StereoFieldAnalyzer(ctx)
         sfaRef.current[track] = sfa
@@ -207,8 +218,6 @@ export function useAudioEngine(
           setMultibandCorrelation({ low: s.low, mid: s.mid, high: s.high })
         }).catch(console.error)
       }
-
-      sourceNodesRef.current.set(audio, source)
     },
     [getOrCreateGraph],
   )
@@ -399,6 +408,13 @@ export function useAudioEngine(
     sfaRef.current.before?.dispose()
     sfaRef.current.after?.dispose()
     sfaRef.current = {}
+
+    // Reset correlation smoothing accumulators so the previous song's phase
+    // values don't bleed into the first frames of the new song.
+    corrSmoothRef.current = {
+      before: { low: 0, mid: 0, high: 0 },
+      after:  { low: 0, mid: 0, high: 0 },
+    }
 
     const onMetadata = (v: 'before' | 'after') => (): void => {
       // Ignore stale callbacks from a previous generation
