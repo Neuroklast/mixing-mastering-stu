@@ -45,6 +45,9 @@ class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: bo
   }
 }
 
+/** Cap DPR at 1.5 on high-DPI (>2) devices to reduce pixel fill rate on mobile GPUs. */
+const MAX_DPR = typeof window !== 'undefined' && window.devicePixelRatio > 2 ? 1.5 : 2
+
 export function HeroScene3D(): JSX.Element {
   return (
     <SceneErrorBoundary>
@@ -58,7 +61,7 @@ export function HeroScene3D(): JSX.Element {
         }}
       >
         <Canvas
-          dpr={[1, 2]}
+          dpr={[1, MAX_DPR]}
           gl={{
             antialias: false,
             stencil: false,
