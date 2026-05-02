@@ -131,10 +131,10 @@ export function useAudioEngine(
   // ── Audio graph setup ──
   const getOrCreateGraph = useCallback(() => {
     const ctx = getAudioContext()
-    const isMobile = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1
+    const isMobileDevice = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
     if (!analyserRef.current) {
       const analyser = ctx.createAnalyser()
-      analyser.fftSize = isMobile ? 512 : 2048
+      analyser.fftSize = isMobileDevice ? 512 : 2048
       analyser.smoothingTimeConstant = 0.8
       analyser.connect(ctx.destination)
       analyserRef.current = analyser
@@ -153,14 +153,14 @@ export function useAudioEngine(
     // the inactive-track background curve to update live.
     if (!analyserBeforeRef.current) {
       const ab = ctx.createAnalyser()
-      ab.fftSize = isMobile ? 512 : 4096
+      ab.fftSize = isMobileDevice ? 512 : 4096
       ab.smoothingTimeConstant = 0.8
       analyserBeforeRef.current = ab
       setAnalyserBefore(ab)
     }
     if (!analyserAfterRef.current) {
       const aa = ctx.createAnalyser()
-      aa.fftSize = isMobile ? 512 : 4096
+      aa.fftSize = isMobileDevice ? 512 : 4096
       aa.smoothingTimeConstant = 0.8
       analyserAfterRef.current = aa
       setAnalyserAfter(aa)
@@ -179,9 +179,9 @@ export function useAudioEngine(
       const analyserPerTrack = track === 'before' ? analyserBeforeRef.current : analyserAfterRef.current
       if (analyserPerTrack) source.connect(analyserPerTrack)
 
-      // ── Multiband correlation (StereoFieldAnalyzer, desktop only) ────────────
-      const isMobile = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1
-      if (!isMobile && !sfaRef.current[track]) {
+      // ── Multiband correlation (StereoFieldAnalyzer, non-mobile only) ─────────
+      const isMobileDevice = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      if (!isMobileDevice && !sfaRef.current[track]) {
         const sfa = new StereoFieldAnalyzer(ctx)
         sfaRef.current[track] = sfa
         void sfa.attach(source, (corr) => {

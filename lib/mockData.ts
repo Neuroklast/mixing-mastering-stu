@@ -6,10 +6,10 @@ import type { Review } from '@/components/features/ReviewsSection'
 export const MOCK_SHOWCASE_TRACK: ShowcaseTrack = {
   title: 'Neuroklast – INCINERATE',
   artist: 'NEUROKLAST',
-  genre: 'Metal',
-  equipment: 'FL Studio · Quested v2108',
   beforeUrl: '/demo/incinerate-mixdown.wav',
   afterUrl: '/demo/incinerate-master.wav',
+  labelBefore: 'DEMO',
+  labelAfter: 'FINAL',
 }
 
 // Multiple tracks for playlist navigation in dev mode
@@ -18,12 +18,10 @@ export const MOCK_SHOWCASE_TRACKS: ShowcaseTrack[] = [
   {
     title: 'Kernel Breaker – FRAGMENT',
     artist: 'KERNEL BREAKER',
-    genre: 'Industrial Metal',
-    equipment: 'FL Studio · PMC result6',
     beforeUrl: '/demo/incinerate-mixdown.wav',
     afterUrl: '/demo/incinerate-master.wav',
-    labelBefore: 'RAW MIX',
-    labelAfter: 'MASTER',
+    labelBefore: 'DEMO',
+    labelAfter: 'FINAL',
   },
 ]
 
