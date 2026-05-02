@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+import { LenisProvider } from '@/components/providers/LenisProvider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -40,11 +41,11 @@ export default function RootLayout({
   children: React.ReactNode
 }): JSX.Element {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}> 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className="vignette scanlines grain">
+      <body className="vignette scanlines grain"> 
         {/* Skip-to-content link for keyboard / screen-reader users */}
         <a
           href="#main-content"
@@ -52,7 +53,9 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        {children}
+        <LenisProvider>
+          {children}
+        </LenisProvider>
       </body>
     </html>
   )
