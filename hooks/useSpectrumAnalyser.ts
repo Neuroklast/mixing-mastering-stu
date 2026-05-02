@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useCallback, useState } from 'react'
+import { TRACK_LABELS } from '@/lib/constants'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -366,8 +367,8 @@ export function useSpectrumAnalyser({
   const drawLegend = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, at: 'before' | 'after', vm: ViewMode): void => {
       const items: { color: string; label: string }[] = [
-        { color: at === 'before' ? COLOR_ACTIVE_STROKE : COLOR_INACTIVE_STROKE, label: 'Mixdown' },
-        { color: at === 'after' ? COLOR_ACTIVE_STROKE : COLOR_INACTIVE_STROKE, label: 'Master' },
+        { color: at === 'before' ? COLOR_ACTIVE_STROKE : COLOR_INACTIVE_STROKE, label: TRACK_LABELS.BEFORE },
+        { color: at === 'after' ? COLOR_ACTIVE_STROKE : COLOR_INACTIVE_STROKE, label: TRACK_LABELS.AFTER },
       ]
       if (vm === 'curve') items.push({ color: COLOR_DELTA, label: 'Δ' })
 

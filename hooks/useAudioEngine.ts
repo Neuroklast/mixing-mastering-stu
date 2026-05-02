@@ -121,6 +121,10 @@ export function useAudioEngine(
     before: { low: 0, mid: 0, high: 0 },
     after:  { low: 0, mid: 0, high: 0 },
   })
+  // Counts how many audio elements have fired loadedmetadata for the current load cycle
+  const metadataLoadedRef = useRef(0)
+  // URLs used during the initial mount (used to skip the URL-change effect on first render)
+  const initialUrlsRef = useRef({ before: tracks.before.url, after: tracks.after.url })
 
   // Helper: keep statusRef in sync
   const updateStatus = useCallback((s: PlayerStatus) => {
@@ -179,9 +183,8 @@ export function useAudioEngine(
       const analyserPerTrack = track === 'before' ? analyserBeforeRef.current : analyserAfterRef.current
       if (analyserPerTrack) source.connect(analyserPerTrack)
 
-      // ── Multiband correlation (StereoFieldAnalyzer, non-mobile only) ─────────
-      const isMobileDevice = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-      if (!isMobileDevice && !sfaRef.current[track]) {
+      // ── Multiband correlation (StereoFieldAnalyzer) ──────────────────────────
+      if (!sfaRef.current[track]) {
         const sfa = new StereoFieldAnalyzer(ctx)
         sfaRef.current[track] = sfa
         void sfa.attach(source, (corr) => {
@@ -251,6 +254,7 @@ export function useAudioEngine(
     if (typeof window === 'undefined') return
 
     updateStatus('loading')
+    metadataLoadedRef.current = 0
 
     const elements: Record<'before' | 'after', HTMLAudioElement> = {
       before: new Audio(tracks.before.url),
@@ -273,11 +277,10 @@ export function useAudioEngine(
     audioElementsRef.current = elements
     sourceNodesRef.current = new Map()
 
-    let metadataLoaded = 0
     const onMetadata = (v: 'before' | 'after') => () => {
       if (v === 'before') setDuration(elements[v].duration)
-      metadataLoaded++
-      if (metadataLoaded >= 2) updateStatus('ready')
+      metadataLoadedRef.current++
+      if (metadataLoadedRef.current >= 2) updateStatus('ready')
     }
 
     const onTimeUpdate = (v: 'before' | 'after') => () => {
@@ -322,6 +325,68 @@ export function useAudioEngine(
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // ── Background track switching: reload audio when URLs change without remount ──
+  useEffect(() => {
+    // Skip on initial render — the mount effect above handles first load
+    if (
+      tracks.before.url === initialUrlsRef.current.before &&
+      tracks.after.url === initialUrlsRef.current.after
+    ) return
+
+    const elements = audioElementsRef.current
+    if (!elements) return
+
+    // Pause and stop any running animation
+    elements.before.pause()
+    elements.after.pause()
+    stopRaf()
+    setFrequencyData(null)
+    setLufsShortTerm(null)
+    setMultibandCorrelation(null)
+
+    // Reset playback state
+    updateStatus('loading')
+    metadataLoadedRef.current = 0
+    activeTrackRef.current = 'before'
+    setActiveTrack('before')
+    setCurrentTime(startMarker)
+
+    // Dispose old StereoFieldAnalyzers (new audio elements will trigger re-attach)
+    sfaRef.current.before?.dispose()
+    sfaRef.current.after?.dispose()
+    sfaRef.current = {}
+
+    // Update URLs on existing audio elements (MediaElementAudioSourceNode stays connected)
+    elements.before.src = tracks.before.url
+    elements.after.src = tracks.after.url
+    elements.before.preload = 'metadata'
+    elements.after.preload = 'metadata'
+    elements.before.load()
+    elements.after.load()
+
+    if (startMarker > 0) {
+      ;(['before', 'after'] as const).forEach((v) => {
+        const seekOnce = (): void => {
+          elements[v].currentTime = startMarker
+          elements[v].removeEventListener('loadedmetadata', seekOnce)
+        }
+        elements[v].addEventListener('loadedmetadata', seekOnce)
+      })
+    }
+
+    const onMetadata = (v: 'before' | 'after') => (): void => {
+      if (v === 'before') setDuration(elements[v].duration)
+      metadataLoadedRef.current++
+      if (metadataLoadedRef.current >= 2) updateStatus('ready')
+    }
+
+    // These are one-shot listeners: we add them per URL-change cycle
+    elements.before.addEventListener('loadedmetadata', onMetadata('before'), { once: true })
+    elements.after.addEventListener('loadedmetadata', onMetadata('after'), { once: true })
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tracks.before.url, tracks.after.url])
 
   // ── LUFS integrated (background computation on mount) ──
   useEffect(() => {

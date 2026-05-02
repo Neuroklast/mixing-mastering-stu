@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Play, Pause, SkipBack, SkipForward } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -104,6 +104,13 @@ const MasteringPlayerInner = ({
     { startMarker: track.startMarker },
   )
 
+  // Track whether we've ever been in a 'ready' state – used to distinguish the
+  // initial skeleton from the in-place loading overlay on subsequent track changes.
+  const hasBeenReadyRef = useRef(false)
+  if (engine.status === 'ready' || engine.status === 'playing' || engine.status === 'paused') {
+    hasBeenReadyRef.current = true
+  }
+
   const [iosHintDismissed, setIosHintDismissed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true
     return sessionStorage.getItem('ios-audio-hint-dismissed') === '1'
@@ -117,7 +124,8 @@ const MasteringPlayerInner = ({
     setIosHintDismissed(true)
   }
 
-  if (engine.status === 'loading') return <LoadingSkeleton />
+  // Initial load: show skeleton until first metadata is ready
+  if (engine.status === 'loading' && !hasBeenReadyRef.current) return <LoadingSkeleton />
   if (engine.status === 'error') return <ErrorDisplay message={engine.errorMessage} />
 
   const labelBefore = track.labelBefore ?? 'DEMO'
@@ -129,6 +137,7 @@ const MasteringPlayerInner = ({
   const lufsDelta  = mixLufs !== null && masterLufs !== null ? masterLufs - mixLufs : null
 
   const isMasterActive = engine.activeTrack === 'after'
+  const isSwitching = engine.status === 'loading'
 
   return (
     <section className="container max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-20 md:py-32">
@@ -157,12 +166,29 @@ const MasteringPlayerInner = ({
       {/* ── Rack Unit Container ── */}
       <div
         className={cn(
-          'w-full bg-zinc-950/80 backdrop-blur-sm rounded overflow-hidden',
+          'relative w-full bg-zinc-950/80 backdrop-blur-sm rounded overflow-hidden',
           'border border-white/[0.08] [border-top-color:rgba(255,255,255,0.15)]',
           'transition-shadow duration-500',
           isMasterActive && 'shadow-[0_0_40px_rgba(74,222,128,0.08)]',
         )}
       >
+        {/* Loading overlay: shown while switching tracks (not on initial load) */}
+        {isSwitching && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-zinc-950/70 backdrop-blur-[2px]">
+            <div className="flex gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="block w-1.5 h-6 bg-[var(--color-accent)] rounded-full animate-pulse"
+                  style={{ animationDelay: `${i * 0.15}s` }}
+                />
+              ))}
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-accent)]/70">
+              Loading track
+            </p>
+          </div>
+        )}
 
         {/* ══ TOP SECTION: Identity + A/B Toggle + Penalty Buttons ══ */}
         <div className="px-6 md:px-8 pt-6 pb-4 border-b border-white/[0.08]">
