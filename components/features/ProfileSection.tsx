@@ -22,13 +22,19 @@ export const ProfileSection = ({ profile }: ProfileSectionProps): JSX.Element =>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
         {/* Portrait */}
         <div className="relative aspect-[3/4] rounded overflow-hidden bg-secondary border border-border">
-          <Image
-            src={profile.portraitSrc ?? '/placeholder-portrait.png'}
-            alt={profile.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 50vw"
-          />
+          {profile.portraitSrc ? (
+            <Image
+              src={profile.portraitSrc}
+              alt={profile.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-secondary">
+              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">No Portrait</span>
+            </div>
+          )}
         </div>
 
         {/* Bio */}
