@@ -11,6 +11,8 @@
  * Must be imported via dynamic({ ssr: false }) in page.tsx.
  */
 
+import { Component } from 'react'
+import type { ErrorInfo, ReactNode } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { Scene } from './Scene'
@@ -23,30 +25,52 @@ const SCENE_CONFIG: HeroSceneConfig = {
   dampingLambda: 6,
 }
 
+/** Catches WebGL / GLTF load errors so a missing model doesn't crash the page. */
+class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[HeroScene3D] 3D scene failed to load:', error.message, info.componentStack)
+    }
+  }
+
+  render() {
+    if (this.state.failed) return null
+    return this.props.children
+  }
+}
+
 export function HeroScene3D(): JSX.Element {
   return (
-    <div
-      aria-hidden="true"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: -1,
-        pointerEvents: 'none',
-      }}
-    >
-      <Canvas
-        dpr={[1, 2]}
-        gl={{
-          antialias: false,
-          stencil: false,
-          depth: true,
-          powerPreference: 'high-performance',
+    <SceneErrorBoundary>
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: -1,
+          pointerEvents: 'none',
         }}
-        shadows={false}
       >
-        <Scene config={SCENE_CONFIG} />
-      </Canvas>
-    </div>
+        <Canvas
+          dpr={[1, 2]}
+          gl={{
+            antialias: false,
+            stencil: false,
+            depth: true,
+            powerPreference: 'high-performance',
+          }}
+          shadows={false}
+        >
+          <Scene config={SCENE_CONFIG} />
+        </Canvas>
+      </div>
+    </SceneErrorBoundary>
   )
 }
 
