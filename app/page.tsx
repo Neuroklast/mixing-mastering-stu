@@ -17,8 +17,6 @@ import type { Profile } from '@/types/profile'
 import { MOCK_CREDITS, DEMO_REVIEWS, DEMO_GALLERY } from '@/lib/mockData'
 import { getActiveShowcaseTrack, getAllShowcaseTracks } from '@/services/showcaseService'
 
-const isDev = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
-
 const FALLBACK_TRACK: ShowcaseTrack = {
   title: 'Demo Track',
   artist: 'SONORATIVA',
@@ -136,7 +134,7 @@ export default async function HomePage(): Promise<JSX.Element> {
             <ClientMasteringPlayer tracks={tracks} />
           </ErrorBoundary>
           <ErrorBoundary>
-            <CreditsSection credits={isDev ? MOCK_CREDITS : []} />
+            <CreditsSection credits={MOCK_CREDITS} />
           </ErrorBoundary>
           <ErrorBoundary>
             <ProfileSection profile={PROFILE_ZARDONIC} />
@@ -145,10 +143,10 @@ export default async function HomePage(): Promise<JSX.Element> {
             <ProfileSection profile={PROFILE_KAIO} />
           </ErrorBoundary>
           <ErrorBoundary>
-            <ReviewsSection reviews={isDev ? DEMO_REVIEWS : []} />
+            <ReviewsSection reviews={DEMO_REVIEWS} />
           </ErrorBoundary>
           <ErrorBoundary>
-            <GallerySection images={isDev ? DEMO_GALLERY : []} />
+            <GallerySection images={DEMO_GALLERY} />
           </ErrorBoundary>
         </div>
       </main>

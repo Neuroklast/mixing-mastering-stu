@@ -102,6 +102,7 @@ export const ScrollCanvas = (): JSX.Element => {
   const frameUrls    = useRef<string[]>([])
   const [frameCount, setFrameCount] = useState(0)
   const [ready, setReady] = useState(false)
+  const [frameLoadError, setFrameLoadError] = useState(false)
   const prefersReducedMotion = useReducedMotion()
 
   // ── Fetch dynamic frame list from the API ────────────────────────────────────
@@ -109,10 +110,11 @@ export const ScrollCanvas = (): JSX.Element => {
     fetch('/api/video-frames')
       .then((r) => r.json())
       .then(({ frames }: { frames: string[] }) => {
+        if (frames.length === 0) { setFrameLoadError(true); return }
         frameUrls.current = frames
         setFrameCount(frames.length)
       })
-      .catch(() => {}) // fallback: frameCount stays 0 → skeleton shown indefinitely
+      .catch(() => setFrameLoadError(true))
   }, [])
 
   // ── Canvas sizing: DPR-aware, always fills the viewport (mobile-safe) ────────
@@ -213,9 +215,10 @@ export const ScrollCanvas = (): JSX.Element => {
   }, [prefersReducedMotion, ready, frameCount, drawFrame])
 
   if (prefersReducedMotion) return <StaticGradientFallback />
+  if (frameLoadError) return <StaticGradientFallback />
 
   return (
-    <div ref={containerRef} className="relative w-full h-[300vh] overflow-x-hidden">
+    <div ref={containerRef} className="relative w-full h-[300vh]">
       {/*
        * sticky wrapper – full viewport, no horizontal overflow.
        * `w-full` (100%) keeps it within the parent's boundary so it never

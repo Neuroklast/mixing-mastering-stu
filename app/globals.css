@@ -71,6 +71,7 @@
   html {
     /* Lenis takes over smooth scrolling */
     scroll-behavior: auto;
+    overflow-x: hidden;
   }
 
   body {
