@@ -3,7 +3,6 @@ import * as path from 'node:path'
 import dynamic from 'next/dynamic'
 import { Navbar } from '@/components/features/Navbar'
 import { HeroSection } from '@/components/features/HeroSection'
-import { ScrollCanvas } from '@/components/features/ScrollCanvas'
 import { Footer } from '@/components/features/Footer'
 import { ErrorBoundary } from '@/components/features/ErrorBoundary'
 import { ClientMasteringPlayer } from '@/components/features/ClientMasteringPlayer'
@@ -133,9 +132,6 @@ export default async function HomePage(): Promise<JSX.Element> {
       <Toaster position="top-right" theme="dark" richColors />
       <Navbar />
       <main id="main-content">
-        <ErrorBoundary>
-          <ScrollCanvas />
-        </ErrorBoundary>
         <div className="relative z-10">
           <ErrorBoundary>
             <HeroSection />
