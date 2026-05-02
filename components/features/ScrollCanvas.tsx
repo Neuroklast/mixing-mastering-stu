@@ -4,25 +4,23 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Lenis from 'lenis'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const FRAME_COUNT = 182
-const FRAME_BASE = '/video/frames/ezgif-frame-'
-const PRELOAD_BATCH_SIZE = 8
-
-const frameUrl = (n: number): string =>
-  `${FRAME_BASE}${String(n).padStart(3, '0')}.png`
+const PRELOAD_BATCH_SIZE = 16
 
 // ── Module-level cache ─────────────────────────────────────────────────────────
 // Lives outside the component so it persists across remounts and HMR cycles.
 const frameCache = new Map<number, HTMLImageElement>()
 
-function loadFrame(n: number): Promise<HTMLImageElement> {
+function loadFrame(n: number, urls: string[]): Promise<HTMLImageElement> {
+  const url = urls[n - 1]
+  if (!url) return Promise.reject(new Error(`No URL for frame ${n}`))
   const hit = frameCache.get(n)
   if (hit) return Promise.resolve(hit)
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new window.Image()
+    if (n === 1) (img as any).fetchPriority = 'high'
     img.onload = () => { frameCache.set(n, img); resolve(img) }
     img.onerror = () => reject(new Error(`Frame ${n} failed to load`))
-    img.src = frameUrl(n)
+    img.src = url
   })
 }
 
@@ -30,12 +28,13 @@ async function preloadFrames(
   from: number,
   to: number,
   batchSize: number,
+  urls: string[],
   onFirstBatch?: () => void,
 ): Promise<void> {
   for (let i = from; i <= to; i += batchSize) {
     const end = Math.min(i + batchSize - 1, to)
     await Promise.allSettled(
-      Array.from({ length: end - i + 1 }, (_, j) => loadFrame(i + j)),
+      Array.from({ length: end - i + 1 }, (_, j) => loadFrame(i + j, urls)),
     )
     if (i === from) onFirstBatch?.()
   }
@@ -56,8 +55,8 @@ function drawFrameCover(
 }
 
 /** Map a [0, 1] scroll-progress to a 1-based frame index. */
-function progressToFrame(progress: number): number {
-  return Math.max(1, Math.min(FRAME_COUNT, Math.round(progress * (FRAME_COUNT - 1)) + 1))
+function progressToFrame(progress: number, frameCount: number): number {
+  return Math.max(1, Math.min(frameCount, Math.round(progress * (frameCount - 1)) + 1))
 }
 
 /** Compute [0, 1] scroll progress of a container element. */
@@ -100,8 +99,21 @@ export const ScrollCanvas = (): JSX.Element => {
   const canvasRef    = useRef<HTMLCanvasElement>(null)
   const pendingRaf   = useRef(false)
   const lastFrame    = useRef(-1)
+  const frameUrls    = useRef<string[]>([])
+  const [frameCount, setFrameCount] = useState(0)
   const [ready, setReady] = useState(false)
   const prefersReducedMotion = useReducedMotion()
+
+  // ── Fetch dynamic frame list from the API ────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/video-frames')
+      .then((r) => r.json())
+      .then(({ frames }: { frames: string[] }) => {
+        frameUrls.current = frames
+        setFrameCount(frames.length)
+      })
+      .catch(() => {}) // fallback: frameCount stays 0 → skeleton shown indefinitely
+  }, [])
 
   // ── Canvas sizing: DPR-aware, always fills the viewport (mobile-safe) ────────
   const syncCanvasSize = useCallback((): void => {
@@ -131,9 +143,19 @@ export const ScrollCanvas = (): JSX.Element => {
 
   // ── Batch-preload all frames ─────────────────────────────────────────────────
   useEffect(() => {
-    if (prefersReducedMotion) return
-    preloadFrames(1, FRAME_COUNT, PRELOAD_BATCH_SIZE, () => setReady(true))
-  }, [prefersReducedMotion])
+    if (prefersReducedMotion || frameCount === 0) return
+    const urls = frameUrls.current
+    // Priority-load first batch synchronously before marking ready
+    loadFrame(1, urls)
+      .then(() => {
+        setReady(true)
+        preloadFrames(2, frameCount, PRELOAD_BATCH_SIZE, urls)
+      })
+      .catch(() => {
+        // If frame 1 fails, still attempt full preload
+        preloadFrames(1, frameCount, PRELOAD_BATCH_SIZE, urls, () => setReady(true))
+      })
+  }, [prefersReducedMotion, frameCount])
 
   // ── Draw a specific frame onto the canvas ────────────────────────────────────
   const drawFrame = useCallback((frameIndex: number): void => {
@@ -159,7 +181,7 @@ export const ScrollCanvas = (): JSX.Element => {
       orientation: 'vertical',
       smoothWheel: true,
       wheelMultiplier: 0.8,
-      touchMultiplier: 1.5,
+      touchMultiplier: 1.2,
     })
 
     const onScroll = (): void => {
@@ -168,7 +190,7 @@ export const ScrollCanvas = (): JSX.Element => {
       requestAnimationFrame(() => {
         pendingRaf.current = false
         const progress = buildScrollProgress(container)
-        const frameIndex = progressToFrame(progress)
+        const frameIndex = progressToFrame(progress, frameCount)
         if (frameIndex !== lastFrame.current) drawFrame(frameIndex)
       })
     }
@@ -188,34 +210,34 @@ export const ScrollCanvas = (): JSX.Element => {
       lenis.off('scroll', onScroll)
       lenis.destroy()
     }
-  }, [prefersReducedMotion, ready, drawFrame])
+  }, [prefersReducedMotion, ready, frameCount, drawFrame])
 
   if (prefersReducedMotion) return <StaticGradientFallback />
 
   return (
-    <div ref={containerRef} className="relative w-full h-[300vh]">
+    <div ref={containerRef} className="relative w-full h-[300vh] overflow-x-hidden">
       {/*
        * sticky wrapper – full viewport, no horizontal overflow.
-       * `width: 100vw; left: 0` ensures it always spans edge-to-edge on mobile
-       * even when a parent has padding or a scroll-container offset.
+       * `w-full` (100%) keeps it within the parent's boundary so it never
+       * causes horizontal scrolling on mobile browsers. `100vw` was removed
+       * because it includes the scrollbar gutter and overflows on mobile.
        */}
       <div
-        className="sticky top-0 h-screen bg-black overflow-hidden"
-        style={{ width: '100vw' }}
+        className="sticky top-0 h-screen w-full bg-black overflow-hidden"
       >
         {!ready && <CanvasSkeleton />}
         {/*
          * The canvas backing store is sized in physical pixels (DPR-aware).
-         * CSS width/height pin it to the full viewport so it is always
-         * edge-to-edge on every device – including mobile.
+         * CSS width/height use 100% so it always fills the sticky wrapper
+         * without overflowing the mobile viewport.
          */}
         <canvas
           ref={canvasRef}
           style={{
             position: 'absolute',
             inset: 0,
-            width: '100vw',
-            height: '100vh',
+            width: '100%',
+            height: '100%',
             opacity: ready ? 0.4 : 0,
             transform: 'translateZ(0)',
             willChange: 'transform',
