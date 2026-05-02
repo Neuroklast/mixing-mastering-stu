@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Play, Pause, SkipBack, SkipForward } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
 import { SpectrumAnalyser } from '@/components/features/SpectrumAnalyser'
@@ -121,8 +120,8 @@ const MasteringPlayerInner = ({
   if (engine.status === 'loading') return <LoadingSkeleton />
   if (engine.status === 'error') return <ErrorDisplay message={engine.errorMessage} />
 
-  const labelBefore = track.labelBefore ?? 'MIXDOWN'
-  const labelAfter  = track.labelAfter  ?? 'MASTER'
+  const labelBefore = track.labelBefore ?? 'DEMO'
+  const labelAfter  = track.labelAfter  ?? 'FINAL'
 
   // LUFS matrix
   const mixLufs    = engine.lufsIntegratedBefore
@@ -238,11 +237,11 @@ const MasteringPlayerInner = ({
           {/* LUFS readout matrix */}
           <div className="flex flex-wrap gap-x-5 gap-y-1 mb-4 font-mono text-xs">
             <span className="text-muted-foreground uppercase tracking-wider">
-              Mix:{' '}
+              Demo:{' '}
               <span className="text-white/70">{formatLufs(mixLufs)} LUFS</span>
             </span>
             <span className="text-muted-foreground uppercase tracking-wider">
-              Master:{' '}
+              Final:{' '}
               <span className="text-white/70">{formatLufs(masterLufs)} LUFS</span>
             </span>
             {lufsDelta !== null && (
@@ -319,21 +318,6 @@ const MasteringPlayerInner = ({
             </div>
           </div>
 
-          {/* Metadata badges */}
-          {(track.genre || track.equipment) && (
-            <div className="flex gap-2 flex-wrap mt-4 pt-4 border-t border-white/[0.08]">
-              {track.genre && (
-                <Badge variant="outline" className="font-mono text-xs border-white/15 text-white/40">
-                  {track.genre}
-                </Badge>
-              )}
-              {track.equipment && (
-                <Badge variant="outline" className="font-mono text-xs border-white/15 text-white/40">
-                  {track.equipment}
-                </Badge>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </section>

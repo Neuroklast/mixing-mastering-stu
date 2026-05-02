@@ -156,8 +156,8 @@ export const MultibandMeter = ({ correlation, className }: MultibandMeterProps):
       <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-1 text-center leading-none">
         Phase
       </p>
-      <div className="flex-1 min-h-0">
-        <canvas ref={canvasRef} className="w-full h-full block" />
+      <div className="rounded overflow-hidden bg-secondary/30">
+        <canvas ref={canvasRef} className="w-full h-[180px] block" />
       </div>
     </div>
   )
