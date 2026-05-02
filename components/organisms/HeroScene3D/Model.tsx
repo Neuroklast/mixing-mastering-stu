@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
@@ -55,7 +55,10 @@ export function Model({ config }: ModelProps): JSX.Element {
   })
 
   // Responsive scale: shrink proportionally on narrow viewports
-  const scale = Math.min(1, viewport.width / 6) * 0.6
+  const scale = useMemo(
+    () => Math.min(1, viewport.width / 6) * 0.3,
+    [viewport.width],
+  )
 
   return (
     <group ref={groupRef}>
