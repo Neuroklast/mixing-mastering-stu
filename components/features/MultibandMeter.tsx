@@ -156,39 +156,31 @@ export const MultibandMeter = ({ correlation, className }: MultibandMeterProps):
   }, [])  // run once on mount
 
   return (
-    <div className={cn('flex flex-col', className)}>
-      {/* Label + help */}
-      <div className="flex items-center justify-center gap-1 mb-1">
+    <div className={cn('flex flex-col gap-3', className)}>
+      {/* Label + help – fixed height to align with SpectrumAnalyser controls row */}
+      <div className="h-11 flex items-center justify-center gap-1">
         <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground leading-none">
           Phase
         </p>
-        {/* Desktop tooltip */}
+        {/* Tooltip – overlays on desktop (hover) and mobile (click), never shifts layout */}
         <TooltipProvider>
-          <Tooltip>
+          <Tooltip
+            open={helpOpen || undefined}
+            onOpenChange={(v) => { if (!v) setHelpOpen(false) }}
+          >
             <TooltipTrigger asChild>
-              <span className="hidden md:inline-flex" aria-label={TOOLTIP_PHASE_METER}>
+              <button
+                className="flex items-center justify-center"
+                aria-label={TOOLTIP_PHASE_METER}
+                onClick={() => setHelpOpen((v) => !v)}
+              >
                 <Question className="w-2.5 h-2.5 text-muted-foreground/40 cursor-help" />
-              </span>
+              </button>
             </TooltipTrigger>
             <TooltipContent side="top">{TOOLTIP_PHASE_METER}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        {/* Mobile help button */}
-        <button
-          className="md:hidden flex items-center justify-center"
-          aria-label="Phase meter info"
-          onClick={() => setHelpOpen((v) => !v)}
-        >
-          <Question className="w-2.5 h-2.5 text-muted-foreground/40" />
-        </button>
       </div>
-
-      {/* Mobile help text */}
-      {helpOpen && (
-        <div className="md:hidden mb-1 rounded border border-white/10 bg-secondary/80 px-2 py-1.5 text-[10px] font-mono text-muted-foreground leading-relaxed">
-          {TOOLTIP_PHASE_METER}
-        </div>
-      )}
 
       <div className="rounded overflow-hidden bg-secondary/30">
         <canvas ref={canvasRef} className="w-full h-[180px] block" />

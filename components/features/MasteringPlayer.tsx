@@ -150,7 +150,7 @@ const MasteringPlayerInner = ({
       {/* Section heading */}
       <div className="mb-10">
         <h2 className="text-4xl md:text-5xl font-bold tracking-tight font-mono uppercase inline-block">
-          EXAMPLE SOUNDS
+          EXAMPLES
         </h2>
         <div className="h-0.5 w-16 bg-accent mt-2" />
       </div>

@@ -24,7 +24,7 @@ export const SpectrumAnalyser = ({
   className,
 }: SpectrumAnalyserProps): JSX.Element => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [helpOpen, setHelpOpen] = useState(false)
+  const [tooltipOpen, setTooltipOpen] = useState(false)
 
   const { viewMode, setViewMode } =
     useSpectrumAnalyser({ analyserBefore, analyserAfter, canvasRef, activeTrack })
@@ -59,11 +59,11 @@ export const SpectrumAnalyser = ({
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Controls row – fixed height so canvas aligns with Phase meter */}
+      <div className="h-11 flex items-center gap-3">
         {/* View selector */}
         <div
-          className="flex rounded overflow-hidden border border-border"
+          className="flex h-full rounded overflow-hidden border border-border"
           role="group"
           aria-label="Spectrum view"
         >
@@ -72,7 +72,7 @@ export const SpectrumAnalyser = ({
               key={key}
               onClick={() => setViewMode(key)}
               className={cn(
-                'px-3 py-1 min-h-[44px] font-mono text-xs uppercase tracking-wider transition-colors',
+                'px-3 h-full font-mono text-xs uppercase tracking-wider transition-colors',
                 viewMode === key
                   ? 'bg-accent text-white'
                   : 'bg-transparent text-muted-foreground hover:text-accent',
@@ -83,32 +83,25 @@ export const SpectrumAnalyser = ({
           ))}
         </div>
 
-        {/* Desktop tooltip (Radix) + mobile help button */}
+        {/* Tooltip – overlays on desktop (hover) and mobile (click), never shifts layout */}
         <TooltipProvider>
-          <Tooltip>
+          <Tooltip
+            open={tooltipOpen || undefined}
+            onOpenChange={(v) => { if (!v) setTooltipOpen(false) }}
+          >
             <TooltipTrigger asChild>
-              <span className="hidden md:inline-flex items-center" aria-label={TOOLTIP_SPECTRUM_CURVE}>
+              <button
+                className="flex items-center justify-center"
+                aria-label={TOOLTIP_SPECTRUM_CURVE}
+                onClick={() => setTooltipOpen((v) => !v)}
+              >
                 <Question className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
-              </span>
+              </button>
             </TooltipTrigger>
             <TooltipContent side="top">{TOOLTIP_SPECTRUM_CURVE}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <button
-          className="md:hidden flex items-center justify-center w-6 h-6 rounded-full border border-white/20 text-muted-foreground/50"
-          aria-label="Spectrum analyser info"
-          onClick={() => setHelpOpen((v) => !v)}
-        >
-          <Question className="w-3.5 h-3.5" />
-        </button>
       </div>
-
-      {/* Mobile help panel */}
-      {helpOpen && (
-        <div className="md:hidden rounded border border-white/10 bg-secondary/80 px-3 py-2 text-[11px] font-mono text-muted-foreground leading-relaxed">
-          {TOOLTIP_SPECTRUM_CURVE}
-        </div>
-      )}
 
       {/* Canvas */}
       <div
