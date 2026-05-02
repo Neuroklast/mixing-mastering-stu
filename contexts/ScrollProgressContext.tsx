@@ -1,0 +1,37 @@
+'use client'
+
+import { createContext, useContext, useEffect, useRef } from 'react'
+
+interface ScrollProgressContextValue {
+  /** Mutable ref holding page scroll progress [0, 1]. Read in useFrame without causing re-renders. */
+  progressRef: React.MutableRefObject<number>
+}
+
+const ScrollProgressContext = createContext<ScrollProgressContextValue | null>(null)
+
+export function ScrollProgressProvider({ children }: { children: React.ReactNode }): JSX.Element {
+  const progressRef = useRef(0)
+
+  useEffect(() => {
+    const update = (): void => {
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      progressRef.current = max > 0 ? window.scrollY / max : 0
+    }
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    return () => window.removeEventListener('scroll', update)
+  }, [])
+
+  return (
+    <ScrollProgressContext.Provider value={{ progressRef }}>
+      {children}
+    </ScrollProgressContext.Provider>
+  )
+}
+
+/** Returns the scroll-progress ref for use in animation loops (e.g. useFrame). */
+export function useScrollProgressRef(): React.MutableRefObject<number> {
+  const ctx = useContext(ScrollProgressContext)
+  if (!ctx) throw new Error('useScrollProgressRef must be used inside <ScrollProgressProvider>')
+  return ctx.progressRef
+}
