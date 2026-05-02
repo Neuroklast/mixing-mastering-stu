@@ -11,17 +11,6 @@ export interface AudioTrack {
 
 export type PlayerStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'switching' | 'error'
 
-// ─── Loudness Penalty Strategy Pattern ───────────────────────────────────────
-
-export const PENALTY_PROFILES = {
-  spotify: { label: 'Spotify', targetLufs: -14 },
-  youtube: { label: 'YouTube', targetLufs: -14 },
-  apple:   { label: 'Apple',   targetLufs: -16 },
-  club:    { label: 'Club',    targetLufs: null }, // No penalty – full dynamic range
-} as const
-
-export type PlatformKey = keyof typeof PENALTY_PROFILES
-
 // ─── Multiband correlation helpers ───────────────────────────────────────────
 
 interface CorrBandPair {
@@ -78,10 +67,6 @@ export interface AudioEngineState {
   analyserAfter: AnalyserNode | null
   /** Phase correlation per frequency band (null until playback starts) */
   multibandCorrelation: { low: number; mid: number; high: number } | null
-  /** Currently selected loudness penalty platform */
-  activePlatform: PlatformKey | null
-  /** Gain reduction in dB applied by the selected platform (-x.x), or null when no platform active */
-  penaltyDb: number | null
 }
 
 interface AudioEngineTracks {
@@ -98,7 +83,6 @@ type AudioEngineControls = {
   pause: () => void
   seek: (time: number) => void
   switchTrack: (track: 'before' | 'after') => void
-  setPlatform: (key: PlatformKey | null) => void
 }
 
 let sharedAudioContext: AudioContext | null = null
@@ -155,14 +139,12 @@ export function useAudioEngine(
   const [analyserBefore, setAnalyserBefore] = useState<AnalyserNode | null>(null)
   const [analyserAfter, setAnalyserAfter] = useState<AnalyserNode | null>(null)
   const [multibandCorrelation, setMultibandCorrelation] = useState<{ low: number; mid: number; high: number } | null>(null)
-  const [activePlatform, setActivePlatform] = useState<PlatformKey | null>(null)
 
   // ── Refs (audio graph) ──
   const analyserRef = useRef<AnalyserNode | null>(null)
   const analyserBeforeRef = useRef<AnalyserNode | null>(null)
   const analyserAfterRef = useRef<AnalyserNode | null>(null)
   const gainNodesRef = useRef<Record<'before' | 'after', GainNode> | null>(null)
-  const penaltyGainRef = useRef<GainNode | null>(null)
   const sourceNodesRef = useRef<Map<HTMLAudioElement, MediaElementAudioSourceNode>>(new Map())
   const audioElementsRef = useRef<Record<'before' | 'after', HTMLAudioElement> | null>(null)
   const activeTrackRef = useRef<'before' | 'after'>('before')
@@ -185,13 +167,8 @@ export function useAudioEngine(
       const analyser = ctx.createAnalyser()
       analyser.fftSize = isMobile ? 512 : 2048
       analyser.smoothingTimeConstant = 0.8
-      // Insert penalty gain node between analyser and destination
-      const penaltyGain = ctx.createGain()
-      penaltyGain.gain.value = 1
-      analyser.connect(penaltyGain)
-      penaltyGain.connect(ctx.destination)
+      analyser.connect(ctx.destination)
       analyserRef.current = analyser
-      penaltyGainRef.current = penaltyGain
     }
     if (!gainNodesRef.current) {
       const gainBefore = ctx.createGain()
@@ -576,37 +553,6 @@ export function useAudioEngine(
     [connectAudioElement, crossfade, getOrCreateGraph, updateStatus],
   )
 
-  // ── Loudness Penalty control ──
-  const setPlatform = useCallback((key: PlatformKey | null): void => {
-    setActivePlatform(key)
-  }, [])
-
-  // Apply penalty gain whenever platform or lufsIntegrated changes
-  useEffect(() => {
-    const penaltyGain = penaltyGainRef.current
-    if (!penaltyGain) return
-    if (!activePlatform || activePlatform === 'club') {
-      penaltyGain.gain.value = 1
-      return
-    }
-    const profile = PENALTY_PROFILES[activePlatform]
-    if (profile.targetLufs === null || lufsIntegrated === null) {
-      penaltyGain.gain.value = 1
-      return
-    }
-    const db = profile.targetLufs - lufsIntegrated
-    // Only attenuate (never amplify) to prevent clipping
-    penaltyGain.gain.value = Math.pow(10, Math.min(0, db) / 20)
-  }, [activePlatform, lufsIntegrated])
-
-  // Derived penalty display value
-  const penaltyDb: number | null = (() => {
-    if (!activePlatform || activePlatform === 'club') return null
-    const profile = PENALTY_PROFILES[activePlatform]
-    if (profile.targetLufs === null || lufsIntegrated === null) return null
-    return profile.targetLufs - lufsIntegrated
-  })()
-
   return {
     status,
     isPlaying: status === 'playing',
@@ -621,12 +567,9 @@ export function useAudioEngine(
     analyserBefore,
     analyserAfter,
     multibandCorrelation,
-    activePlatform,
-    penaltyDb,
     play,
     pause,
     seek,
     switchTrack,
-    setPlatform,
   }
 }

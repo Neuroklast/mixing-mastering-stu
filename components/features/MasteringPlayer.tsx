@@ -5,7 +5,7 @@ import { Play, Pause, SkipBack, SkipForward } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Slider } from '@/components/ui/slider'
-import { useAudioEngine, PENALTY_PROFILES, type PlatformKey } from '@/hooks/useAudioEngine'
+import { useAudioEngine } from '@/hooks/useAudioEngine'
 import { SpectrumAnalyser } from '@/components/features/SpectrumAnalyser'
 import { MultibandMeter } from '@/components/features/MultibandMeter'
 import { showcaseTrackSchema, type ShowcaseTrack } from '@/lib/schemas/showcase'
@@ -86,8 +86,6 @@ export const MasteringPlayer = ({
     />
   )
 }
-
-const PLATFORM_ORDER: PlatformKey[] = ['spotify', 'youtube', 'apple', 'club']
 
 const MasteringPlayerInner = ({
   track,
@@ -208,45 +206,6 @@ const MasteringPlayerInner = ({
                   {t === 'before' ? labelBefore : labelAfter}
                 </button>
               ))}
-            </div>
-
-            {/* Right – Loudness penalty platform buttons */}
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-              <div className="flex gap-1">
-                {PLATFORM_ORDER.map((key) => {
-                  const profile  = PENALTY_PROFILES[key]
-                  const isActive = engine.activePlatform === key
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => engine.setPlatform(isActive ? null : key)}
-                      title={
-                        profile.targetLufs !== null
-                          ? `${profile.label}: target ${profile.targetLufs} LUFS`
-                          : `${profile.label}: no penalty`
-                      }
-                      className={cn(
-                        'px-2.5 py-1.5 min-h-[36px] rounded font-mono text-[10px] font-bold uppercase tracking-wider border transition-all duration-200',
-                        isActive
-                          ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white glow-accent-strong'
-                          : 'bg-transparent border-white/15 text-white/40 hover:border-white/35 hover:text-white/70',
-                      )}
-                    >
-                      {profile.label}
-                    </button>
-                  )
-                })}
-              </div>
-              {/* Penalty readout */}
-              <div className="h-4 font-mono text-[10px] text-right">
-                {engine.penaltyDb !== null ? (
-                  <span className="text-[var(--color-accent)]">
-                    Penalty: {engine.penaltyDb.toFixed(1)} dB
-                  </span>
-                ) : engine.activePlatform === 'club' ? (
-                  <span className="text-emerald-400">Full Dynamic Range</span>
-                ) : null}
-              </div>
             </div>
           </div>
         </div>
