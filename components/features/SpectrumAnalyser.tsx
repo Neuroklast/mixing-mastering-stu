@@ -8,6 +8,8 @@ interface SpectrumAnalyserProps {
   analyserBefore: AnalyserNode | null
   analyserAfter: AnalyserNode | null
   activeTrack: 'before' | 'after'
+  /** When true the canvas wrapper gets a subtle green neon glow */
+  isMasterActive?: boolean
   className?: string
 }
 
@@ -15,6 +17,7 @@ export const SpectrumAnalyser = ({
   analyserBefore,
   analyserAfter,
   activeTrack,
+  isMasterActive = false,
   className,
 }: SpectrumAnalyserProps): JSX.Element => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -77,7 +80,10 @@ export const SpectrumAnalyser = ({
 
       {/* Canvas */}
       <div
-        className="rounded overflow-hidden bg-secondary/30"
+        className={cn(
+          'rounded overflow-hidden bg-secondary/30 transition-all duration-500',
+          isMasterActive && 'shadow-[0_0_20px_rgba(74,222,128,0.15),inset_0_0_20px_rgba(74,222,128,0.04)]',
+        )}
         style={{ transform: 'translateZ(0)', willChange: 'transform' }}
       >
         <canvas ref={canvasRef} className="w-full h-[180px] block" />

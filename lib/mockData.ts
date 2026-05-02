@@ -12,6 +12,21 @@ export const MOCK_SHOWCASE_TRACK: ShowcaseTrack = {
   afterUrl: '/demo/incinerate-master.wav',
 }
 
+// Multiple tracks for playlist navigation in dev mode
+export const MOCK_SHOWCASE_TRACKS: ShowcaseTrack[] = [
+  MOCK_SHOWCASE_TRACK,
+  {
+    title: 'Kernel Breaker – FRAGMENT',
+    artist: 'KERNEL BREAKER',
+    genre: 'Industrial Metal',
+    equipment: 'FL Studio · PMC result6',
+    beforeUrl: '/demo/incinerate-mixdown.wav',
+    afterUrl: '/demo/incinerate-master.wav',
+    labelBefore: 'RAW MIX',
+    labelAfter: 'MASTER',
+  },
+]
+
 export const MOCK_CREDITS: Credit[] = [
   { id: '1', name: 'Bullet For My Valentine', role: 'Mix & Master', year: 2022, featured: true },
   { id: '2', name: 'Fear Factory', role: 'Mix & Master', year: 2021, featured: true },
