@@ -56,6 +56,8 @@ export default function RootLayout({
         <LenisProvider>
           {children}
         </LenisProvider>
+        {/* CRT screen effect: corner vignette + scanline boost + subtle flicker */}
+        <div className="crt-overlay" aria-hidden="true" />
       </body>
     </html>
   )
