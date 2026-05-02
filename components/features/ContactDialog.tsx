@@ -4,8 +4,12 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
+  BaseModal,
+  BaseModalContent,
+  BaseModalHeader,
+  BaseModalTitle,
+  BaseModalDescription,
+} from '@/components/ui/base-modal'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -94,51 +98,56 @@ export const ContactDialog = ({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold tracking-tight uppercase font-heading">
-            Get Started
-          </DialogTitle>
-          <DialogDescription className="font-mono">
+    <BaseModal.Root open={open} onOpenChange={onOpenChange}>
+      <BaseModalContent variant="center" className="sm:max-w-[600px]" aria-describedby="contact-modal-desc">
+        <BaseModalHeader>
+          <BaseModalTitle>Get Started</BaseModalTitle>
+          <BaseModalDescription id="contact-modal-desc">
             Tell us about your project and we&apos;ll send a custom quote.
-          </DialogDescription>
-        </DialogHeader>
+          </BaseModalDescription>
+        </BaseModalHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="clientName" className="font-mono uppercase text-xs tracking-wider">
-                Name *
+              <Label htmlFor="contactName" className="font-mono uppercase text-xs tracking-wider">
+                Name <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
               </Label>
               <Input
-                id="clientName"
+                id="contactName"
                 value={form.clientName}
                 onChange={(e) => updateField('clientName')(e.target.value)}
                 placeholder="Your name"
                 required
+                autoComplete="name"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="clientEmail" className="font-mono uppercase text-xs tracking-wider">
-                Email *
+              <Label htmlFor="contactEmail" className="font-mono uppercase text-xs tracking-wider">
+                Email <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
               </Label>
               <Input
-                id="clientEmail"
+                id="contactEmail"
                 type="email"
                 value={form.clientEmail}
                 onChange={(e) => updateField('clientEmail')(e.target.value)}
                 placeholder="your@email.com"
                 required
+                autoComplete="email"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="font-mono uppercase text-xs tracking-wider">Service *</Label>
+              <Label className="font-mono uppercase text-xs tracking-wider">
+                Service <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
+              </Label>
               <Select value={form.serviceType} onValueChange={updateField('serviceType')}>
-                <SelectTrigger><SelectValue placeholder="Select service" /></SelectTrigger>
+                <SelectTrigger aria-label="Select service"><SelectValue placeholder="Select service" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="mixing">Mixing – $200</SelectItem>
                   <SelectItem value="mastering">Mastering – $100</SelectItem>
@@ -147,11 +156,11 @@ export const ContactDialog = ({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="genre" className="font-mono uppercase text-xs tracking-wider">
+              <Label htmlFor="contactGenre" className="font-mono uppercase text-xs tracking-wider">
                 Genre
               </Label>
               <Input
-                id="genre"
+                id="contactGenre"
                 value={form.genre}
                 onChange={(e) => updateField('genre')(e.target.value)}
                 placeholder="e.g. Hip-Hop, Rock, Electronic"
@@ -160,11 +169,11 @@ export const ContactDialog = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes" className="font-mono uppercase text-xs tracking-wider">
+            <Label htmlFor="contactNotes" className="font-mono uppercase text-xs tracking-wider">
               Additional Details
             </Label>
             <Textarea
-              id="notes"
+              id="contactNotes"
               value={form.notes}
               onChange={(e) => updateField('notes')(e.target.value)}
               placeholder="Reference tracks, specific requirements, timeline..."
@@ -173,7 +182,7 @@ export const ContactDialog = ({
             />
           </div>
 
-          <div className="flex gap-3 justify-end pt-2">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}
               className="font-mono uppercase tracking-wider">
               Cancel
@@ -184,7 +193,7 @@ export const ContactDialog = ({
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </BaseModalContent>
+    </BaseModal.Root>
   )
 }

@@ -125,6 +125,16 @@ export function useAudioEngine(
   const metadataLoadedRef = useRef(0)
   // URLs used during the initial mount (used to skip the URL-change effect on first render)
   const initialUrlsRef = useRef({ before: tracks.before.url, after: tracks.after.url })
+  /**
+   * Monotonically increasing generation counter.
+   * Incremented on every new load cycle (mount + each URL change).
+   * Each loadedmetadata callback captures the current generation at scheduling
+   * time and ignores the call if the generation has since changed.  This
+   * prevents stale callbacks from older (possibly already-disposed) load
+   * cycles from corrupting the state machine – especially important when the
+   * user skips tracks rapidly.
+   */
+  const loadGenerationRef = useRef(0)
 
   // Helper: keep statusRef in sync
   const updateStatus = useCallback((s: PlayerStatus) => {
@@ -255,6 +265,9 @@ export function useAudioEngine(
 
     updateStatus('loading')
     metadataLoadedRef.current = 0
+    // Assign the initial generation for this load cycle
+    loadGenerationRef.current++
+    const generation = loadGenerationRef.current
 
     const elements: Record<'before' | 'after', HTMLAudioElement> = {
       before: new Audio(tracks.before.url),
@@ -263,21 +276,12 @@ export function useAudioEngine(
     elements.before.preload = 'metadata'
     elements.after.preload = 'metadata'
 
-    // Jump to startMarker on first load
-    if (startMarker > 0) {
-      ;(['before', 'after'] as const).forEach((v) => {
-        const seekOnce = (): void => {
-          elements[v].currentTime = startMarker
-          elements[v].removeEventListener('loadedmetadata', seekOnce)
-        }
-        elements[v].addEventListener('loadedmetadata', seekOnce)
-      })
-    }
-
     audioElementsRef.current = elements
     sourceNodesRef.current = new Map()
 
     const onMetadata = (v: 'before' | 'after') => () => {
+      // Ignore stale callbacks from a previous load cycle
+      if (loadGenerationRef.current !== generation) return
       if (v === 'before') setDuration(elements[v].duration)
       metadataLoadedRef.current++
       if (metadataLoadedRef.current >= 2) updateStatus('ready')
@@ -305,15 +309,47 @@ export function useAudioEngine(
       setErrorMessage(`Failed to load ${v} audio file. Check the URL is accessible.`)
     }
 
+    const metadataCbs = {
+      before: onMetadata('before'),
+      after: onMetadata('after'),
+    }
+    const timeUpdateCbs = {
+      before: onTimeUpdate('before'),
+      after: onTimeUpdate('after'),
+    }
+    const endedCbs = {
+      before: onEnded('before'),
+      after: onEnded('after'),
+    }
+    const errorCbs = {
+      before: onError('before'),
+      after: onError('after'),
+    }
+
     ;(['before', 'after'] as const).forEach((v) => {
-      elements[v].addEventListener('loadedmetadata', onMetadata(v))
-      elements[v].addEventListener('timeupdate', onTimeUpdate(v))
-      elements[v].addEventListener('ended', onEnded(v))
-      elements[v].addEventListener('error', onError(v))
+      elements[v].addEventListener('loadedmetadata', metadataCbs[v])
+      elements[v].addEventListener('timeupdate', timeUpdateCbs[v])
+      elements[v].addEventListener('ended', endedCbs[v])
+      elements[v].addEventListener('error', errorCbs[v])
     })
+
+    // Jump to startMarker on first load (add BEFORE loading the audio)
+    if (startMarker > 0) {
+      ;(['before', 'after'] as const).forEach((v) => {
+        const seekOnce = (): void => {
+          elements[v].currentTime = startMarker
+          elements[v].removeEventListener('loadedmetadata', seekOnce)
+        }
+        elements[v].addEventListener('loadedmetadata', seekOnce)
+      })
+    }
 
     return () => {
       ;(['before', 'after'] as const).forEach((v) => {
+        elements[v].removeEventListener('loadedmetadata', metadataCbs[v])
+        elements[v].removeEventListener('timeupdate', timeUpdateCbs[v])
+        elements[v].removeEventListener('ended', endedCbs[v])
+        elements[v].removeEventListener('error', errorCbs[v])
         elements[v].pause()
         elements[v].src = ''
       })
@@ -344,6 +380,8 @@ export function useAudioEngine(
     setFrequencyData(null)
     setLufsShortTerm(null)
     setMultibandCorrelation(null)
+    setLufsIntegrated(null)
+    setLufsIntegratedBefore(null)
 
     // Reset playback state
     updateStatus('loading')
@@ -352,16 +390,37 @@ export function useAudioEngine(
     setActiveTrack('before')
     setCurrentTime(startMarker)
 
+    // Increment generation so stale loadedmetadata callbacks from the previous
+    // cycle (including any still-live mount-effect listeners) are ignored.
+    loadGenerationRef.current++
+    const generation = loadGenerationRef.current
+
     // Dispose old StereoFieldAnalyzers (new audio elements will trigger re-attach)
     sfaRef.current.before?.dispose()
     sfaRef.current.after?.dispose()
     sfaRef.current = {}
 
+    const onMetadata = (v: 'before' | 'after') => (): void => {
+      // Ignore stale callbacks from a previous generation
+      if (loadGenerationRef.current !== generation) return
+      if (v === 'before') setDuration(elements[v].duration)
+      metadataLoadedRef.current++
+      if (metadataLoadedRef.current >= 2) updateStatus('ready')
+    }
+
+    const beforeCb = onMetadata('before')
+    const afterCb  = onMetadata('after')
+
+    // Add one-shot listeners BEFORE calling .load() to avoid missing
+    // the event when the browser serves the file from cache.
+    elements.before.addEventListener('loadedmetadata', beforeCb, { once: true })
+    elements.after.addEventListener('loadedmetadata', afterCb, { once: true })
+
     // Update URLs on existing audio elements (MediaElementAudioSourceNode stays connected)
     elements.before.src = tracks.before.url
-    elements.after.src = tracks.after.url
+    elements.after.src  = tracks.after.url
     elements.before.preload = 'metadata'
-    elements.after.preload = 'metadata'
+    elements.after.preload  = 'metadata'
     elements.before.load()
     elements.after.load()
 
@@ -375,50 +434,46 @@ export function useAudioEngine(
       })
     }
 
-    const onMetadata = (v: 'before' | 'after') => (): void => {
-      if (v === 'before') setDuration(elements[v].duration)
-      metadataLoadedRef.current++
-      if (metadataLoadedRef.current >= 2) updateStatus('ready')
+    return () => {
+      // Remove listeners if they haven't fired yet (e.g. rapid skip before load completes)
+      elements.before.removeEventListener('loadedmetadata', beforeCb)
+      elements.after.removeEventListener('loadedmetadata', afterCb)
     }
-
-    // These are one-shot listeners: we add them per URL-change cycle
-    elements.before.addEventListener('loadedmetadata', onMetadata('before'), { once: true })
-    elements.after.addEventListener('loadedmetadata', onMetadata('after'), { once: true })
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tracks.before.url, tracks.after.url])
 
-  // ── LUFS integrated (background computation on mount) ──
+  // ── LUFS integrated (background computation on URL change) ──
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const computeAfter = async (): Promise<void> => {
+
+    // Abort any in-flight fetch from a previous URL combination
+    const abortCtrl = new AbortController()
+    const { signal } = abortCtrl
+
+    const computeTrack = async (
+      url: string,
+      setter: (v: number | null) => void,
+    ): Promise<void> => {
       try {
         const ctx = new AudioContext()
-        const resp = await fetch(tracks.after.url)
+        const resp = await fetch(url, { signal })
         const ab = await resp.arrayBuffer()
+        if (signal.aborted) { await ctx.close(); return }
         const decoded = await ctx.decodeAudioData(ab)
         const lufs = computeIntegratedLufs(decoded.getChannelData(0))
-        setLufsIntegrated(isFinite(lufs) ? lufs : null)
+        setter(isFinite(lufs) ? lufs : null)
         await ctx.close()
-      } catch {
-        // silently ignore
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        // silently ignore other errors (network, decode)
       }
     }
-    const computeBefore = async (): Promise<void> => {
-      try {
-        const ctx = new AudioContext()
-        const resp = await fetch(tracks.before.url)
-        const ab = await resp.arrayBuffer()
-        const decoded = await ctx.decodeAudioData(ab)
-        const lufs = computeIntegratedLufs(decoded.getChannelData(0))
-        setLufsIntegratedBefore(isFinite(lufs) ? lufs : null)
-        await ctx.close()
-      } catch {
-        // silently ignore
-      }
-    }
-    void computeAfter()
-    void computeBefore()
+
+    void computeTrack(tracks.after.url, setLufsIntegrated)
+    void computeTrack(tracks.before.url, setLufsIntegratedBefore)
+
+    return () => { abortCtrl.abort() }
   }, [tracks.after.url, tracks.before.url])
 
   // ── One-time user-gesture listener to resume suspended AudioContext (Safari/iOS) ──
