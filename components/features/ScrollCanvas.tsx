@@ -19,6 +19,7 @@ function loadFrame(n: number, urls: string[]): Promise<HTMLImageElement> {
     if (n === 1) (img as any).fetchPriority = 'high'
     img.onload = () => { frameCache.set(n, img); resolve(img) }
     img.onerror = () => reject(new Error(`Frame ${n} failed to load`))
+    img.decoding = 'async'
     img.src = url
   })
 }
@@ -39,9 +40,12 @@ async function preloadFrames(
   }
 }
 
-function drawFrameCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement): void {
+// Use contain (Math.min) so the full 16:9 frame is always visible on any
+// screen aspect ratio (including portrait mobile) without cropping or distortion.
+// The black parent background fills the letterbox bars.
+function drawFrameContain(ctx: CanvasRenderingContext2D, img: HTMLImageElement): void {
   const { width: cw, height: ch } = ctx.canvas
-  const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight)
+  const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight)
   const sw = img.naturalWidth * scale
   const sh = img.naturalHeight * scale
   ctx.drawImage(img, (cw - sw) / 2, (ch - sh) / 2, sw, sh)
@@ -72,7 +76,7 @@ function useReducedMotion(): boolean {
 
 const StaticGradientFallback = (): JSX.Element => (
   <div className="relative w-full h-[300vh]">
-    <div className="sticky top-0 h-screen w-full overflow-hidden">
+    <div className="sticky top-0 h-dvh w-full overflow-hidden">
       <div className="w-full h-full bg-gradient-to-b from-black via-[#1a0808] to-background opacity-60" />
     </div>
   </div>
@@ -116,7 +120,7 @@ export const ScrollCanvas = (): JSX.Element => {
     if (frame > 0) {
       const img = frameCache.get(frame)
       const ctx = canvas.getContext('2d')
-      if (img && ctx) drawFrameCover(ctx, img)
+      if (img && ctx) drawFrameContain(ctx, img)
     }
   }, [])
 
@@ -147,7 +151,7 @@ export const ScrollCanvas = (): JSX.Element => {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    drawFrameCover(ctx, img)
+    drawFrameContain(ctx, img)
     lastFrame.current = frameIndex
   }, [])
 
@@ -197,7 +201,7 @@ export const ScrollCanvas = (): JSX.Element => {
 
   return (
     <div ref={containerRef} className="relative w-full h-[300vh]">
-      <div className="sticky top-0 h-screen w-full bg-black overflow-hidden">
+      <div className="sticky top-0 h-dvh w-full bg-black overflow-hidden">
         {!ready && <CanvasSkeleton />}
         <canvas
           ref={canvasRef}
