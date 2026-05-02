@@ -5,13 +5,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CaretLeft, CaretRight, X } from '@phosphor-icons/react'
 import * as Dialog from '@radix-ui/react-dialog'
-
-interface GalleryImage {
-  src: string
-  alt: string
-  width: number
-  height: number
-}
+import type { GalleryImage } from '@/types'
 
 interface GallerySectionProps {
   images: GalleryImage[]

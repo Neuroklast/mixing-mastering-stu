@@ -12,7 +12,13 @@ interface ModelProps {
   config: Pick<HeroSceneConfig, 'modelPath' | 'maxTiltRad' | 'dampingLambda'>
 }
 
-/** Minimum rotation delta (radians) below which damping is considered settled. */
+/**
+ * Minimum rotation delta (radians) below which damping is considered settled.
+ * 0.0001 rad ≈ 0.006° — imperceptible to the eye but prevents the render loop
+ * from running indefinitely on floating-point drift. Lowering this makes the
+ * settle-check run longer; raising it causes a visible snap at the end of
+ * the animation.
+ */
 const DAMP_SETTLE_THRESHOLD = 0.0001
 
 /**

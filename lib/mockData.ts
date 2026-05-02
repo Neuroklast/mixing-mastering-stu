@@ -105,18 +105,15 @@ export const DEMO_REVIEWS: Review[] = [
   },
 ]
 
+import type { GalleryImage } from '@/types'
+
 /**
  * Gallery images are loaded from the CMS in production.  The DEMO_GALLERY is
  * intentionally empty so that the GallerySection renders its empty-state UI
  * rather than serving external images that may carry ToS restrictions.
  * Add real images via the Payload CMS Gallery collection.
  */
-export const DEMO_GALLERY: {
-  src: string
-  alt: string
-  width: number
-  height: number
-}[] = []
+export const DEMO_GALLERY: GalleryImage[] = []
 
 export const MOCK_ORDERS: Order[] = [
   {

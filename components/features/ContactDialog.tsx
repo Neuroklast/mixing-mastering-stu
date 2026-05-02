@@ -68,6 +68,10 @@ export const ContactDialog = ({
     }
 
     const selectedService = getServiceById(form.serviceType)
+    if (!selectedService) {
+      toast.error('Invalid service selected. Please choose a valid option.')
+      return
+    }
 
     setIsSubmitting(true)
     try {
@@ -75,9 +79,9 @@ export const ContactDialog = ({
         clientName: form.clientName,
         clientEmail: form.clientEmail,
         serviceType: toServiceType(form.serviceType),
-        packageTier: selectedService?.packageTier ?? 'starter',
+        packageTier: selectedService.packageTier,
         notes: [form.genre && `Genre: ${form.genre}`, form.notes].filter(Boolean).join('\n') || undefined,
-        totalPrice: selectedService?.priceUsd ?? 0,
+        totalPrice: selectedService.priceUsd,
       })
 
       if (!result.success) {
