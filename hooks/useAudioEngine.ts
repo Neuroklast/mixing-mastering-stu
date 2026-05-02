@@ -123,8 +123,8 @@ export function useAudioEngine(
   })
   // Counts how many audio elements have fired loadedmetadata for the current load cycle
   const metadataLoadedRef = useRef(0)
-  // URLs used during the initial mount (used to skip the URL-change effect on first render)
-  const initialUrlsRef = useRef({ before: tracks.before.url, after: tracks.after.url })
+  // Becomes true after the first render so the URL-change effect skips only that one render
+  const hasMountedRef = useRef(false)
   /**
    * Monotonically increasing generation counter.
    * Incremented on every new load cycle (mount + each URL change).
@@ -365,10 +365,10 @@ export function useAudioEngine(
   // ── Background track switching: reload audio when URLs change without remount ──
   useEffect(() => {
     // Skip on initial render — the mount effect above handles first load
-    if (
-      tracks.before.url === initialUrlsRef.current.before &&
-      tracks.after.url === initialUrlsRef.current.after
-    ) return
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      return
+    }
 
     const elements = audioElementsRef.current
     if (!elements) return

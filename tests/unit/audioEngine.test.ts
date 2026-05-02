@@ -114,4 +114,28 @@ describe('computeIntegratedLufs', () => {
     const lufs = computeIntegratedLufs(signal)
     expect(lufs).toBeCloseTo(-3.70, 1)
   })
+
+  it('single-sample buffer returns a finite value for non-zero input', () => {
+    const single = new Float32Array([0.5])
+    const result = computeIntegratedLufs(single)
+    // meanSquare = 0.25; LUFS = -0.691 + 10*log10(0.25) ≈ -6.72
+    expect(isFinite(result)).toBe(true)
+    expect(result).toBeCloseTo(-6.72, 1)
+  })
+
+  it('alternating +1/-1 buffer (full-scale AC) yields same LUFS as DC +1', () => {
+    // Both have meanSquare = 1.0, so LUFS should be identical
+    const ac = new Float32Array(1024)
+    for (let i = 0; i < ac.length; i++) ac[i] = i % 2 === 0 ? 1 : -1
+    const dc = new Float32Array(1024).fill(1)
+    expect(computeIntegratedLufs(ac)).toBeCloseTo(computeIntegratedLufs(dc), 5)
+  })
+
+  it('very long buffer (65536 samples) still computes correctly', () => {
+    // Fill with 0.5 → meanSquare = 0.25 → LUFS ≈ -6.72
+    const long = new Float32Array(65536).fill(0.5)
+    const result = computeIntegratedLufs(long)
+    expect(isFinite(result)).toBe(true)
+    expect(result).toBeCloseTo(-6.72, 1)
+  })
 })
