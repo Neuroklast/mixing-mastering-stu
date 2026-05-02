@@ -17,7 +17,7 @@ function loadFrame(n: number, urls: string[]): Promise<HTMLImageElement> {
   if (hit) return Promise.resolve(hit)
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new window.Image()
-    if (n === 1) (img as HTMLImageElement & { fetchPriority: string }).fetchPriority = 'high'
+    if (n === 1) (img as any).fetchPriority = 'high'
     img.onload = () => { frameCache.set(n, img); resolve(img) }
     img.onerror = () => reject(new Error(`Frame ${n} failed to load`))
     img.src = url
@@ -215,29 +215,29 @@ export const ScrollCanvas = (): JSX.Element => {
   if (prefersReducedMotion) return <StaticGradientFallback />
 
   return (
-    <div ref={containerRef} className="relative w-full h-[300vh]">
+    <div ref={containerRef} className="relative w-full h-[300vh] overflow-x-hidden">
       {/*
        * sticky wrapper – full viewport, no horizontal overflow.
-       * `width: 100vw; left: 0` ensures it always spans edge-to-edge on mobile
-       * even when a parent has padding or a scroll-container offset.
+       * `w-full` (100%) keeps it within the parent's boundary so it never
+       * causes horizontal scrolling on mobile browsers. `100vw` was removed
+       * because it includes the scrollbar gutter and overflows on mobile.
        */}
       <div
-        className="sticky top-0 h-screen bg-black overflow-hidden"
-        style={{ width: '100vw' }}
+        className="sticky top-0 h-screen w-full bg-black overflow-hidden"
       >
         {!ready && <CanvasSkeleton />}
         {/*
          * The canvas backing store is sized in physical pixels (DPR-aware).
-         * CSS width/height pin it to the full viewport so it is always
-         * edge-to-edge on every device – including mobile.
+         * CSS width/height use 100% so it always fills the sticky wrapper
+         * without overflowing the mobile viewport.
          */}
         <canvas
           ref={canvasRef}
           style={{
             position: 'absolute',
             inset: 0,
-            width: '100vw',
-            height: '100vh',
+            width: '100%',
+            height: '100%',
             opacity: ready ? 0.4 : 0,
             transform: 'translateZ(0)',
             willChange: 'transform',
