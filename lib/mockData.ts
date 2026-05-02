@@ -105,26 +105,18 @@ export const DEMO_REVIEWS: Review[] = [
   },
 ]
 
-export const DEMO_GALLERY = [
-  {
-    src: 'https://images.unsplash.com/photo-1598653222000-6b7b7a552625?w=1200&q=80',
-    alt: 'Mixing console in the studio',
-    width: 1200,
-    height: 800,
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&q=80',
-    alt: 'DAW session on dual monitors',
-    width: 1200,
-    height: 800,
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=1200&q=80',
-    alt: 'Studio monitors and recording setup',
-    width: 1200,
-    height: 800,
-  },
-]
+/**
+ * Gallery images are loaded from the CMS in production.  The DEMO_GALLERY is
+ * intentionally empty so that the GallerySection renders its empty-state UI
+ * rather than serving external images that may carry ToS restrictions.
+ * Add real images via the Payload CMS Gallery collection.
+ */
+export const DEMO_GALLERY: {
+  src: string
+  alt: string
+  width: number
+  height: number
+}[] = []
 
 export const MOCK_ORDERS: Order[] = [
   {

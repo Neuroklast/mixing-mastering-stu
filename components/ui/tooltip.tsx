@@ -23,7 +23,7 @@ const TooltipContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        'z-[200] max-w-xs rounded border border-[var(--color-accent)] bg-zinc-950 px-3 py-1.5',
+        'z-[200] max-w-xs rounded border border-accent bg-surface px-3 py-1.5',
         'font-mono text-[11px] uppercase tracking-wider text-white',
         'shadow-[0_0_14px_rgba(217,72,72,0.45)] animate-in fade-in-0 zoom-in-95',
         'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',

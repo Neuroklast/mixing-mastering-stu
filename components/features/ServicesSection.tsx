@@ -3,76 +3,7 @@
 import { Check, X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-
-interface ServiceFeature {
-  name: string
-  included: boolean
-}
-
-interface ServicePackage {
-  id: string
-  name: string
-  tagline: string
-  displayPrice: string
-  turnaround: string
-  features: ServiceFeature[]
-  isBestValue?: boolean
-}
-
-const SERVICE_PACKAGES: ServicePackage[] = [
-  {
-    id: 'mixing',
-    name: 'Mixing',
-    tagline: 'Professional mix engineering',
-    displayPrice: '$200',
-    turnaround: '3-5 days',
-    features: [
-      { name: 'Stereo mix', included: true },
-      { name: 'Level balancing', included: true },
-      { name: 'EQ & compression', included: true },
-      { name: 'Effects & reverb', included: true },
-      { name: 'Automation', included: true },
-      { name: 'Up to 3 revisions', included: true },
-      { name: 'Mastering', included: false },
-      { name: 'Stems delivery', included: false },
-    ],
-  },
-  {
-    id: 'mastering',
-    name: 'Mastering',
-    tagline: 'Final polish for distribution',
-    displayPrice: '$100',
-    turnaround: '1-2 days',
-    features: [
-      { name: 'Stereo mastering', included: true },
-      { name: 'Loudness optimization', included: true },
-      { name: 'EQ & compression', included: true },
-      { name: 'Stereo enhancement', included: true },
-      { name: 'Format delivery (WAV/MP3)', included: true },
-      { name: 'Up to 2 revisions', included: true },
-      { name: 'Mixing included', included: false },
-      { name: 'Stem mastering', included: false },
-    ],
-  },
-  {
-    id: 'bundle',
-    name: 'Mix + Master',
-    tagline: 'Complete production package',
-    displayPrice: '$275',
-    turnaround: '4-7 days',
-    isBestValue: true,
-    features: [
-      { name: 'Full mixing service', included: true },
-      { name: 'Professional mastering', included: true },
-      { name: 'Priority turnaround', included: true },
-      { name: 'Unlimited revisions', included: true },
-      { name: 'Stems delivery', included: true },
-      { name: 'Multiple formats', included: true },
-      { name: 'Before/after comparison', included: true },
-      { name: 'Free consultation call', included: true },
-    ],
-  },
-]
+import { SERVICES_CONFIG, type ServicePackage } from '@/lib/services-config'
 
 interface ServiceCardProps {
   pkg: ServicePackage
@@ -133,7 +64,7 @@ interface ServicesSectionProps {
 
 export const ServicesSection = ({ onSelectPackage }: ServicesSectionProps): JSX.Element => (
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    {SERVICE_PACKAGES.map((pkg) => (
+    {SERVICES_CONFIG.map((pkg) => (
       <ServiceCard key={pkg.id} pkg={pkg} onSelect={onSelectPackage} />
     ))}
   </div>

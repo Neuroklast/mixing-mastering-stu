@@ -16,6 +16,9 @@
   --color-muted-foreground: #888888;
   --color-secondary: #1A1A1A;
   --color-secondary-foreground: #F5F5F5;
+  /** Deep surface – used for inset panels (rack unit, tooltips) that need to
+      sit darker than --color-background without leaving the token system. */
+  --color-surface: #0a0a0a;
   --color-primary: #D94848;
   --color-primary-foreground: #FFFFFF;
   --color-popover: #1E1E1E;
@@ -52,6 +55,7 @@
   --secondary-foreground: #F5F5F5;
   --muted: #2A2A2A;
   --muted-foreground: #888888;
+  --surface: #0a0a0a;
   --accent: #D94848;
   --accent-foreground: #FFFFFF;
   --destructive: #D94848;
@@ -145,8 +149,32 @@
       inset 0 0 20px rgba(217, 72, 72, 0.15);
   }
 
+  /** Accent text-shadow glow – mirrors glow-accent but as text-shadow so it
+      can be applied to inline text without affecting box layout. */
+  .text-glow-accent {
+    text-shadow:
+      0 0 20px rgba(217, 72, 72, 0.8),
+      0 0 40px rgba(217, 72, 72, 0.4);
+  }
+
   .font-heading {
     font-family: var(--font-heading);
+  }
+
+  /** Hero section decorative overlays */
+  .hero-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .hero-glow {
+    background: radial-gradient(
+      ellipse 80% 60% at 50% 40%,
+      rgba(217, 72, 72, 0.1) 0%,
+      transparent 70%
+    );
   }
 }
 

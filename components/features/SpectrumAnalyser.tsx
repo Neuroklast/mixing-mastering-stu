@@ -74,8 +74,8 @@ export const SpectrumAnalyser = ({
               className={cn(
                 'px-3 py-1 min-h-[44px] font-mono text-xs uppercase tracking-wider transition-colors',
                 viewMode === key
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'bg-transparent text-muted-foreground hover:text-[var(--color-accent)]',
+                  ? 'bg-accent text-white'
+                  : 'bg-transparent text-muted-foreground hover:text-accent',
               )}
             >
               {label}
@@ -105,7 +105,7 @@ export const SpectrumAnalyser = ({
 
       {/* Mobile help panel */}
       {helpOpen && (
-        <div className="md:hidden rounded border border-white/10 bg-zinc-900/80 px-3 py-2 text-[11px] font-mono text-muted-foreground leading-relaxed">
+        <div className="md:hidden rounded border border-white/10 bg-secondary/80 px-3 py-2 text-[11px] font-mono text-muted-foreground leading-relaxed">
           {TOOLTIP_SPECTRUM_CURVE}
         </div>
       )}

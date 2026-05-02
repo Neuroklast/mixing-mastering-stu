@@ -26,10 +26,10 @@ const StarRating = ({ rating }: StarRatingProps): JSX.Element => {
   const stars = []
   for (let i = 1; i <= 5; i++) {
     if (rating >= i) {
-      stars.push(<Star key={i} weight="fill" className="h-4 w-4 text-[var(--color-accent)]" />)
+      stars.push(<Star key={i} weight="fill" className="h-4 w-4 text-accent" />)
     } else if (rating >= i - 0.5) {
       stars.push(
-        <StarHalf key={i} weight="fill" className="h-4 w-4 text-[var(--color-accent)]" />,
+        <StarHalf key={i} weight="fill" className="h-4 w-4 text-accent" />,
       )
     } else {
       stars.push(<Star key={i} weight="regular" className="h-4 w-4 text-muted-foreground" />)
@@ -60,7 +60,7 @@ const ReviewCard = ({ review, index }: ReviewCardProps): JSX.Element => (
           <span
             className={cn(
               'px-2 py-0.5 rounded font-mono text-xs border',
-              'bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/30',
+              'bg-accent/20 text-accent border-accent/30',
             )}
           >
             {review.service}
@@ -88,7 +88,7 @@ export const ReviewsSection = ({ reviews }: ReviewsSectionProps): JSX.Element =>
         <h2 className="text-4xl md:text-5xl font-bold tracking-tight font-mono uppercase inline-block">
           REVIEWS
         </h2>
-        <div className="h-0.5 w-16 bg-[var(--color-accent)] mt-2" />
+        <div className="h-0.5 w-16 bg-accent mt-2" />
       </div>
 
       {reviews.length === 0 ? (

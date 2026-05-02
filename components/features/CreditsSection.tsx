@@ -55,7 +55,7 @@ const CreditCard = ({ credit }: CreditCardProps): JSX.Element => {
               <p className="text-muted-foreground font-mono text-xs">{credit.year}</p>
             )}
             <div className="mt-2 flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded bg-[var(--color-accent)] text-white font-mono text-xs uppercase tracking-wider">
+              <span className="px-2 py-0.5 rounded bg-accent text-white font-mono text-xs uppercase tracking-wider">
                 {credit.role}
               </span>
               {credit.spotifyUrl && (
@@ -64,7 +64,7 @@ const CreditCard = ({ credit }: CreditCardProps): JSX.Element => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="px-2 py-0.5 rounded border border-[var(--color-accent)] text-[var(--color-accent)] font-mono text-xs hover:bg-[var(--color-accent)]/10 transition-colors"
+                  className="px-2 py-0.5 rounded border border-accent text-accent font-mono text-xs hover:bg-accent/10 transition-colors"
                 >
                   Spotify
                 </a>
@@ -80,7 +80,7 @@ const CreditCard = ({ credit }: CreditCardProps): JSX.Element => {
           <p className="text-muted-foreground font-mono text-xs">{credit.year}</p>
         )}
         <div className="mt-1 flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded bg-[var(--color-accent)] text-white font-mono text-xs uppercase tracking-wider">
+          <span className="px-2 py-0.5 rounded bg-accent text-white font-mono text-xs uppercase tracking-wider">
             {credit.role}
           </span>
         </div>
@@ -106,7 +106,7 @@ const LogoMarquee = ({ credits }: { credits: Credit[] }): JSX.Element => {
             key={`${credit.id ?? credit.name}-${i}`}
             className="font-mono text-xs uppercase tracking-widest text-muted-foreground whitespace-nowrap select-none flex items-center gap-2"
           >
-            <span className="h-1 w-1 rounded-full bg-[var(--color-accent)] inline-block" />
+            <span className="h-1 w-1 rounded-full bg-accent inline-block" />
             {credit.name}
           </li>
         ))}
@@ -229,7 +229,7 @@ export const CreditsSection = ({ credits }: CreditsSectionProps): JSX.Element =>
         <h2 className="text-4xl md:text-5xl font-bold tracking-tight font-mono uppercase inline-block">
           CREDITS
         </h2>
-        <div className="h-0.5 w-16 bg-[var(--color-accent)] mt-2" />
+        <div className="h-0.5 w-16 bg-accent mt-2" />
       </div>
 
       {credits.length === 0 ? (
@@ -250,7 +250,7 @@ export const CreditsSection = ({ credits }: CreditsSectionProps): JSX.Element =>
                 className={cn(
                   'px-4 py-2 min-h-[44px] rounded font-mono text-xs uppercase tracking-wider border transition-colors',
                   activeTab === tab.value
-                    ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white'
+                    ? 'bg-accent border-accent text-white'
                     : 'bg-transparent border-border text-muted-foreground hover:border-foreground hover:text-foreground',
                 )}
               >
@@ -266,7 +266,7 @@ export const CreditsSection = ({ credits }: CreditsSectionProps): JSX.Element =>
               placeholder="Search credits…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full max-w-sm px-4 py-2.5 min-h-[44px] rounded border border-border bg-secondary text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-[var(--color-accent)] transition-colors"
+              className="w-full max-w-sm px-4 py-2.5 min-h-[44px] rounded border border-border bg-secondary text-foreground font-mono text-sm placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
             />
           </div>
 

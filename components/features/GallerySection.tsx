@@ -39,7 +39,7 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
         <h2 className="text-4xl md:text-5xl font-bold tracking-tight font-mono uppercase inline-block">
           STUDIO
         </h2>
-        <div className="h-0.5 w-16 bg-[var(--color-accent)] mt-2" />
+        <div className="h-0.5 w-16 bg-accent mt-2" />
       </div>
 
       {images.length === 0 ? (

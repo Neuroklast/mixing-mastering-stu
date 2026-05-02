@@ -15,20 +15,17 @@ const fadeUp = {
 // ── Targeting Brackets ────────────────────────────────────────────────────────
 // Thin L-shaped corners that frame the AUDIO word instead of a solid box.
 const TargetBrackets = (): JSX.Element => (
-  <span className="inline-block relative px-5 py-1" aria-hidden="true">
+    <span className="inline-block relative px-5 py-1" aria-hidden="true">
     {/* top-left */}
-    <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[var(--color-accent)]" />
+    <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-accent" />
     {/* top-right */}
-    <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[var(--color-accent)]" />
+    <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-accent" />
     {/* bottom-left */}
-    <span className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-[var(--color-accent)]" />
+    <span className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-accent" />
     {/* bottom-right */}
-    <span className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[var(--color-accent)]" />
+    <span className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-accent" />
     {/* Text */}
-    <span
-      className="relative text-[var(--color-accent)]"
-      style={{ textShadow: '0 0 20px rgba(217,72,72,0.8), 0 0 40px rgba(217,72,72,0.4)' }}
-    >
+    <span className="relative text-accent text-glow-accent">
       AUDIO
     </span>
   </span>
@@ -74,24 +71,10 @@ export const HeroSection = (): JSX.Element => {
         className="relative container max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-24 md:py-36 overflow-hidden"
       >
         {/* Dark grid texture */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),' +
-              'linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-          }}
-        />
+        <div className="absolute inset-0 pointer-events-none hero-grid" />
 
         {/* Deep red atmospheric glow */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(217,72,72,0.10) 0%, transparent 70%)',
-          }}
-        />
+        <div className="absolute inset-0 pointer-events-none hero-glow" />
 
         {/* Technical data overlays */}
         <TechOverlay />
@@ -111,10 +94,7 @@ export const HeroSection = (): JSX.Element => {
             transition={{ duration: 0.6, delay: 0.1 }}
           >
             {/* "PRECISION" – thin weight for lightness / precision feeling */}
-            <span
-              className="block text-white/90"
-              style={{ fontWeight: 300 }}
-            >
+            <span className="block text-white/90 font-light">
               PRECISION
             </span>
             {/* "AUDIO" – targeting-bracket frame + chromatic aberration accent */}
@@ -127,10 +107,7 @@ export const HeroSection = (): JSX.Element => {
               <TargetBrackets />
             </span>
             {/* "MASTERY" – extra bold for contrast and weight */}
-            <span
-              className="block text-white"
-              style={{ fontWeight: 700 }}
-            >
+            <span className="block text-white font-bold">
               MASTERY
             </span>
           </motion.h1>

@@ -39,10 +39,10 @@ export const ProfileSection = ({ profile }: ProfileSectionProps): JSX.Element =>
 
         {/* Bio */}
         <div>
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight font-heading mb-1">
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tight font-mono uppercase mb-1">
             {profile.name}
           </h2>
-          <p className="text-[var(--color-accent)] font-mono text-sm uppercase tracking-widest mb-6">
+          <p className="text-accent font-mono text-sm uppercase tracking-widest mb-6">
             {profile.title}
           </p>
 
@@ -77,7 +77,7 @@ export const ProfileSection = ({ profile }: ProfileSectionProps): JSX.Element =>
           {isLong && (
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="mt-3 text-[var(--color-accent)] font-mono text-xs uppercase tracking-wider hover:underline transition-colors"
+              className="mt-3 text-accent font-mono text-xs uppercase tracking-wider hover:underline transition-colors"
             >
               {expanded ? 'Show Less' : 'Read More'}
             </button>
@@ -99,7 +99,7 @@ export const ProfileSection = ({ profile }: ProfileSectionProps): JSX.Element =>
                 transition={{ duration: 0.4, delay: i * 0.1 }}
                 className="flex-shrink-0 flex flex-col items-center gap-2 bg-card border border-border rounded p-4 min-w-[120px]"
               >
-                <Medal weight="bold" className="h-8 w-8 text-[var(--color-accent)]" />
+                <Medal weight="bold" className="h-8 w-8 text-accent" />
                 <p className="text-xs font-bold text-center text-foreground leading-tight">
                   {award.name}
                 </p>
