@@ -2,7 +2,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { Navbar } from '@/components/features/Navbar'
 import { HeroSection } from '@/components/features/HeroSection'
-import { VideoBackground } from '@/components/features/VideoBackground'
+import { ScrollCanvas } from '@/components/features/ScrollCanvas'
 import { Footer } from '@/components/features/Footer'
 import { ErrorBoundary } from '@/components/features/ErrorBoundary'
 import { CreditsSection } from '@/components/features/CreditsSection'
@@ -126,7 +126,7 @@ export default async function HomePage(): Promise<JSX.Element> {
       <Navbar />
       <main id="main-content">
         <ErrorBoundary>
-          <VideoBackground />
+          <ScrollCanvas />
         </ErrorBoundary>
         <div className="relative z-10">
           <ErrorBoundary>
