@@ -11,6 +11,7 @@ import { useAudioEngine } from '@/hooks/useAudioEngine'
 import { SpectrumAnalyser } from '@/components/features/SpectrumAnalyser'
 import { MultibandMeter } from '@/components/features/MultibandMeter'
 import { showcaseTrackSchema, type ShowcaseTrack } from '@/lib/schemas/showcase'
+import { IOS_AUDIO_HINT_KEY } from '@/lib/site'
 import { cn } from '@/lib/utils'
 
 interface MasteringPlayerProps {
@@ -34,7 +35,7 @@ const formatLufs = (v: number | null): string =>
 
 const LoadingSkeleton = (): JSX.Element => (
   <section className="container max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-20 md:py-32">
-    <div className="w-full bg-zinc-950/80 border border-white/10 rounded overflow-hidden">
+    <div className="w-full bg-surface/80 border border-white/10 rounded overflow-hidden">
       <div className="p-8 md:p-10">
         <div className="animate-pulse space-y-4">
           <div className="h-5 bg-secondary/50 rounded w-1/3" />
@@ -48,7 +49,7 @@ const LoadingSkeleton = (): JSX.Element => (
 
 const ErrorDisplay = ({ message }: { message: string | null }): JSX.Element => (
   <section className="container max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-20 md:py-32">
-    <div className="bg-zinc-950/80 border border-white/10 rounded p-8 text-center">
+    <div className="bg-surface/80 border border-white/10 rounded p-8 text-center">
       <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">
         {message ?? 'Audio error'}
       </p>
@@ -68,7 +69,7 @@ export const MasteringPlayer = ({
   if (!validation.success) {
     return (
       <section className="container max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-20 md:py-32">
-        <div className="bg-zinc-950/80 border border-white/10 rounded p-8 text-center">
+        <div className="bg-surface/80 border border-white/10 rounded p-8 text-center">
           <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">
             Invalid track data
           </p>
@@ -116,14 +117,14 @@ const MasteringPlayerInner = ({
 
   const [iosHintDismissed, setIosHintDismissed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true
-    return sessionStorage.getItem('ios-audio-hint-dismissed') === '1'
+    return sessionStorage.getItem(IOS_AUDIO_HINT_KEY) === '1'
   })
 
   const isIos =
     typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent)
 
   const dismissIosHint = (): void => {
-    sessionStorage.setItem('ios-audio-hint-dismissed', '1')
+    sessionStorage.setItem(IOS_AUDIO_HINT_KEY, '1')
     setIosHintDismissed(true)
   }
 
@@ -151,7 +152,7 @@ const MasteringPlayerInner = ({
         <h2 className="text-4xl md:text-5xl font-bold tracking-tight font-mono uppercase inline-block">
           EXAMPLE SOUNDS
         </h2>
-        <div className="h-0.5 w-16 bg-[var(--color-accent)] mt-2" />
+        <div className="h-0.5 w-16 bg-accent mt-2" />
       </div>
 
       {/* iOS silent-switch hint */}
@@ -171,7 +172,7 @@ const MasteringPlayerInner = ({
       {/* ── Rack Unit Container ── */}
       <div
         className={cn(
-          'relative w-full bg-zinc-950/80 backdrop-blur-sm rounded overflow-hidden',
+          'relative w-full bg-surface/80 backdrop-blur-sm rounded overflow-hidden',
           'border border-white/[0.08] [border-top-color:rgba(255,255,255,0.15)]',
           'transition-shadow duration-500',
           isMasterActive && 'shadow-[0_0_40px_rgba(217,72,72,0.10)]',
@@ -201,17 +202,17 @@ const MasteringPlayerInner = ({
 
         {/* Loading overlay: shown while switching tracks (not on initial load) */}
         {isBusy && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-zinc-950/70 backdrop-blur-[2px]">
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-surface/70 backdrop-blur-[2px]">
             <div className="flex gap-1.5">
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="block w-1.5 h-6 bg-[var(--color-accent)] rounded-full animate-pulse"
+                  className="block w-1.5 h-6 bg-accent rounded-full animate-pulse"
                   style={{ animationDelay: `${i * 0.15}s` }}
                 />
               ))}
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--color-accent)]/70">
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-accent/70">
               Loading track
             </p>
           </div>
@@ -255,7 +256,7 @@ const MasteringPlayerInner = ({
                           className={cn(
                             'px-5 py-2 min-h-[44px] rounded font-mono text-sm font-bold uppercase tracking-wider border-2 transition-all duration-200',
                             engine.activeTrack === t
-                              ? 'bg-[var(--color-accent)]/20 border-[var(--color-accent)] text-[var(--color-accent)] glow-accent-strong'
+                              ? 'bg-accent/20 border-accent text-accent glow-accent-strong'
                               : 'bg-transparent border-white/20 text-white/40 hover:border-white/40 hover:text-white/70',
                             isBusy && 'opacity-50 cursor-not-allowed',
                           )}
@@ -312,7 +313,7 @@ const MasteringPlayerInner = ({
             {lufsDelta !== null && (
               <span className="text-muted-foreground uppercase tracking-wider">
                 Δ:{' '}
-                <span className="text-[var(--color-accent)]">
+                <span className="text-accent">
                   {lufsDelta > 0 ? '+' : ''}{lufsDelta.toFixed(1)} dB
                 </span>
               </span>
@@ -356,7 +357,7 @@ const MasteringPlayerInner = ({
                     aria-label={engine.isPlaying ? 'Pause' : 'Play'}
                     className={cn(
                       'h-11 w-11 min-h-[44px] min-w-[44px] rounded text-white transition-all hover:scale-105 active:scale-95 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100',
-                      'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 glow-accent-strong',
+                      'bg-accent hover:bg-accent/90 glow-accent-strong',
                     )}
                   >
                     {engine.isPlaying ? (

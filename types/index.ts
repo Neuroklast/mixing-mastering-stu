@@ -48,3 +48,11 @@ export interface License {
   expires_at: string | null
   stripe_payment_intent_id: string | null
 }
+
+/** A single image in the studio gallery. */
+export interface GalleryImage {
+  src: string
+  alt: string
+  width: number
+  height: number
+}

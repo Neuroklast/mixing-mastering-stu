@@ -185,7 +185,7 @@ export const MultibandMeter = ({ correlation, className }: MultibandMeterProps):
 
       {/* Mobile help text */}
       {helpOpen && (
-        <div className="md:hidden mb-1 rounded border border-white/10 bg-zinc-900/80 px-2 py-1.5 text-[10px] font-mono text-muted-foreground leading-relaxed">
+        <div className="md:hidden mb-1 rounded border border-white/10 bg-secondary/80 px-2 py-1.5 text-[10px] font-mono text-muted-foreground leading-relaxed">
           {TOOLTIP_PHASE_METER}
         </div>
       )}

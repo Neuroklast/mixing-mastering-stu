@@ -5,8 +5,7 @@ import Link from 'next/link'
 import { X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-
-const STORAGE_KEY = 'sonorativa-cookie-consent'
+import { COOKIE_CONSENT_KEY } from '@/lib/site'
 
 /**
  * CookieBanner – GDPR-compliant cookie notice.
@@ -19,7 +18,7 @@ export const CookieBanner = (): JSX.Element | null => {
 
   useEffect(() => {
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) {
+      if (!localStorage.getItem(COOKIE_CONSENT_KEY)) {
         setVisible(true)
       }
     } catch {
@@ -29,12 +28,12 @@ export const CookieBanner = (): JSX.Element | null => {
   }, [])
 
   const accept = (): void => {
-    try { localStorage.setItem(STORAGE_KEY, 'accepted') } catch { /* ignore */ }
+    try { localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted') } catch { /* ignore */ }
     setVisible(false)
   }
 
   const decline = (): void => {
-    try { localStorage.setItem(STORAGE_KEY, 'declined') } catch { /* ignore */ }
+    try { localStorage.setItem(COOKIE_CONSENT_KEY, 'declined') } catch { /* ignore */ }
     setVisible(false)
   }
 
@@ -58,7 +57,7 @@ export const CookieBanner = (): JSX.Element | null => {
           cookies are used.{' '}
           <Link
             href="/legal/privacy"
-            className="text-foreground underline underline-offset-2 hover:text-[var(--color-accent)] transition-colors"
+            className="text-foreground underline underline-offset-2 hover:text-accent transition-colors"
           >
             Privacy Policy
           </Link>

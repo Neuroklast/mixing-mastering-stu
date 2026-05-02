@@ -17,6 +17,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { createOrderAction } from '@/app/actions/createOrder'
+import { SERVICES_CONFIG, getServiceById } from '@/lib/services-config'
+import { CONTACT_RESPONSE_PROMISE } from '@/lib/site'
 
 interface ContactDialogProps {
   open: boolean
@@ -30,12 +32,6 @@ interface ContactFormState {
   serviceType: string
   genre: string
   notes: string
-}
-
-const SERVICE_PRICES: Record<string, number> = {
-  mixing: 200,
-  mastering: 100,
-  bundle: 275,
 }
 
 const toServiceType = (serviceId: string): 'mixing' | 'mastering' | 'mixing_mastering' => {
@@ -71,15 +67,21 @@ export const ContactDialog = ({
       return
     }
 
+    const selectedService = getServiceById(form.serviceType)
+    if (!selectedService) {
+      toast.error('Invalid service selected. Please choose a valid option.')
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const result = await createOrderAction({
         clientName: form.clientName,
         clientEmail: form.clientEmail,
         serviceType: toServiceType(form.serviceType),
-        packageTier: 'starter',
+        packageTier: selectedService.packageTier,
         notes: [form.genre && `Genre: ${form.genre}`, form.notes].filter(Boolean).join('\n') || undefined,
-        totalPrice: SERVICE_PRICES[form.serviceType] ?? 0,
+        totalPrice: selectedService.priceUsd,
       })
 
       if (!result.success) {
@@ -87,7 +89,7 @@ export const ContactDialog = ({
         return
       }
 
-      toast.success('Request submitted!', { description: "We'll respond within 24 hours." })
+      toast.success('Request submitted!', { description: CONTACT_RESPONSE_PROMISE })
       setForm(INITIAL_FORM)
       onOpenChange(false)
     } catch {
@@ -149,9 +151,11 @@ export const ContactDialog = ({
               <Select value={form.serviceType} onValueChange={updateField('serviceType')}>
                 <SelectTrigger aria-label="Select service"><SelectValue placeholder="Select service" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="mixing">Mixing – $200</SelectItem>
-                  <SelectItem value="mastering">Mastering – $100</SelectItem>
-                  <SelectItem value="bundle">Mix + Master – $275</SelectItem>
+                  {SERVICES_CONFIG.map((svc) => (
+                    <SelectItem key={svc.id} value={svc.id}>
+                      {svc.name} – {svc.displayPrice}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

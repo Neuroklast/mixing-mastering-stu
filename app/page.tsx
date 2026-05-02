@@ -11,9 +11,9 @@ import { ClientMasteringPlayer } from '@/components/features/ClientMasteringPlay
 import { CookieBanner } from '@/components/features/CookieBanner'
 import { Toaster } from 'sonner'
 import { showcaseTrackSchema, type ShowcaseTrack } from '@/lib/schemas/showcase'
-import type { Profile } from '@/types/profile'
 import { MOCK_CREDITS, DEMO_REVIEWS, DEMO_GALLERY } from '@/lib/mockData'
 import { getActiveShowcaseTrack, getAllShowcaseTracks } from '@/services/showcaseService'
+import { PROFILE_ZARDONIC, PROFILE_KAIO } from '@/lib/content/engineers'
 
 const CreditsSection = dynamic(() =>
   import('@/components/features/CreditsSection').then((m) => ({ default: m.CreditsSection }))
@@ -28,11 +28,16 @@ const GallerySection = dynamic(() =>
   import('@/components/features/GallerySection').then((m) => ({ default: m.GallerySection }))
 )
 
+/**
+ * Local-file fallback used only when the filesystem song directory, CMS, and
+ * active-track sources all return empty. The paths below point to the demo
+ * audio files that ship with the project — no external third-party dependency.
+ */
 const FALLBACK_TRACK: ShowcaseTrack = {
   title: 'Demo Track',
   artist: 'SONORATIVA',
-  beforeUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-  afterUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+  beforeUrl: '/demo/incinerate-mixdown.wav',
+  afterUrl: '/demo/incinerate-master.wav',
   labelBefore: 'DEMO',
   labelAfter: 'FINAL',
 }
@@ -97,22 +102,6 @@ function loadPlayerSongs(): ShowcaseTrack[] {
   }
 
   return tracks
-}
-
-const PROFILE_ZARDONIC: Profile = {
-  name: 'Federico „Zardonic" Ágreda Álvarez',
-  title: 'Mixing & Mastering Engineer · Sound Designer',
-  bio: 'Venezuelan-born electronic music producer, DJ, and mixing/mastering engineer with over 20 years of industry experience. Known for his work in industrial metal, drum & bass, and cyberpunk-influenced music, he has collaborated with major artists including Fear Factory, Bullet For My Valentine, Nine Inch Nails, Pop Evil, Sonic Syndicate, The Qemists, and Gorgoroth. His engineering style focuses on extreme clarity, surgical EQ, and cinematic low-end. #1 on Beatport Drum & Bass releases and Amazon Hard Rock & Metal charts with over 100 million streams worldwide. Factory presets for Arturia, Slate Digital, Brainworx, and Baby Audio. First Latin American musician as a playable character in a video game (Warlocks Vs Shadows). Soundtracks: Superhot: Mind Control Delete, Redout 2. DAW: FL Studio. Monitoring: Quested v2108, PMC result6. Synth: Sequential Pro 2.',
-  portraitSrc: '/demo/zardonic.jpeg',
-  awards: [],
-}
-
-const PROFILE_KAIO: Profile = {
-  name: 'Daniel „Kaio" Soto',
-  title: 'Mixing & Mastering Engineer · Visual Media Artist',
-  bio: 'Venezuelan mixing and mastering engineer specialising in heavy music genres — metal, hardcore, and industrial. Known for precise transient control, tight low-end management, and the ability to translate raw mixes into polished, competitive masters. Founder and head engineer of Mixbucket USA. Delivered full Mix & Master for Necrobeast (albums: Promethean Flame, Iron Baphomet) and created official lyric videos for international metal acts. Technical focus: maximum loudness with full transient dynamics preserved. Works with clients across Latin America and Europe.',
-  portraitSrc: '/demo/kaio.jpeg',
-  awards: [],
 }
 
 export default async function HomePage(): Promise<JSX.Element> {

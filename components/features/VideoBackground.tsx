@@ -28,7 +28,7 @@ const useReducedMotion = (): boolean => {
 const StaticGradientFallback = (): JSX.Element => (
   <div className="relative w-full h-[300vh]">
     <div className="sticky top-0 h-screen w-full overflow-hidden">
-      <div className="w-full h-full bg-gradient-to-b from-black via-[#1a0808] to-background opacity-60" />
+      <div className="w-full h-full bg-gradient-to-b from-black via-background/80 to-background opacity-60" />
     </div>
   </div>
 )
@@ -97,8 +97,7 @@ export const VideoBackground = (): JSX.Element => {
     <div ref={containerRef} className="relative w-full h-[300vh]">
       <div
         className="sticky top-0 h-screen overflow-hidden bg-black"
-        style={{ transform: 'translateZ(0)', width: '100%', left: 0, position: 'sticky' }}
-      >
+        >
         {!isVideoReady && <VideoSkeleton />}
         <video
           ref={videoRef}

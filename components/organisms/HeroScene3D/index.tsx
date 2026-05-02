@@ -61,6 +61,7 @@ export function HeroScene3D(): JSX.Element {
         }}
       >
         <Canvas
+          frameloop="demand"
           dpr={[1, MAX_DPR]}
           gl={{
             antialias: false,
