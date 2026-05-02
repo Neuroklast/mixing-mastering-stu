@@ -1,9 +1,10 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import dynamic from 'next/dynamic'
+import { ScrollProgressProvider } from '@/contexts/ScrollProgressContext'
+import { DynamicHeroScene3D as HeroScene3D } from '@/components/organisms/HeroScene3D/DynamicHeroScene3D'
 import { Navbar } from '@/components/features/Navbar'
 import { HeroSection } from '@/components/features/HeroSection'
-import { ScrollCanvas } from '@/components/features/ScrollCanvas'
 import { Footer } from '@/components/features/Footer'
 import { ErrorBoundary } from '@/components/features/ErrorBoundary'
 import { ClientMasteringPlayer } from '@/components/features/ClientMasteringPlayer'
@@ -129,39 +130,39 @@ export default async function HomePage(): Promise<JSX.Element> {
         )
 
   return (
-    <>
-      <Toaster position="top-right" theme="dark" richColors />
-      <Navbar />
-      <main id="main-content">
-        <ErrorBoundary>
-          <ScrollCanvas />
-        </ErrorBoundary>
-        <div className="relative z-10">
-          <ErrorBoundary>
-            <HeroSection />
-          </ErrorBoundary>
-          <ErrorBoundary>
-            <ClientMasteringPlayer tracks={tracks} />
-          </ErrorBoundary>
-          <ErrorBoundary>
-            <CreditsSection credits={MOCK_CREDITS} />
-          </ErrorBoundary>
-          <ErrorBoundary>
-            <ProfileSection profile={PROFILE_ZARDONIC} />
-          </ErrorBoundary>
-          <ErrorBoundary>
-            <ProfileSection profile={PROFILE_KAIO} />
-          </ErrorBoundary>
-          <ErrorBoundary>
-            <ReviewsSection reviews={DEMO_REVIEWS} />
-          </ErrorBoundary>
-          <ErrorBoundary>
-            <GallerySection images={DEMO_GALLERY} />
-          </ErrorBoundary>
-        </div>
-      </main>
-      <Footer />
-      <CookieBanner />
-    </>
+    <ScrollProgressProvider>
+      <>
+        <Toaster position="top-right" theme="dark" richColors />
+        <HeroScene3D />
+        <Navbar />
+        <main id="main-content">
+          <div className="relative z-10">
+            <ErrorBoundary>
+              <HeroSection />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <ClientMasteringPlayer tracks={tracks} />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <CreditsSection credits={MOCK_CREDITS} />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <ProfileSection profile={PROFILE_ZARDONIC} />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <ProfileSection profile={PROFILE_KAIO} />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <ReviewsSection reviews={DEMO_REVIEWS} />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <GallerySection images={DEMO_GALLERY} />
+            </ErrorBoundary>
+          </div>
+        </main>
+        <Footer />
+        <CookieBanner />
+      </>
+    </ScrollProgressProvider>
   )
 }

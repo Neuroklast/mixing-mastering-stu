@@ -32,7 +32,7 @@ const F_MIN = 20
 const F_MAX = 20000
 
 // Colours matching the industrial/cyber aesthetic
-const COLOR_DELTA = 'rgba(0, 255, 128, 0.7)'  // green  – Δ (B − A)
+const COLOR_DELTA = 'rgba(0, 242, 255, 0.7)'  // cyan #00f2ff – Δ (B − A)
 const COLOR_ACTIVE_BAR = '#D94848'            // red accent – active track bars
 const COLOR_INACTIVE_BAR = 'rgba(120,120,120,0.5)' // grey – inactive track bars
 
@@ -334,7 +334,7 @@ export function useSpectrumAnalyser({
       for (let x = 1; x < w; x++) ctx.lineTo(x, yA[x]!)
       for (let x = w - 1; x >= 0; x--) ctx.lineTo(x, yB[x]!)
       ctx.closePath()
-      ctx.fillStyle = 'rgba(74,222,128,0.13)'
+      ctx.fillStyle = 'rgba(0,242,255,0.08)'
       ctx.fill()
 
       // Red fill: mix (A) above master (B)

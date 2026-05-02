@@ -24,7 +24,7 @@ export const SERVICE_PRODUCING      = 'Producing'
 // ── Tooltip / help copy ───────────────────────────────────────────────────────
 export const TOOLTIP_SPECTRUM_CURVE =
   'Frequency Curve: Shows the full-spectrum energy profile of the audio signal. ' +
-  'Red = active track; grey = inactive track; green Δ line = energy difference between DEMO and FINAL.'
+  'Red = active track; grey = inactive track; cyan Δ line = energy difference between DEMO and FINAL.'
 
 export const TOOLTIP_PHASE_METER =
   'Phase Correlation Meter: Measures stereo phase coherence per frequency band (Low / Mid / High). ' +
