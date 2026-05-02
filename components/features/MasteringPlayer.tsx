@@ -174,9 +174,31 @@ const MasteringPlayerInner = ({
           'relative w-full bg-zinc-950/80 backdrop-blur-sm rounded overflow-hidden',
           'border border-white/[0.08] [border-top-color:rgba(255,255,255,0.15)]',
           'transition-shadow duration-500',
-          isMasterActive && 'shadow-[0_0_40px_rgba(74,222,128,0.08)]',
+          isMasterActive && 'shadow-[0_0_40px_rgba(217,72,72,0.10)]',
         )}
       >
+        {/* ── Decorative screw corners (19″ rack aesthetic) ── */}
+        {(['top-left', 'top-right', 'bottom-left', 'bottom-right'] as const).map((pos) => (
+          <span
+            key={pos}
+            aria-hidden="true"
+            className={cn(
+              'absolute w-4 h-4 z-10 pointer-events-none opacity-25',
+              pos === 'top-left'     && 'top-2 left-2',
+              pos === 'top-right'    && 'top-2 right-2',
+              pos === 'bottom-left'  && 'bottom-2 left-2',
+              pos === 'bottom-right' && 'bottom-2 right-2',
+            )}
+          >
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.5)" strokeWidth="1" />
+              <circle cx="8" cy="8" r="1.5" fill="rgba(255,255,255,0.4)" />
+              <line x1="8" y1="3" x2="8" y2="13" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
+              <line x1="3" y1="8" x2="13" y2="8" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
+            </svg>
+          </span>
+        ))}
+
         {/* Loading overlay: shown while switching tracks (not on initial load) */}
         {isBusy && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-zinc-950/70 backdrop-blur-[2px]">
@@ -222,22 +244,25 @@ const MasteringPlayerInner = ({
                 {(['before', 'after'] as const).map((t) => (
                   <Tooltip key={t}>
                     <TooltipTrigger asChild>
-                      <button
-                        onClick={() => engine.switchTrack(t)}
-                        disabled={isBusy}
-                        aria-pressed={engine.activeTrack === t}
-                        className={cn(
-                          'px-5 py-2 min-h-[44px] rounded font-mono text-sm font-bold uppercase tracking-wider border-2 transition-all duration-200',
-                          engine.activeTrack === t
-                            ? t === 'after'
-                              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-[0_0_16px_rgba(74,222,128,0.4)]'
-                              : 'bg-[var(--color-accent)]/20 border-[var(--color-accent)] text-[var(--color-accent)] glow-accent-strong'
-                            : 'bg-transparent border-white/20 text-white/40 hover:border-white/40 hover:text-white/70',
-                          isBusy && 'opacity-50 cursor-not-allowed',
-                        )}
-                      >
-                        {t === 'before' ? labelBefore : labelAfter}
-                      </button>
+                      {/* Wrap in a span so pointer events reach the tooltip even
+                          when the inner button is disabled (disabled elements
+                          suppress pointer events and break Radix tooltips). */}
+                      <span className="inline-flex">
+                        <button
+                          onClick={() => engine.switchTrack(t)}
+                          disabled={isBusy}
+                          aria-pressed={engine.activeTrack === t}
+                          className={cn(
+                            'px-5 py-2 min-h-[44px] rounded font-mono text-sm font-bold uppercase tracking-wider border-2 transition-all duration-200',
+                            engine.activeTrack === t
+                              ? 'bg-[var(--color-accent)]/20 border-[var(--color-accent)] text-[var(--color-accent)] glow-accent-strong'
+                              : 'bg-transparent border-white/20 text-white/40 hover:border-white/40 hover:text-white/70',
+                            isBusy && 'opacity-50 cursor-not-allowed',
+                          )}
+                        >
+                          {t === 'before' ? labelBefore : labelAfter}
+                        </button>
+                      </span>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
                       {t === 'before' ? 'Listen to the unprocessed mix' : 'Listen to the mastered version'}
@@ -287,14 +312,14 @@ const MasteringPlayerInner = ({
             {lufsDelta !== null && (
               <span className="text-muted-foreground uppercase tracking-wider">
                 Δ:{' '}
-                <span className={cn(lufsDelta > 0 ? 'text-emerald-400' : 'text-[var(--color-accent)]')}>
+                <span className="text-[var(--color-accent)]">
                   {lufsDelta > 0 ? '+' : ''}{lufsDelta.toFixed(1)} dB
                 </span>
               </span>
             )}
             {engine.lufsShortTerm !== null && (
               <span className="text-muted-foreground uppercase tracking-wider">
-                ST:{' '}
+                S-TERM:{' '}
                 <span className="text-white/70">{engine.lufsShortTerm.toFixed(1)} LUFS</span>
               </span>
             )}
@@ -322,24 +347,25 @@ const MasteringPlayerInner = ({
             {/* Play / Pause */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  onClick={engine.isPlaying ? engine.pause : engine.play}
-                  disabled={isBusy}
-                  aria-label={engine.isPlaying ? 'Pause' : 'Play'}
-                  className={cn(
-                    'h-11 w-11 min-h-[44px] min-w-[44px] rounded text-white transition-all hover:scale-105 active:scale-95 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100',
-                    isMasterActive
-                      ? 'bg-emerald-500/80 hover:bg-emerald-500 shadow-[0_0_16px_rgba(74,222,128,0.4)]'
-                      : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 glow-accent-strong',
-                  )}
-                >
-                  {engine.isPlaying ? (
-                    <Pause weight="fill" className="h-5 w-5" />
-                  ) : (
-                    <Play weight="fill" className="h-5 w-5 ml-0.5" />
-                  )}
-                </Button>
+                {/* Span wrapper keeps tooltip active even when the button is disabled */}
+                <span className="inline-flex">
+                  <Button
+                    size="icon"
+                    onClick={engine.isPlaying ? engine.pause : engine.play}
+                    disabled={isBusy}
+                    aria-label={engine.isPlaying ? 'Pause' : 'Play'}
+                    className={cn(
+                      'h-11 w-11 min-h-[44px] min-w-[44px] rounded text-white transition-all hover:scale-105 active:scale-95 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100',
+                      'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 glow-accent-strong',
+                    )}
+                  >
+                    {engine.isPlaying ? (
+                      <Pause weight="fill" className="h-5 w-5" />
+                    ) : (
+                      <Play weight="fill" className="h-5 w-5 ml-0.5" />
+                    )}
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent side="top">
                 {engine.isPlaying ? 'Pause playback' : 'Start playback'}
