@@ -38,7 +38,7 @@ export const FrequencyVisualizer = ({
         <div key={FREQUENCY_BANDS[index].label} className="flex-1 flex flex-col items-center gap-2">
           <div className="w-full bg-muted/50 border border-border/50 rounded-sm overflow-hidden relative h-full">
             <div
-              className="absolute bottom-0 w-full transition-all duration-100 rounded-sm"
+              className="absolute bottom-0 w-full transition-[height] duration-100 rounded-sm"
               style={getBarStyle(bandValue, BAND_COLORS[index], isPlaying)}
             />
           </div>

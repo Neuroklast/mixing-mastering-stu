@@ -5,9 +5,19 @@ import Lenis from 'lenis'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const PRELOAD_BATCH_SIZE = 16
+const CACHE_WINDOW = 40 // frames to keep around current position
 
 // ── Module-level cache ─────────────────────────────────────────────────────────
 const frameCache = new Map<number, HTMLImageElement>()
+
+function pruneCache(currentFrame: number, totalFrames: number): void {
+  const half = CACHE_WINDOW >> 1
+  const lo = Math.max(1, currentFrame - half)
+  const hi = Math.min(totalFrames, currentFrame + half)
+  for (const key of frameCache.keys()) {
+    if (key < lo || key > hi) frameCache.delete(key)
+  }
+}
 
 function loadFrame(n: number, urls: string[]): Promise<HTMLImageElement> {
   const url = urls[n - 1]
@@ -176,7 +186,10 @@ export const ScrollCanvas = (): JSX.Element => {
         pendingRaf.current = false
         const progress = buildScrollProgress(container)
         const frameIndex = progressToFrame(progress, frameCount)
-        if (frameIndex !== lastFrame.current) drawFrame(frameIndex)
+        if (frameIndex !== lastFrame.current) {
+          drawFrame(frameIndex)
+          pruneCache(frameIndex, frameCount)
+        }
       })
     }
 

@@ -63,6 +63,8 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
                   fill
                   className="object-cover"
                   sizes="85vw"
+                  loading={i === 0 ? undefined : 'lazy'}
+                  priority={i === 0}
                 />
               </div>
             ))}
@@ -83,6 +85,8 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
                   fill
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  loading={i === 0 ? undefined : 'lazy'}
+                  priority={i === 0}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300" />
               </div>
