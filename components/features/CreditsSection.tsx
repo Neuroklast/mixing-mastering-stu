@@ -104,7 +104,6 @@ const LogoMarquee = ({ credits }: { credits: Credit[] }): JSX.Element => {
         {items.map((credit, i) => (
           <li
             key={`${credit.id ?? credit.name}-${i}`}
-            title={credit.role}
             className="font-mono text-xs uppercase tracking-widest text-muted-foreground whitespace-nowrap select-none flex items-center gap-2"
           >
             <span className="h-1 w-1 rounded-full bg-[var(--color-accent)] inline-block" />
