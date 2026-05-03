@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import FormField from '@/app/admin/_components/FormField'
 import AudioUploadField from '@/app/admin/_components/AudioUploadField'
 import { createAdminClient } from '@/lib/supabaseAdmin'
@@ -15,6 +16,9 @@ export default async function EditShowcasePage({ params }: { params: Promise<{ i
 
   return (
     <div style={{ maxWidth: '600px' }}>
+      <Link href="/admin/showcase" style={{ color: '#7c3aed', fontSize: '0.85rem', textDecoration: 'none', display: 'inline-block', marginBottom: '1.5rem' }}>
+        ← Back to Showcase
+      </Link>
       <h1 style={{ marginBottom: '2rem' }}>Edit Showcase Track</h1>
       <form action={update}>
         <FormField label="Title" name="title" defaultValue={String(row.title ?? '')} required />

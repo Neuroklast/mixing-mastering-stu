@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import FormField from '@/app/admin/_components/FormField'
 import AudioUploadField from '@/app/admin/_components/AudioUploadField'
 import { createShowcase } from '../_actions'
@@ -5,6 +6,9 @@ import { createShowcase } from '../_actions'
 export default function NewShowcasePage() {
   return (
     <div style={{ maxWidth: '600px' }}>
+      <Link href="/admin/showcase" style={{ color: '#7c3aed', fontSize: '0.85rem', textDecoration: 'none', display: 'inline-block', marginBottom: '1.5rem' }}>
+        ← Back to Showcase
+      </Link>
       <h1 style={{ marginBottom: '2rem' }}>New Showcase Track</h1>
       <form action={createShowcase}>
         <FormField label="Title" name="title" required />

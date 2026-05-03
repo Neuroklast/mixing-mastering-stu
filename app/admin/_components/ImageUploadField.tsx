@@ -1,0 +1,195 @@
+'use client'
+
+import { useState } from 'react'
+import { createSignedUploadUrl } from '@/app/admin/_actions/uploads'
+import { createClient } from '@/lib/supabaseClient'
+
+interface ImageUploadFieldProps {
+  /** Label shown above the field */
+  label: string
+  /** Hidden input name for the storage path (e.g. `storage_path`) */
+  pathName: string
+  /** Hidden input name for the public URL (e.g. `image_url`) */
+  urlName: string
+  /** Default storage path when editing an existing record */
+  defaultPath?: string
+  /** Default image URL when editing an existing record */
+  defaultUrl?: string
+  /** Storage bucket name (default: 'media') */
+  bucket?: string
+  /** Path prefix inside the bucket (e.g. 'gallery', 'credits', 'members') */
+  pathPrefix?: string
+  /** Accepted MIME types */
+  accept?: string
+}
+
+type UploadStatus = 'idle' | 'uploading' | 'success' | 'error'
+
+export default function ImageUploadField({
+  label,
+  pathName,
+  urlName,
+  defaultPath = '',
+  defaultUrl = '',
+  bucket = 'media',
+  pathPrefix = 'uploads',
+  accept = 'image/jpeg,image/png,image/webp,image/avif',
+}: ImageUploadFieldProps) {
+  const [status, setStatus] = useState<UploadStatus>('idle')
+  const [progress, setProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [storagePath, setStoragePath] = useState(defaultPath)
+  const [imageUrl, setImageUrl] = useState(defaultUrl)
+
+  const reset = () => {
+    setStatus('idle')
+    setError(null)
+    setProgress(0)
+  }
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setStatus('uploading')
+    setError(null)
+    setProgress(0)
+
+    try {
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const objectPath = `${pathPrefix}/${Date.now()}.${ext}`
+
+      // Get signed upload URL via server action
+      const { signedUrl } = await createSignedUploadUrl(bucket, objectPath)
+
+      // Upload directly to Supabase Storage with progress tracking
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('PUT', signedUrl)
+        xhr.setRequestHeader('Content-Type', file.type)
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) setProgress(ev.loaded / ev.total)
+        }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve()
+          else reject(new Error(`Upload failed: ${xhr.statusText}`))
+        }
+        xhr.onerror = () => reject(new Error('Network error during upload'))
+        xhr.send(file)
+      })
+
+      // Get public URL
+      const supabase = createClient()
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(objectPath)
+      const publicUrl = urlData.publicUrl
+
+      setStoragePath(objectPath)
+      setImageUrl(publicUrl)
+      setStatus('success')
+      setProgress(1)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
+      setStatus('error')
+    }
+  }
+
+  const progressPct = Math.round(progress * 100)
+  const previewUrl = imageUrl || defaultUrl
+
+  return (
+    <div style={{ marginBottom: '1.5rem' }}>
+      <label
+        style={{ display: 'block', marginBottom: '0.3rem', color: '#aaa', fontSize: '0.85rem' }}
+      >
+        {label}
+      </label>
+
+      {/* Thumbnail preview */}
+      {previewUrl && (
+        <div style={{ marginBottom: '0.5rem' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={previewUrl}
+            alt="Preview"
+            style={{
+              width: '96px',
+              height: '96px',
+              objectFit: 'cover',
+              borderRadius: '4px',
+              border: '1px solid #333',
+              display: 'block',
+              marginBottom: '0.3rem',
+            }}
+          />
+          <p style={{ fontSize: '0.75rem', color: '#666' }}>
+            Path: <code style={{ color: '#888' }}>{storagePath || defaultPath}</code>
+          </p>
+        </div>
+      )}
+
+      <input
+        type="file"
+        accept={accept}
+        onChange={handleFile}
+        disabled={status === 'uploading'}
+        style={{ color: '#ccc', display: 'block', marginBottom: '0.4rem' }}
+      />
+
+      {/* Progress bar */}
+      {status === 'uploading' && (
+        <div style={{ marginTop: '0.4rem' }}>
+          <div
+            style={{
+              height: '4px',
+              background: '#333',
+              borderRadius: '2px',
+              overflow: 'hidden',
+              marginBottom: '0.3rem',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${progressPct}%`,
+                background: '#7c3aed',
+                transition: 'width 0.2s ease',
+              }}
+            />
+          </div>
+          <p style={{ fontSize: '0.8rem', color: '#aaa' }}>Uploading… {progressPct}%</p>
+        </div>
+      )}
+
+      {status === 'success' && (
+        <p style={{ fontSize: '0.8rem', color: '#4ade80' }}>✓ Upload complete</p>
+      )}
+
+      {error && (
+        <div>
+          <p style={{ fontSize: '0.8rem', color: '#f87171', marginBottom: '0.3rem' }}>
+            Error: {error}
+          </p>
+          <button
+            type="button"
+            onClick={reset}
+            style={{
+              fontSize: '0.75rem',
+              color: '#aaa',
+              background: 'none',
+              border: '1px solid #444',
+              borderRadius: '4px',
+              padding: '0.2rem 0.6rem',
+              cursor: 'pointer',
+            }}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {/* Hidden fields for form action */}
+      <input type="hidden" name={pathName} value={storagePath} />
+      <input type="hidden" name={urlName} value={imageUrl} />
+    </div>
+  )
+}

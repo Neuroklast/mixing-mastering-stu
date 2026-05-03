@@ -536,4 +536,115 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS idx_legal_slug ON legal(slug);
 
+-- ── Site content (key/value for hero, about, footer, contact info) ────────────
+CREATE TABLE IF NOT EXISTS site_content (
+  key          TEXT        PRIMARY KEY,
+  value        TEXT        NOT NULL DEFAULT '',
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'site_content' AND policyname = 'Public can read site content'
+  ) THEN
+    CREATE POLICY "Public can read site content" ON site_content FOR SELECT USING (true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'site_content' AND policyname = 'Service role can manage site content'
+  ) THEN
+    CREATE POLICY "Service role can manage site content" ON site_content FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+-- ── Members / team ────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS members (
+  id                   UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  name                 TEXT        NOT NULL,
+  role                 TEXT        NOT NULL,
+  bio                  TEXT,
+  photo_url            TEXT,
+  photo_storage_path   TEXT,
+  social_links         JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  display_order        INTEGER     NOT NULL DEFAULT 0,
+  active               BOOLEAN     NOT NULL DEFAULT true
+);
+ALTER TABLE members ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'members' AND policyname = 'Public can read active members'
+  ) THEN
+    CREATE POLICY "Public can read active members" ON members FOR SELECT USING (active = true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'members' AND policyname = 'Service role can manage members'
+  ) THEN
+    CREATE POLICY "Service role can manage members" ON members FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_members_active_order ON members(active, display_order);
+
+-- ── Services (replaces lib/services-config.ts) ───────────────────────────────
+CREATE TABLE IF NOT EXISTS services (
+  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  slug            TEXT        NOT NULL UNIQUE,
+  title           TEXT        NOT NULL,
+  description     TEXT,
+  price_cents     INTEGER     NOT NULL CHECK (price_cents >= 0),
+  currency        TEXT        NOT NULL DEFAULT 'eur',
+  duration        TEXT,
+  features        JSONB       NOT NULL DEFAULT '[]'::jsonb,
+  display_order   INTEGER     NOT NULL DEFAULT 0,
+  active          BOOLEAN     NOT NULL DEFAULT true
+);
+ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'services' AND policyname = 'Public can read active services'
+  ) THEN
+    CREATE POLICY "Public can read active services" ON services FOR SELECT USING (active = true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'services' AND policyname = 'Service role can manage services'
+  ) THEN
+    CREATE POLICY "Service role can manage services" ON services FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_services_active_order ON services(active, display_order);
+
+-- ── Seed site_content defaults ────────────────────────────────────────────────
+INSERT INTO site_content (key, value) VALUES
+  ('hero_badge',          'Professional Audio Engineering'),
+  ('hero_title_1',        'PRECISION'),
+  ('hero_title_2',        'AUDIO'),
+  ('hero_title_3',        'ENGINEERING'),
+  ('hero_subtitle',       'Mixing & mastering for artists who care about every dB.'),
+  ('hero_cta_primary',    'Book a session'),
+  ('hero_cta_secondary',  'Hear the difference'),
+  ('about_title',         'Studio'),
+  ('about_body',          ''),
+  ('contact_email',       ''),
+  ('contact_phone',       ''),
+  ('contact_address',     ''),
+  ('footer_tagline',      'SONORATIVA — Professional Audio Engineering'),
+  ('social_instagram',    ''),
+  ('social_soundcloud',   ''),
+  ('social_spotify',      '')
+ON CONFLICT (key) DO NOTHING;
+
 COMMIT;

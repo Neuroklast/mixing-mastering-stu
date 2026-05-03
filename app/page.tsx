@@ -16,7 +16,8 @@ import { getActiveShowcaseTrack, getAllShowcaseTracks } from '@/services/showcas
 import { getAllCredits } from '@/services/creditsService'
 import { getAllReviews } from '@/services/reviewsService'
 import { getAllGalleryImages } from '@/services/galleryService'
-import { PROFILE_ZARDONIC, PROFILE_KAIO } from '@/lib/content/engineers'
+import { getSiteContent } from '@/services/contentService'
+import { getActiveMembers } from '@/services/membersService'
 
 const CreditsSection = dynamic(() =>
   import('@/components/features/CreditsSection').then((m) => ({ default: m.CreditsSection }))
@@ -30,6 +31,11 @@ const ReviewsSection = dynamic(() =>
 const GallerySection = dynamic(() =>
   import('@/components/features/GallerySection').then((m) => ({ default: m.GallerySection }))
 )
+const MembersSection = dynamic(() =>
+  import('@/components/features/MembersSection').then((m) => ({ default: m.MembersSection }))
+)
+
+import { PROFILE_ZARDONIC, PROFILE_KAIO } from '@/lib/content/engineers'
 
 /**
  * Local-file fallback used only when the filesystem song directory, CMS, and
@@ -130,6 +136,11 @@ export default async function HomePage(): Promise<JSX.Element> {
   const galleryResult = await getAllGalleryImages()
   const gallery = galleryResult.success ? galleryResult.data : DEMO_GALLERY
 
+  const [siteContent, members] = await Promise.all([
+    getSiteContent(),
+    getActiveMembers(),
+  ])
+
   return (
     <ScrollProgressProvider>
       <>
@@ -139,7 +150,7 @@ export default async function HomePage(): Promise<JSX.Element> {
         <main id="main-content">
           <div className="relative z-10">
             <ErrorBoundary>
-              <HeroSection />
+              <HeroSection content={siteContent} />
             </ErrorBoundary>
             <ErrorBoundary>
               <ClientMasteringPlayer tracks={tracks} />
@@ -154,6 +165,9 @@ export default async function HomePage(): Promise<JSX.Element> {
               <ProfileSection profile={PROFILE_KAIO} />
             </ErrorBoundary>
             <ErrorBoundary>
+              <MembersSection members={members} />
+            </ErrorBoundary>
+            <ErrorBoundary>
               <ReviewsSection reviews={reviews} />
             </ErrorBoundary>
             <ErrorBoundary>
@@ -161,7 +175,7 @@ export default async function HomePage(): Promise<JSX.Element> {
             </ErrorBoundary>
           </div>
         </main>
-        <Footer />
+        <Footer siteContent={siteContent} />
         <CookieBanner />
       </>
     </ScrollProgressProvider>

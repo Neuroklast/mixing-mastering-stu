@@ -1,9 +1,13 @@
+import Link from 'next/link'
 import FormField from '@/app/admin/_components/FormField'
 import { createLegal } from '../_actions'
 
 export default function NewLegalPage() {
   return (
     <div style={{ maxWidth: '700px' }}>
+      <Link href="/admin/legal" style={{ color: '#7c3aed', fontSize: '0.85rem', textDecoration: 'none', display: 'inline-block', marginBottom: '1.5rem' }}>
+        ← Back to Legal Pages
+      </Link>
       <h1 style={{ marginBottom: '2rem' }}>New Legal Page</h1>
       <form action={createLegal}>
         <FormField label="Title" name="title" required />

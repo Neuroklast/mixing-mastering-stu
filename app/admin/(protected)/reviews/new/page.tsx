@@ -1,9 +1,13 @@
+import Link from 'next/link'
 import FormField from '@/app/admin/_components/FormField'
 import { createReview } from '../_actions'
 
 export default function NewReviewPage() {
   return (
     <div style={{ maxWidth: '600px' }}>
+      <Link href="/admin/reviews" style={{ color: '#7c3aed', fontSize: '0.85rem', textDecoration: 'none', display: 'inline-block', marginBottom: '1.5rem' }}>
+        ← Back to Reviews
+      </Link>
       <h1 style={{ marginBottom: '2rem' }}>New Review</h1>
       <form action={createReview}>
         <FormField label="Client Name" name="client_name" required />

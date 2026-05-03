@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabaseAdmin'
 import { deleteReview } from './_actions'
+import ConfirmDeleteButton from '@/app/admin/_components/ConfirmDeleteButton'
 
 export default async function ReviewsAdminPage() {
   const supabase = createAdminClient()
@@ -34,11 +35,9 @@ export default async function ReviewsAdminPage() {
               <td style={{ padding: '0.75rem' }}>{String(row.rating ?? '')}</td>
               <td style={{ padding: '0.75rem' }}>{String(row.service ?? '')}</td>
               <td style={{ padding: '0.75rem' }}>{String(row.date ?? '')}</td>
-              <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+              <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <Link href={`/admin/reviews/${String(row.id)}`} style={{ color: '#7c3aed' }}>Edit</Link>
-                <form action={deleteReview.bind(null, String(row.id))}>
-                  <button type="submit" style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>Delete</button>
-                </form>
+                <ConfirmDeleteButton action={deleteReview.bind(null, String(row.id))} />
               </td>
             </tr>
           ))}
