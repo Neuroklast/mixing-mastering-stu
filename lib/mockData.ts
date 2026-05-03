@@ -2,6 +2,7 @@ import type { ShowcaseTrack } from '@/lib/schemas/showcase'
 import type { Credit } from '@/lib/schemas/credits'
 import type { Review } from '@/lib/schemas/review'
 import type { GalleryImage } from '@/lib/schemas/gallery'
+import type { LegalPage } from '@/lib/schemas/legal'
 import type { Order, AudioFile, Product } from '@/types'
 
 export const MOCK_SHOWCASE_TRACK: ShowcaseTrack = {
@@ -168,5 +169,24 @@ export const MOCK_PRODUCTS: Product[] = [
     is_active: true,
     download_url: null,
     license_type: 'single',
+  },
+]
+
+export const MOCK_LEGAL_PAGES: LegalPage[] = [
+  {
+    id: 'legal-impressum',
+    title: 'Impressum',
+    slug: 'impressum',
+    content:
+      '<h2>Angaben gemäß § 5 TMG</h2><p>SONORATIVA – Professional Audio Engineering</p><p>E-Mail: <a href="mailto:legal@sonorativa.com">legal@sonorativa.com</a></p><p>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV: SONORATIVA</p>',
+    lastUpdated: '2026-05-01',
+  },
+  {
+    id: 'legal-datenschutz',
+    title: 'Datenschutzerklärung',
+    slug: 'datenschutz',
+    content:
+      '<h2>Datenschutz auf einen Blick</h2><p>Diese Seite erläutert, welche personenbezogenen Daten wir erheben, wenn Sie unsere Website nutzen, und wie wir diese Daten verwenden. Die vollständige englischsprachige Datenschutzerklärung finden Sie unter <a href="/legal/privacy">Privacy Policy</a>.</p>',
+    lastUpdated: '2026-05-01',
   },
 ]

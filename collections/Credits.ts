@@ -3,6 +3,12 @@ import type { CollectionConfig } from 'payload'
 export const Credits: CollectionConfig = {
   slug: 'credits',
   admin: { useAsTitle: 'name' },
+  access: {
+    read: () => true,
+    create: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'engineer',
+    update: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'engineer',
+    delete: ({ req }) => req.user?.role === 'admin',
+  },
   fields: [
     { name: 'name', type: 'text', required: true },
     {

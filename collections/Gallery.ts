@@ -3,6 +3,12 @@ import type { CollectionConfig } from 'payload'
 export const Gallery: CollectionConfig = {
   slug: 'gallery',
   admin: { useAsTitle: 'alt' },
+  access: {
+    read: () => true,
+    create: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'engineer',
+    update: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'engineer',
+    delete: ({ req }) => req.user?.role === 'admin',
+  },
   fields: [
     { name: 'image', type: 'upload', relationTo: 'media', required: true },
     {

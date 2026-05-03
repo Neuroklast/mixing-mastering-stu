@@ -10,6 +10,7 @@ import { Credits } from '@/collections/Credits'
 import { Reviews } from '@/collections/Reviews'
 import { Gallery } from '@/collections/Gallery'
 import { Media } from '@/collections/Media'
+import { Legal } from '@/collections/Legal'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -36,7 +37,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Orders, Products, Media, Showcase, Credits, Reviews, Gallery],
+  collections: [Users, Orders, Products, Media, Showcase, Credits, Reviews, Gallery, Legal],
   plugins: [
     ...(s3Configured
       ? [
