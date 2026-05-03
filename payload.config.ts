@@ -68,7 +68,7 @@ db: postgresAdapter({
     ssl: {
       rejectUnauthorized: false
     }
-  }
+  },
   push: true
 }),
   editor: lexicalEditor(),
