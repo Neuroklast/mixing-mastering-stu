@@ -272,6 +272,10 @@ export function useAudioEngine(
   useEffect(() => {
     if (typeof window === 'undefined') return
 
+    // Transition to 'loading' synchronously so the UI reacts immediately.
+    // This is intentional (not a cascading render): the effect body finishes
+    // setting up all audio elements before React re-renders.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     updateStatus('loading')
     metadataLoadedRef.current = 0
     // Assign the initial generation for this load cycle
@@ -629,7 +633,7 @@ export function useAudioEngine(
       // so its per-track analyser keeps producing spectrum data for the
       // background curve overlay.
     },
-    [connectAudioElement, crossfade, getOrCreateGraph, updateStatus],
+    [connectAudioElement, crossfade, updateStatus],
   )
 
   return {

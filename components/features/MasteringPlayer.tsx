@@ -110,8 +110,11 @@ const MasteringPlayerInner = ({
 
   // Track whether we've ever been in a 'ready' state – used to distinguish the
   // initial skeleton from the in-place loading overlay on subsequent track changes.
+  // This ref is written/read during render intentionally: it is a monotonic flag
+  // (false → true, never back) so concurrent rendering cannot cause stale reads.
   const hasBeenReadyRef = useRef(false)
   if (engine.status === 'ready' || engine.status === 'playing' || engine.status === 'paused') {
+    // eslint-disable-next-line react-hooks/refs
     hasBeenReadyRef.current = true
   }
 
@@ -129,6 +132,7 @@ const MasteringPlayerInner = ({
   }
 
   // Initial load: show skeleton until first metadata is ready
+  // eslint-disable-next-line react-hooks/refs
   if (engine.status === 'loading' && !hasBeenReadyRef.current) return <LoadingSkeleton />
   if (engine.status === 'error') return <ErrorDisplay message={engine.errorMessage} />
 

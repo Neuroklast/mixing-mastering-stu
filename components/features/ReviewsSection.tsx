@@ -43,7 +43,7 @@ const ReviewCard = ({ review, index }: ReviewCardProps): JSX.Element => (
     className="flex-shrink-0 w-[320px] md:w-auto bg-card border border-border rounded p-6 flex flex-col gap-4"
   >
     <StarRating rating={review.rating} />
-    <p className="text-muted-foreground leading-relaxed text-sm flex-1">"{review.text}"</p>
+    <p className="text-muted-foreground leading-relaxed text-sm flex-1">&ldquo;{review.text}&rdquo;</p>
     <div className="flex items-center justify-between gap-2 flex-wrap">
       <span className="font-bold text-sm text-foreground">{review.clientName}</span>
       <div className="flex items-center gap-2">
