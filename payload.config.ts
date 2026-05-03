@@ -16,6 +16,15 @@ import { fileURLToPath } from 'url'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+// Only enable S3 storage when all required credentials are present.
+// This allows `payload generate:types` to run without S3 credentials
+// and lets the app start in dev mode without a Supabase S3 bucket.
+const s3Configured =
+  !!process.env.S3_ENDPOINT &&
+  !!process.env.S3_ACCESS_KEY_ID &&
+  !!process.env.S3_SECRET_ACCESS_KEY &&
+  !!process.env.S3_BUCKET
+
 export default buildConfig({
   serverURL: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
   admin: {
@@ -29,23 +38,27 @@ export default buildConfig({
   },
   collections: [Users, Orders, Products, Media, Showcase, Credits, Reviews, Gallery],
   plugins: [
-    s3Storage({
-      collections: {
-        media: true,
-      },
-      bucket: process.env.S3_BUCKET ?? '',
-      config: {
-        endpoint: process.env.S3_ENDPOINT,
-        credentials: {
-          accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
-          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
-        },
-        // Supabase S3 is hosted in a single region; force-path-style is required
-        // because bucket names are not valid DNS hostnames on the Supabase endpoint.
-        forcePathStyle: true,
-        region: 'auto',
-      },
-    }),
+    ...(s3Configured
+      ? [
+          s3Storage({
+            collections: {
+              media: true,
+            },
+            bucket: process.env.S3_BUCKET as string,
+            config: {
+              endpoint: process.env.S3_ENDPOINT,
+              credentials: {
+                accessKeyId: process.env.S3_ACCESS_KEY_ID as string,
+                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY as string,
+              },
+              // Supabase S3 is hosted in a single region; force-path-style is required
+              // because bucket names are not valid DNS hostnames on the Supabase endpoint.
+              forcePathStyle: true,
+              region: 'auto',
+            },
+          }),
+        ]
+      : []),
   ],
   db: postgresAdapter({
     pool: {
