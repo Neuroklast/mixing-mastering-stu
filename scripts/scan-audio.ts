@@ -392,7 +392,7 @@ async function syncToPayload(results: ScanResult[]): Promise<void> {
     if (existing.docs.length > 0) {
       await payload.update({
         collection: 'showcase',
-        id: existing.docs[0]!.id as string,
+        id: String(existing.docs[0]!.id),
         data,
       })
       console.log(`[sync] updated: "${title}" (slug: ${slug})`)
