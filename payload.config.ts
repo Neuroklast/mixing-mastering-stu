@@ -62,11 +62,14 @@ export default buildConfig({
         ]
       : []),
   ],
-  db: postgresAdapter({
-    pool: {
-      connectionString: process.env.POSTGRES_URL ?? '',
-    },
-  }),
+db: postgresAdapter({
+  pool: {
+    connectionString: process.env.POSTGRES_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  }
+}),
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET ?? '',
   typescript: {
