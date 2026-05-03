@@ -6,7 +6,10 @@ echo "================================"
 
 if [ -z "${DATABASE_URI:-}" ]; then
   if [ -f ".env.local" ]; then
-    export $(grep -v '^#' .env.local | grep DATABASE_URI | xargs)
+    set -a
+    # shellcheck source=/dev/null
+    source .env.local
+    set +a
   fi
 fi
 

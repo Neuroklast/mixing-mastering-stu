@@ -3,19 +3,18 @@ import config from '@payload-config'
 import { isDev } from '@/lib/devMode'
 import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 import { creditSchema, type Credit } from '@/lib/schemas/credits'
+import { resolveMediaUrl } from '@/lib/payload/resolveMediaUrl'
 import { MOCK_CREDITS } from '@/lib/mockData'
 
 function docToCredit(doc: Record<string, unknown>): Credit | null {
+  const coverImageUrl = resolveMediaUrl(doc.coverImage)
   const parsed = creditSchema.safeParse({
     id: String(doc.id),
     name: doc.name,
     role: doc.role,
     year: typeof doc.year === 'number' ? doc.year : undefined,
     spotifyUrl: typeof doc.spotifyUrl === 'string' ? doc.spotifyUrl : undefined,
-    coverImage:
-      doc.coverImage && typeof doc.coverImage === 'object'
-        ? { url: (doc.coverImage as Record<string, unknown>).url as string }
-        : undefined,
+    coverImage: coverImageUrl ? { url: coverImageUrl } : undefined,
     featured: typeof doc.featured === 'boolean' ? doc.featured : false,
   })
   return parsed.success ? parsed.data : null

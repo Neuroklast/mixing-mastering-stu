@@ -48,4 +48,9 @@ describe('reviewSchema', () => {
     const r = reviewSchema.safeParse({ ...valid, projectLink: '' })
     expect(r.success).toBe(true)
   })
+
+  it('accepts valid URL projectLink', () => {
+    const r = reviewSchema.safeParse({ ...valid, projectLink: 'https://example.com/project' })
+    expect(r.success).toBe(true)
+  })
 })
