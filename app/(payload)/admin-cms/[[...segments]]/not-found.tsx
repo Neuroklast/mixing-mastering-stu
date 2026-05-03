@@ -7,7 +7,7 @@ type NotFoundArgs = {
   searchParams: Promise<{ [key: string]: string | string[] }>
 }
 
-const NotFound = (args: NotFoundArgs): Promise<React.JSX.Element> =>
+const NotFound = (args: NotFoundArgs): Promise<JSX.Element> =>
   NotFoundPage({ config, importMap, params: args.params, searchParams: args.searchParams })
 
 export default NotFound

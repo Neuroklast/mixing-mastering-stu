@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -14,18 +14,18 @@ import { COOKIE_CONSENT_KEY } from '@/lib/site'
  * Consent is persisted in localStorage. The banner is not rendered during SSR.
  */
 export const CookieBanner = (): JSX.Element | null => {
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
+  // Lazy initialiser runs once on mount (client-side only).
+  // Using lazy useState avoids the setState-in-effect lint violation and
+  // eliminates the extra render cycle that a useEffect initialisation would cause.
+  const [visible, setVisible] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
     try {
-      if (!localStorage.getItem(COOKIE_CONSENT_KEY)) {
-        setVisible(true)
-      }
+      return !localStorage.getItem(COOKIE_CONSENT_KEY)
     } catch {
       // localStorage may be blocked in private browsing – show banner
-      setVisible(true)
+      return true
     }
-  }, [])
+  })
 
   const accept = (): void => {
     try { localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted') } catch { /* ignore */ }
