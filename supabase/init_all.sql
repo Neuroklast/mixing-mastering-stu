@@ -308,7 +308,7 @@ END $$;
 -- NOTE: Payload CMS collections (showcase, gallery, credits, reviews, legal,
 -- media, users, orders, products) are managed by Payload's own migration
 -- system and enforce access control at the application layer via collection
--- access functions.  Run `npm run payload:init` after this script to create
+-- access functions. Run `npm run payload:init` after this script to create
 -- those tables and apply Payload migrations.
 -- ─────────────────────────────────────────────────────────────────────────────
 
