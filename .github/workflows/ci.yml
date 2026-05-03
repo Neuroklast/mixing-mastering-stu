@@ -44,9 +44,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate Payload types
-        run: npx payload generate:types
+      - name: TypeScript check
+        run: npx tsc --noEmit
         env:
-          POSTGRES_URL_NON_POOLING: postgresql://placeholder:placeholder@localhost:5432/test
-          PAYLOAD_SECRET: ci-placeholder-secret-at-least-32-characters-long
-          PAYLOAD_TS_OUTPUT_PATH: /tmp/payload-types.ts
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+          NEXT_PUBLIC_SITE_URL: https://placeholder.example.com
