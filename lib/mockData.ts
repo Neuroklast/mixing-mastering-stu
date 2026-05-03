@@ -178,15 +178,15 @@ export const MOCK_LEGAL_PAGES: LegalPage[] = [
     title: 'Impressum',
     slug: 'impressum',
     content:
-      '<h2>Angaben gemäß § 5 TMG</h2><p>SONORATIVA – Professional Audio Engineering</p><p>E-Mail: <a href="mailto:legal@sonorativa.com">legal@sonorativa.com</a></p><p>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV: SONORATIVA</p>',
+      '<h2>Legal Notice</h2><p>SONORATIVA – Professional Audio Engineering</p><p>E-Mail: <a href="mailto:legal@sonorativa.com">legal@sonorativa.com</a></p><p>Responsible for content: SONORATIVA</p>',
     lastUpdated: '2026-05-01',
   },
   {
     id: 'legal-datenschutz',
-    title: 'Datenschutzerklärung',
+    title: 'Privacy Policy',
     slug: 'datenschutz',
     content:
-      '<h2>Datenschutz auf einen Blick</h2><p>Diese Seite erläutert, welche personenbezogenen Daten wir erheben, wenn Sie unsere Website nutzen, und wie wir diese Daten verwenden. Die vollständige englischsprachige Datenschutzerklärung finden Sie unter <a href="/legal/privacy">Privacy Policy</a>.</p>',
+      '<h2>Privacy at a Glance</h2><p>This page explains what personal data we collect when you use our website and how we use it. For the full privacy policy see <a href="/legal/privacy">Privacy Policy</a>.</p>',
     lastUpdated: '2026-05-01',
   },
 ]

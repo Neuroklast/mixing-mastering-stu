@@ -40,7 +40,8 @@ export async function getAllCredits(): Promise<ServiceResult<Credit[]>> {
       })
       if (parsed.success) credits.push(parsed.data)
     }
-    return ok(credits)
+    // Fall back to demo data when the DB table is empty
+    return ok(credits.length > 0 ? credits : MOCK_CREDITS)
   } catch (e) {
     return err(e instanceof Error ? e.message : 'Failed to load credits')
   }

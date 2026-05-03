@@ -23,7 +23,7 @@ Professional audio engineering studio – mixing & mastering services with futur
 
 ---
 
-## Benutzeranleitung / Setup Guide
+## Setup Guide
 
 This guide covers everything from cloning the repo to a production deployment on Vercel.
 

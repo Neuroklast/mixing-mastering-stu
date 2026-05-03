@@ -30,7 +30,8 @@ export async function getAllReviews(): Promise<ServiceResult<Review[]>> {
       })
       if (parsed.success) reviews.push(parsed.data)
     }
-    return ok(reviews)
+    // Fall back to demo data when the DB table is empty
+    return ok(reviews.length > 0 ? reviews : DEMO_REVIEWS)
   } catch (e) {
     return err(e instanceof Error ? e.message : 'Failed to load reviews')
   }
