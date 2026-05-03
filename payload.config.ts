@@ -69,6 +69,7 @@ db: postgresAdapter({
       rejectUnauthorized: false
     }
   }
+  push: true
 }),
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET ?? '',
