@@ -196,6 +196,14 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- ── Helper: is_admin() ───────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.is_admin(user_id UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = user_id AND role = 'admin'
+  )
+$$;
+
 -- ── Storage buckets ───────────────────────────────────────────────────────────
 
 -- Audio-files bucket (client audio uploads for orders)
@@ -220,6 +228,40 @@ DO $$ BEGIN
     CREATE POLICY "Service role uploads audio"
       ON storage.objects FOR INSERT
       WITH CHECK (bucket_id = 'audio-files' AND auth.role() = 'service_role');
+  END IF;
+END $$;
+
+-- TUS resumable upload: authenticated admins can INSERT into audio-files
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'objects' AND schemaname = 'storage'
+      AND policyname = 'Admins can upload audio files'
+  ) THEN
+    CREATE POLICY "Admins can upload audio files"
+      ON storage.objects FOR INSERT
+      TO authenticated
+      WITH CHECK (
+        bucket_id = 'audio-files'
+        AND public.is_admin(auth.uid())
+      );
+  END IF;
+END $$;
+
+-- TUS upsert (x-upsert: true header): authenticated admins can UPDATE audio-files
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'objects' AND schemaname = 'storage'
+      AND policyname = 'Admins can update audio files'
+  ) THEN
+    CREATE POLICY "Admins can update audio files"
+      ON storage.objects FOR UPDATE
+      TO authenticated
+      USING (
+        bucket_id = 'audio-files'
+        AND public.is_admin(auth.uid())
+      );
   END IF;
 END $$;
 

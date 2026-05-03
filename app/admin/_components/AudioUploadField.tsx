@@ -1,55 +1,120 @@
 'use client'
 
 import { useState } from 'react'
+import { useTusUpload } from '@/hooks/useTusUpload'
 
 interface AudioUploadFieldProps {
   label: string
   name: string
   defaultValue?: string
-  bucket?: string
+  showcaseId?: string
 }
 
 export default function AudioUploadField({
   label,
   name,
   defaultValue = '',
-  bucket = 'audio-files',
+  showcaseId = 'track',
 }: AudioUploadFieldProps) {
-  const [storagePath, setStoragePath] = useState('')
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState('')
+  const { status, progress, url, error, upload, reset } = useTusUpload()
+  const [currentPath, setCurrentPath] = useState(defaultValue)
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploading(true)
-    setError('')
 
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('bucket', bucket)
+    const fieldSuffix = name.includes('before') ? 'before' : 'after'
+    const objectPath = `${showcaseId}/${fieldSuffix}-${Date.now()}.wav`
 
-    const res = await fetch('/api/admin/upload-audio', { method: 'POST', body: formData })
-    if (!res.ok) {
-      const body = (await res.json()) as { error?: string }
-      setError(body.error ?? 'Upload failed')
-    } else {
-      const body = (await res.json()) as { path?: string }
-      setStoragePath(body.path ?? '')
+    try {
+      await upload(file, objectPath)
+      setCurrentPath(objectPath)
+    } catch {
+      // error already reflected in state.error
     }
-    setUploading(false)
   }
 
+  const progressPct = Math.round(progress * 100)
+
   return (
-    <div style={{ marginBottom: '1rem' }}>
-      <label style={{ display: 'block', marginBottom: '0.3rem', color: '#aaa', fontSize: '0.85rem' }}>{label}</label>
-      {defaultValue && (
-        <p style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.4rem' }}>Current: {defaultValue}</p>
+    <div style={{ marginBottom: '1.5rem' }}>
+      <label
+        style={{ display: 'block', marginBottom: '0.3rem', color: '#aaa', fontSize: '0.85rem' }}
+      >
+        {label}
+      </label>
+
+      {/* Current / successfully-uploaded file preview */}
+      {currentPath && (
+        <div style={{ marginBottom: '0.5rem' }}>
+          <p style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.3rem' }}>
+            Current: <code style={{ color: '#888' }}>{currentPath}</code>
+          </p>
+        </div>
       )}
-      <input type="file" accept="audio/*" onChange={handleFile} disabled={uploading} style={{ color: '#ccc' }} />
-      {uploading && <p style={{ fontSize: '0.8rem', color: '#aaa' }}>Uploading…</p>}
-      {error && <p style={{ fontSize: '0.8rem', color: '#f87171' }}>{error}</p>}
-      <input type="hidden" name={name} value={storagePath || defaultValue} />
+
+      <input
+        type="file"
+        accept="audio/wav,audio/flac,audio/x-wav,.wav,.flac"
+        onChange={handleFile}
+        disabled={status === 'uploading'}
+        style={{ color: '#ccc', display: 'block', marginBottom: '0.4rem' }}
+      />
+
+      {/* Progress bar */}
+      {status === 'uploading' && (
+        <div style={{ marginTop: '0.4rem' }}>
+          <div
+            style={{
+              height: '4px',
+              background: '#333',
+              borderRadius: '2px',
+              overflow: 'hidden',
+              marginBottom: '0.3rem',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${progressPct}%`,
+                background: '#7c3aed',
+                transition: 'width 0.2s ease',
+              }}
+            />
+          </div>
+          <p style={{ fontSize: '0.8rem', color: '#aaa' }}>Uploading… {progressPct}%</p>
+        </div>
+      )}
+
+      {status === 'success' && (
+        <p style={{ fontSize: '0.8rem', color: '#4ade80' }}>✓ Upload complete</p>
+      )}
+
+      {error && (
+        <div>
+          <p style={{ fontSize: '0.8rem', color: '#f87171', marginBottom: '0.3rem' }}>
+            Error: {error}
+          </p>
+          <button
+            type="button"
+            onClick={reset}
+            style={{
+              fontSize: '0.75rem',
+              color: '#aaa',
+              background: 'none',
+              border: '1px solid #444',
+              borderRadius: '4px',
+              padding: '0.2rem 0.6rem',
+              cursor: 'pointer',
+            }}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {/* Hidden field — contains the storage path for the form action */}
+      <input type="hidden" name={name} value={url ?? currentPath} />
     </div>
   )
 }
