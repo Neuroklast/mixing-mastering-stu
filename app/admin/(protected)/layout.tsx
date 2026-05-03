@@ -24,10 +24,16 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
   }
 
   return (
-    <div style={{ margin: 0, fontFamily: 'system-ui, sans-serif', background: '#0a0a0a', color: '#fff', minHeight: '100vh' }}>
+    <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
       <Toaster position="top-right" theme="dark" richColors />
       <AdminNav />
-      <main style={{ padding: '2rem' }}>{children}</main>
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Breadcrumb / email bar */}
+        <header className="hidden md:flex items-center justify-end px-6 py-3 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+          <span className="text-xs text-zinc-500 font-mono">{user.email}</span>
+        </header>
+        <main className="flex-1 p-6 md:p-8 overflow-auto">{children}</main>
+      </div>
     </div>
   )
 }

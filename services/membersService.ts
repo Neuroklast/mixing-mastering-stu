@@ -36,7 +36,7 @@ export async function getActiveMembers(): Promise<Member[]> {
       .eq('active', true)
       .order('display_order', { ascending: true })
 
-    if (error || !data) return []
+    if (error || !data) return DEMO_MEMBERS
 
     const members: Member[] = []
     for (const row of data) {
@@ -54,7 +54,8 @@ export async function getActiveMembers(): Promise<Member[]> {
       })
       if (parsed.success) members.push(parsed.data)
     }
-    return members
+    // Fall back to demo data when the DB table is empty
+    return members.length > 0 ? members : DEMO_MEMBERS
   } catch (e) {
     console.error('[membersService] getActiveMembers failed:', e)
     return []

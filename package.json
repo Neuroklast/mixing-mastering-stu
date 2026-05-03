@@ -6,6 +6,7 @@
     "node": "24.x"
   },
   "scripts": {
+    "install:all": "node scripts/install.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
