@@ -10,6 +10,28 @@ import { MOCK_LEGAL_PAGES } from '@/lib/mockData'
  * Only handles the node types produced by the Lexical editor for legal content:
  * paragraphs, headings, links, and inline text with bold/italic formatting.
  */
+
+const HTML_ESCAPE_MAP: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char] ?? char)
+}
+
+/** Only allow safe URL schemes; default to '#' for anything suspicious. */
+function sanitizeUrl(url: string): string {
+  const trimmed = url.trim()
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+    return trimmed
+  }
+  return '#'
+}
+
 function lexicalToHtml(root: unknown): string {
   if (!root || typeof root !== 'object') return ''
   const node = root as Record<string, unknown>
@@ -34,11 +56,13 @@ function lexicalToHtml(root: unknown): string {
     case 'listitem':
       return `<li>${children}</li>`
     case 'link': {
-      const url = typeof node.url === 'string' ? node.url : '#'
-      return `<a href="${url}">${children}</a>`
+      const rawUrl = typeof node.url === 'string' ? node.url : '#'
+      const url = sanitizeUrl(rawUrl)
+      return `<a href="${escapeHtml(url)}">${children}</a>`
     }
     case 'text': {
-      const text = typeof node.text === 'string' ? node.text : ''
+      const raw = typeof node.text === 'string' ? node.text : ''
+      const text = escapeHtml(raw)
       const format = typeof node.format === 'number' ? node.format : 0
       // Payload Lexical format bitmask: 1=bold, 2=italic, 4=strikethrough, 8=underline, 16=code
       let result = text
