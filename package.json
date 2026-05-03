@@ -2,13 +2,12 @@
   "name": "sonorativa",
   "private": true,
   "version": "0.1.0",
-  "type": "module",
   "engines": {
     "node": "24.x"
   },
   "scripts": {
     "dev": "next dev",
-    "build": "payload generate:types && next build",
+    "build": "NODE_OPTIONS='--import tsx/esm' payload generate:types && next build"
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
