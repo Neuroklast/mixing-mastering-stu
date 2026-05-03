@@ -27,7 +27,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import type { StorageObject, StorageProvider } from './types'
 
 /** Encode each path segment (but not the slashes between them). */
-function encodePath(path: string): string {
+function encodePathSegments(path: string): string {
   return path.split('/').map(encodeURIComponent).join('/')
 }
 
@@ -59,7 +59,7 @@ export const r2StorageProvider: StorageProvider = {
     if (!host) throw new Error('Missing R2_PUBLIC_HOST environment variable')
     // bucket is not part of the URL when using a custom domain bound to one bucket.
     // If your domain maps to a specific bucket, omit the bucket prefix.
-    return `https://${host}/${encodePath(path)}`
+    return `https://${host}/${encodePathSegments(path)}`
   },
 
   /**
