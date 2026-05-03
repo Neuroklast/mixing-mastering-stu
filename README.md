@@ -2,7 +2,7 @@
 
 Professional audio engineering studio – mixing & mastering services with future VST/digital product shop.
 
-[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNeuroklast%2Fmixing-mastering-stu&env=POSTGRES_URL_NON_POOLING,PAYLOAD_SECRET,S3_ENDPOINT,S3_ACCESS_KEY_ID,S3_SECRET_ACCESS_KEY,S3_BUCKET,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,NEXT_PUBLIC_SITE_URL&envDescription=See%20the%20Environment%20Variables%20section%20in%20README.md%20for%20instructions&envLink=https%3A%2F%2Fgithub.com%2FNeuroklast%2Fmixing-mastering-stu%23environment-variables&project-name=sonorativa&repository-name=sonorativa)
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNeuroklast%2Fmixing-mastering-stu&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,NEXT_PUBLIC_SITE_URL,RESEND_API_KEY,CONTACT_TO_EMAIL,CONTACT_FROM_EMAIL&envDescription=See%20the%20Environment%20Variables%20section%20in%20README.md%20for%20instructions&envLink=https%3A%2F%2Fgithub.com%2FNeuroklast%2Fmixing-mastering-stu%23environment-variables&project-name=sonorativa&repository-name=sonorativa)
 
 ---
 
@@ -10,13 +10,14 @@ Professional audio engineering studio – mixing & mastering services with futur
 
 | Category | Tool |
 |---|---|
-| Framework | Next.js 15 (App Router) + TypeScript Strict |
-| CMS | Payload CMS v3 (at `/admin-cms`, Postgres adapter) |
+| Framework | Next.js (App Router) + TypeScript Strict |
+| Admin | Custom `/admin` area (Next.js Server + Client Components) |
 | Styling | Tailwind CSS v4 (CSS-first, `@theme` directive) |
 | UI Components | Shadcn/UI (Radix primitives + `class-variance-authority`) |
 | Animations | Framer Motion + Lenis smooth scroll |
-| Database / Auth | Supabase (PostgreSQL + Storage) |
-| Media Storage | Supabase S3 (via `@payloadcms/storage-s3`) |
+| Database / Auth | Supabase (PostgreSQL + Storage + Auth) |
+| Audio Uploads | TUS resumable uploads via `tus-js-client` (≤5 GB/file, Free Tier) |
+| Email | Resend |
 | Validation | Zod (all inputs and service boundaries) |
 | Testing | Vitest (integration) + Playwright (E2E) |
 
@@ -48,7 +49,7 @@ Before you deploy, you need a Supabase project with a few things configured.
 
 1. Go to [app.supabase.com](https://app.supabase.com) → **New project**
 2. Choose a region close to your target audience
-3. Save your **database password** — you'll need it for `POSTGRES_URL_NON_POOLING`
+3. Save your database password (you won't need to put it in Vercel — Supabase handles auth)
 
 #### 1.2 Apply the Database Schema & Create Buckets
 
@@ -87,15 +88,14 @@ You need the following values from the Supabase dashboard:
 | `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API → `anon` `public` key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → `service_role` key (secret!) |
-| `POSTGRES_URL_NON_POOLING` | Project Settings → Database → Connection string → URI (non-pooling) |
-| `S3_ENDPOINT` | Storage → S3 Connection → Endpoint |
-| `S3_ACCESS_KEY_ID` | Storage → S3 Connection → Access key ID |
-| `S3_SECRET_ACCESS_KEY` | Storage → S3 Connection → Secret access key |
 
-The S3 endpoint follows the pattern:
-```
-https://<project-ref>.supabase.co/storage/v1/s3
-```
+You also need:
+
+| Variable | Where to get it |
+|---|---|
+| `RESEND_API_KEY` | [resend.com](https://resend.com) → API Keys |
+| `CONTACT_TO_EMAIL` | The email address that receives contact form submissions |
+| `CONTACT_FROM_EMAIL` | A verified sender address in your Resend account |
 
 ---
 
@@ -126,22 +126,23 @@ Open `.env.local` and fill in the values you collected in Part 1. The file is pr
 > **Tip — Zero credentials dev mode:**  
 > Leave `NEXT_PUBLIC_DEV_MODE=true` (the default) to run entirely on mock data without any Supabase connection. All services return pre-defined sample data from `lib/mockData.ts`. This is ideal for frontend development and is safe to commit.
 
-#### 2.3 Run Payload Migrations (first time only)
-
-```bash
-npm run payload:init
-```
-
-This runs `npm run migrate` (creates tables in your Supabase Postgres via the programmatic migration runner) and `npx payload generate:types` (regenerates `payload-types.ts`).
-
-#### 2.4 Start the Dev Server
+#### 2.3 Start the Dev Server
 
 ```bash
 npm run dev
 ```
 
 The app is now running at [http://localhost:3000](http://localhost:3000).  
-The Payload CMS admin panel is at [http://localhost:3000/admin-cms](http://localhost:3000/admin-cms).
+The admin panel is at [http://localhost:3000/admin](http://localhost:3000/admin).
+
+#### 2.4 Create Your First Admin User
+
+1. Go to your Supabase project → **Authentication** → **Users** → **Invite user**
+2. After the user accepts the invite, open **SQL Editor** and run:
+   ```sql
+   UPDATE profiles SET role = 'admin' WHERE id = '<user-uuid>';
+   ```
+3. Log in at `/admin` with the credentials you set
 
 ---
 
@@ -153,7 +154,7 @@ Click the button at the top of this README. Vercel will:
 
 1. Fork/clone the repository into your GitHub account
 2. Ask you to fill in the environment variables (listed below)
-3. Run `npm run build` (`payload generate:types && next build`) automatically
+3. Run `next build` automatically
 4. Deploy the app
 
 When Vercel asks for environment variables, use the values from Part 1.
@@ -170,28 +171,18 @@ When Vercel asks for environment variables, use the values from Part 1.
 
 Under **Environment Variables**, add every variable from the table in the [Environment Variables](#environment-variables) section. Make sure they are set for **Production**, **Preview**, and **Development** environments.
 
-**Step 3 — Build & Output Settings**
+**Step 3 — Deploy**
 
-The default settings work out of the box. The `build` script is already configured as:
-```
-payload generate:types && next build
-```
-Vercel uses the `build` script from `package.json` automatically.
+Click **Deploy**. Vercel will install dependencies and run `next build`.
 
-**Step 4 — Deploy**
+#### Step 4 — Create Your Admin User
 
-Click **Deploy**. Vercel will:
-- Install dependencies
-- Run `payload generate:types` to ensure TypeScript types are up to date
-- Run `next build` with full static optimization
-
-After the first successful deployment, Payload will automatically run pending migrations on startup via the `db.push` functionality.
-
-#### Step 5 — Create Your Admin User
-
-1. Visit `https://your-project.vercel.app/admin-cms`
-2. On first access, Payload will prompt you to create the first admin user
-3. Use a strong password — this is your CMS control panel
+1. Go to your Supabase project → **Authentication** → **Users** → **Invite user**
+2. After the user accepts the invite, open **SQL Editor** and run:
+   ```sql
+   UPDATE profiles SET role = 'admin' WHERE id = '<user-uuid>';
+   ```
+3. Log in at `https://your-project.vercel.app/admin`
 
 ---
 
@@ -204,9 +195,9 @@ The [Supabase Vercel Integration](https://vercel.com/integrations/supabase) auto
 1. Go to your Vercel project → **Settings** → **Integrations**
 2. Search for **Supabase** → **Add Integration**
 3. Connect your Supabase organization and select your project
-4. Vercel automatically populates `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `DATABASE_URL`
+4. Vercel automatically populates `SUPABASE_URL`, `SUPABASE_ANON_KEY`, etc.
 
-> **Note:** The integration uses slightly different variable names. After connecting, manually verify that the variable names match what `env.mjs` expects (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `POSTGRES_URL_NON_POOLING`). You may need to rename or copy the values.
+> **Note:** The integration uses slightly different variable names. After connecting, verify they match what `env.mjs` expects (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`). You may need to rename them.
 
 ---
 
@@ -218,56 +209,50 @@ The [Supabase Vercel Integration](https://vercel.com/integrations/supabase) auto
 │   ├── layout.tsx             # Root layout – lang="en", skip-to-content, viewport
 │   ├── page.tsx               # Homepage (Server Component)
 │   ├── globals.css            # Tailwind v4 + SONORATIVA design tokens (B/W/Red CI)
-│   ├── actions/               # Server Actions (thin orchestration layer)
-│   │   ├── createOrder.ts     # → delegates to services/orderService
-│   │   ├── uploadAudio.ts     # → delegates to services/fileService
+│   ├── _actions/              # Public-facing Server Actions
+│   │   ├── contact.ts         # Contact form → Resend
 │   │   └── generateSignedUrl.ts
-│   ├── legal/                 # Legal pages (SSR, no JS required)
-│   │   ├── privacy/page.tsx   # Privacy Policy (GDPR)
-│   │   └── terms/page.tsx     # Terms of Service
-│   └── (payload)/             # Payload CMS admin panel
-│       └── admin-cms/         # Served at /admin-cms
-├── collections/               # Payload CMS collection configs
-│   ├── Users.ts
-│   ├── Orders.ts
-│   ├── Products.ts
-│   ├── Showcase.ts
-│   ├── Credits.ts
-│   ├── Reviews.ts
-│   ├── Gallery.ts             # Studio gallery images
-│   └── Media.ts               # Uploads → Supabase S3 via @payloadcms/storage-s3
-├── components/
-│   ├── features/              # Complex feature components (client-side)
-│   └── ui/                    # Shadcn/UI primitives (no business logic)
+│   ├── actions/               # Legacy Server Actions (audio upload, order creation)
+│   ├── admin/                 # Admin area (Supabase Auth gated)
+│   │   ├── _actions/          # Admin-only server actions
+│   │   │   ├── auth.ts        # requireAdmin() — checks session + profiles.role
+│   │   │   └── uploads.ts     # createSignedUploadUrl + getTusUploadCredentials
+│   │   ├── _components/       # Shared admin UI components
+│   │   │   └── AudioUploadField.tsx  # TUS upload widget with progress bar
+│   │   ├── showcase/          # Showcase CRUD (audio player with TUS uploads)
+│   │   ├── gallery/           # Gallery CRUD
+│   │   ├── reviews/           # Reviews CRUD
+│   │   ├── credits/           # Credits CRUD
+│   │   ├── legal/             # Legal pages CRUD
+│   │   └── media/             # Media browser
+│   └── legal/                 # Public legal pages (SSR)
 ├── hooks/
-│   └── useAudioEngine.ts      # FSM audio engine
+│   ├── useAudioEngine.ts      # FSM audio engine
+│   └── useTusUpload.ts        # TUS resumable upload hook (large files)
 ├── lib/
 │   ├── devMode.ts             # ★ Single source of truth for NEXT_PUBLIC_DEV_MODE flag
 │   ├── serviceResult.ts       # ★ Shared ServiceResult<T> type + ok/err helpers
+│   ├── supabaseServer.ts      # Supabase server client (cookie-based auth)
+│   ├── supabaseAdmin.ts       # Supabase admin client (service role)
+│   ├── supabaseClient.ts      # Supabase browser client
 │   ├── mockData.ts            # Mock data for dev mode
-│   ├── schemas/               # Zod schemas (single source of truth for data shapes)
-│   │   ├── credits.ts
-│   │   ├── review.ts
-│   │   ├── gallery.ts
-│   │   └── showcase.ts
-│   └── payload/
-│       └── resolveMediaUrl.ts # ★ Shared Payload media URL resolver
-├── services/                  # Data access layer (no UI logic)
-│   ├── creditsService.ts      # Payload CMS → Credits collection
-│   ├── reviewsService.ts      # Payload CMS → Reviews collection
-│   ├── galleryService.ts      # Payload CMS → Gallery collection
-│   ├── showcaseService.ts     # Payload CMS → Showcase collection
-│   ├── orderService.ts        # Supabase → orders table
-│   ├── fileService.ts         # Supabase → files table + storage
-│   └── productService.ts      # Supabase → products table
-├── scripts/
-│   ├── setup.sh               # One-shot local setup
-│   ├── setup-db.sh            # Apply Supabase schema
-│   └── payload-init.sh        # Run Payload migrations + type generation
-├── tests/
-│   ├── integration/           # Vitest – service + schema tests
-│   └── e2e/                   # Playwright – full user journey tests
-└── payload.config.ts          # Payload + S3 storage configuration
+│   └── schemas/               # Zod schemas (single source of truth for data shapes)
+├── services/                  # Data access layer (Supabase-only, no UI logic)
+│   ├── showcaseService.ts     # Generates 1-hour signed URLs for audio files
+│   ├── creditsService.ts
+│   ├── galleryService.ts
+│   ├── reviewsService.ts
+│   ├── legalService.ts
+│   ├── orderService.ts
+│   ├── fileService.ts
+│   └── productService.ts
+├── supabase/
+│   └── init_all.sql           # Idempotent schema + RLS + storage policies
+├── middleware.ts               # Protects /admin/* — Supabase Auth + profiles.role='admin'
+└── tests/
+    ├── integration/           # Vitest – service + schema tests
+    ├── unit/                  # Vitest – hook unit tests
+    └── e2e/                   # Playwright – full user journey tests
 ```
 
 ---
@@ -281,14 +266,10 @@ See `.env.local.example` for a complete list with descriptions.
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Supabase `anon` public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase `service_role` key (server only) |
-| `POSTGRES_URL_NON_POOLING` | ✅ | Supabase Postgres non-pooling connection string (for Payload migrations) |
-| `PAYLOAD_SECRET` | ✅ | Min. 32 chars secret for Payload CMS JWT signing |
 | `NEXT_PUBLIC_SITE_URL` | ✅ | Full site URL, e.g. `https://sonorativa.com` |
-| `S3_ENDPOINT` | ✅ | Supabase S3 endpoint, e.g. `https://<ref>.supabase.co/storage/v1/s3` |
-| `S3_ACCESS_KEY_ID` | ✅ | Supabase S3 access key ID |
-| `S3_SECRET_ACCESS_KEY` | ✅ | Supabase S3 secret access key |
-| `S3_BUCKET` | ✅ | Supabase storage bucket name (e.g. `media`) |
-| `NEXT_PUBLIC_SERVER_URL` | ❌ | Server URL for local Payload media fallback (default: `http://localhost:3000`) |
+| `RESEND_API_KEY` | ✅ | Resend API key for contact form emails |
+| `CONTACT_TO_EMAIL` | ✅ | Email address that receives contact form submissions |
+| `CONTACT_FROM_EMAIL` | ✅ | Verified sender address in Resend |
 | `NEXT_PUBLIC_DEV_MODE` | ❌ | `true` → mock data, no connections needed (default for local dev) |
 
 ---
@@ -316,17 +297,34 @@ export const ok = <T>(data: T): ServiceResult<T> => ({ success: true, data })
 export const err = (error: string): ServiceResult<never> => ({ success: false, error })
 ```
 
-**`lib/payload/resolveMediaUrl.ts`** — Resolves Payload CMS media objects to public URLs (handles both populated relations with `.url` and S3/local uploads with `.filename`).
+### Audio Upload Architecture
+
+Audio files (WAVs up to 75 MB, 150 MB per A/B comparison) use **TUS resumable uploads** so they never pass through a Next.js route:
+
+```
+Admin selects WAV file
+       ↓
+useTusUpload hook calls getTusUploadCredentials() (Server Action)
+       ↓ returns access_token + endpoint
+Browser uploads in 6 MB chunks via TUS directly to Supabase Storage
+       ↓ on success: objectPath saved to showcase.before_storage_path
+Server renders public page
+       ↓
+showcaseService.ts calls createSignedUrl(objectPath, 3600)
+       ↓ 1-hour signed URL
+Audio player streams WAV directly from Supabase Storage
+```
+
+- **TUS** (resumable upload protocol) is supported on Supabase Free Tier up to **5 GB per file**
+- Standard PUT uploads are limited to 50 MB — not viable for 75 MB WAVs
+- The `useTusUpload` hook in `hooks/useTusUpload.ts` handles chunking, progress, and resume
 
 ### Storage Architecture
 
-All Payload media uploads are stored in Supabase Storage via the S3 protocol. The `@payloadcms/storage-s3` plugin intercepts every upload in the `media` collection and stores it in the configured S3 bucket. This makes the deployment completely stateless — no files are written to Vercel's ephemeral filesystem.
-
-```
-Browser upload → Payload Admin → @payloadcms/storage-s3 → Supabase Storage (S3)
-                                                                     ↓
-Frontend image request ←── Payload resolves URL ←── S3 public URL
-```
+| Bucket | Visibility | Used for |
+|---|---|---|
+| `audio-files` | Private (signed URL) | Showcase WAV files (before/after) |
+| `media` | Public | Gallery images, other media |
 
 ---
 
@@ -339,11 +337,8 @@ npm run setup
 # Full Supabase provisioning: applies init_all.sql, generates .env.production
 npm run setup:supabase
 
-# Apply Supabase schema to a live database (requires POSTGRES_URL_NON_POOLING in .env.local)
+# Apply Supabase schema to a live database
 npm run setup:db
-
-# Run Payload migrations + generate TypeScript types
-npm run payload:init
 ```
 
 Make scripts executable after cloning:
@@ -353,23 +348,25 @@ chmod +x scripts/*.sh bin/*.sh
 
 ---
 
-## Gallery / CMS Content Management
+## Admin Content Management
 
-The admin panel at `/admin-cms` manages 5 Payload collections:
+The admin panel at `/admin` manages 6 collections:
 
 | Collection | Description |
 |---|---|
+| **Showcase** | A/B player tracks — WAV audio uploaded via TUS resumable uploads |
+| **Gallery** | Studio gallery images |
 | **Credits** | Artist/band credits (name, role, year, cover image, Spotify URL) |
 | **Reviews** | Client reviews (name, rating, text, service, date) |
-| **Gallery** | Studio gallery images — uploaded directly to Supabase S3 |
-| **Showcase** | A/B player tracks (before/after audio, waveform data) |
-| **Products** | VST plugins / sample packs (for future Stripe integration) |
+| **Legal** | Impressum, Datenschutz pages |
+| **Media** | File browser for Supabase Storage |
 
-To add a gallery image:
-1. Open `/admin-cms` → **Gallery** → **Create New**
-2. Upload an image (stored automatically in Supabase S3)
-3. Fill in the alt text, optional caption, and display order
-4. Set **Active** to true and save
+To add a showcase track with audio:
+1. Open `/admin` → **Showcase** → **New**
+2. Fill in title, artist, genre etc.
+3. For **Before Audio** and **After Audio**: click **Choose File**, select your WAV
+4. The progress bar shows upload progress — files upload directly to Supabase (no size limit issues)
+5. On success the storage path is saved; click **Save** to persist the record
 
 ---
 
@@ -383,7 +380,7 @@ npm test
 npm run test:e2e
 ```
 
-Tests never require real credentials — services are tested with `NEXT_PUBLIC_DEV_MODE=true`, and Payload CMS is mocked with `vi.mock()`.
+Tests never require real credentials — services are tested with `NEXT_PUBLIC_DEV_MODE=true`.
 
 ---
 

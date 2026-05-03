@@ -30,8 +30,8 @@ export default async function EditShowcasePage({ params }: { params: Promise<{ i
           <option value="false">No</option>
           <option value="true">Yes</option>
         </FormField>
-        <AudioUploadField label="Before Audio" name="before_storage_path" defaultValue={String(row.before_storage_path ?? '')} />
-        <AudioUploadField label="After Audio" name="after_storage_path" defaultValue={String(row.after_storage_path ?? '')} />
+        <AudioUploadField label="Before Audio" name="before_storage_path" defaultValue={String(row.before_storage_path ?? '')} showcaseId={id} />
+        <AudioUploadField label="After Audio" name="after_storage_path" defaultValue={String(row.after_storage_path ?? '')} showcaseId={id} />
         <button type="submit" style={{ padding: '0.75rem 1.5rem', background: '#7c3aed', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
           Save
         </button>
