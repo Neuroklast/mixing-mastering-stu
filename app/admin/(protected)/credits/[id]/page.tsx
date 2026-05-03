@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import FormField from '@/app/admin/_components/FormField'
+import ImageUploadField from '@/app/admin/_components/ImageUploadField'
 import { createAdminClient } from '@/lib/supabaseAdmin'
 import { updateCredit } from '../_actions'
 
@@ -14,6 +16,9 @@ export default async function EditCreditPage({ params }: { params: Promise<{ id:
 
   return (
     <div style={{ maxWidth: '600px' }}>
+      <Link href="/admin/credits" style={{ color: '#7c3aed', fontSize: '0.85rem', textDecoration: 'none', display: 'inline-block', marginBottom: '1.5rem' }}>
+        ← Back to Credits
+      </Link>
       <h1 style={{ marginBottom: '2rem' }}>Edit Credit</h1>
       <form action={update}>
         <FormField label="Name" name="name" defaultValue={String(row.name ?? '')} required />
@@ -25,8 +30,14 @@ export default async function EditCreditPage({ params }: { params: Promise<{ id:
         </FormField>
         <FormField label="Year" name="year" type="number" defaultValue={String(row.year ?? '')} />
         <FormField label="Spotify URL" name="spotify_url" type="url" defaultValue={String(row.spotify_url ?? '')} />
-        <FormField label="Cover Image URL" name="cover_image_url" type="url" defaultValue={String(row.cover_image_url ?? '')} />
-        <FormField label="Cover Storage Path" name="cover_storage_path" defaultValue={String(row.cover_storage_path ?? '')} />
+        <ImageUploadField
+          label="Cover Image"
+          pathName="cover_storage_path"
+          urlName="cover_image_url"
+          defaultPath={String(row.cover_storage_path ?? '')}
+          defaultUrl={String(row.cover_image_url ?? '')}
+          pathPrefix="credits"
+        />
         <FormField label="Featured" name="featured" as="select" defaultValue={row.featured ? 'true' : 'false'}>
           <option value="false">No</option>
           <option value="true">Yes</option>

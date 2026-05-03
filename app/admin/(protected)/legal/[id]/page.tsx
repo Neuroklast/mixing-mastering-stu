@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import FormField from '@/app/admin/_components/FormField'
 import { createAdminClient } from '@/lib/supabaseAdmin'
 import { updateLegal } from '../_actions'
@@ -14,6 +15,9 @@ export default async function EditLegalPage({ params }: { params: Promise<{ id: 
 
   return (
     <div style={{ maxWidth: '700px' }}>
+      <Link href="/admin/legal" style={{ color: '#7c3aed', fontSize: '0.85rem', textDecoration: 'none', display: 'inline-block', marginBottom: '1.5rem' }}>
+        ← Back to Legal Pages
+      </Link>
       <h1 style={{ marginBottom: '2rem' }}>Edit Legal Page</h1>
       <form action={update}>
         <FormField label="Title" name="title" defaultValue={String(row.title ?? '')} required />

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabaseAdmin'
 import { deleteLegal } from './_actions'
+import ConfirmDeleteButton from '@/app/admin/_components/ConfirmDeleteButton'
 
 export default async function LegalAdminPage() {
   const supabase = createAdminClient()
@@ -32,11 +33,9 @@ export default async function LegalAdminPage() {
               <td style={{ padding: '0.75rem' }}>{String(row.title ?? '')}</td>
               <td style={{ padding: '0.75rem' }}>{String(row.slug ?? '')}</td>
               <td style={{ padding: '0.75rem' }}>{String(row.last_updated ?? '')}</td>
-              <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+              <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <Link href={`/admin/legal/${String(row.id)}`} style={{ color: '#7c3aed' }}>Edit</Link>
-                <form action={deleteLegal.bind(null, String(row.id))}>
-                  <button type="submit" style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>Delete</button>
-                </form>
+                <ConfirmDeleteButton action={deleteLegal.bind(null, String(row.id))} />
               </td>
             </tr>
           ))}

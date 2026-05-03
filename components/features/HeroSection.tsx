@@ -5,6 +5,8 @@ import { motion } from 'framer-motion'
 import { ArrowRight, Briefcase } from '@phosphor-icons/react'
 import { ContactDialog } from '@/components/features/ContactDialog'
 import { ServicesModal } from '@/components/features/ServicesModal'
+import type { SiteContent } from '@/lib/schemas/siteContent'
+import { SITE_CONTENT_DEFAULTS } from '@/lib/schemas/siteContent'
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -14,7 +16,7 @@ const fadeUp = {
 
 // ── Targeting Brackets ────────────────────────────────────────────────────────
 // Thin L-shaped corners that frame the AUDIO word instead of a solid box.
-const TargetBrackets = (): JSX.Element => (
+const TargetBrackets = ({ text }: { text: string }): JSX.Element => (
     <span className="inline-block relative px-5 py-1" aria-hidden="true">
     {/* top-left */}
     <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-accent" />
@@ -26,7 +28,7 @@ const TargetBrackets = (): JSX.Element => (
     <span className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-accent" />
     {/* Text */}
     <span className="relative text-accent text-glow-accent">
-      AUDIO
+      {text}
     </span>
   </span>
 )
@@ -49,7 +51,11 @@ const TechOverlay = (): JSX.Element => (
   </>
 )
 
-export const HeroSection = (): JSX.Element => {
+interface HeroSectionProps {
+  content?: SiteContent
+}
+
+export const HeroSection = ({ content = SITE_CONTENT_DEFAULTS }: HeroSectionProps): JSX.Element => {
   const [servicesOpen, setServicesOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
   const [selectedService, setSelectedService] = useState('')
@@ -83,7 +89,7 @@ export const HeroSection = (): JSX.Element => {
           {/* Badge */}
           <motion.div {...fadeUp} transition={{ duration: 0.5 }}>
             <span className="inline-block mb-8 px-4 py-1 font-mono text-xs uppercase tracking-[0.25em] border border-white/15 text-muted-foreground rounded-sm">
-              Professional Audio Engineering
+              {content.hero_badge ?? SITE_CONTENT_DEFAULTS.hero_badge}
             </span>
           </motion.div>
 
@@ -93,22 +99,22 @@ export const HeroSection = (): JSX.Element => {
             {...fadeUp}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            {/* "PRECISION" – thin weight for lightness / precision feeling */}
+            {/* First line – thin weight for lightness / precision feeling */}
             <span className="block text-white/90 font-light">
-              PRECISION
+              {content.hero_title_1 ?? SITE_CONTENT_DEFAULTS.hero_title_1}
             </span>
-            {/* "AUDIO" – targeting-bracket frame + chromatic aberration accent */}
+            {/* Second line – targeting-bracket frame + chromatic aberration accent */}
             <span
               className="block my-2"
               style={{
                 filter: 'drop-shadow(1px 0 0 rgba(217,72,72,0.5)) drop-shadow(-1px 0 0 rgba(72,128,217,0.3))',
               }}
             >
-              <TargetBrackets />
+              <TargetBrackets text={content.hero_title_2 ?? SITE_CONTENT_DEFAULTS.hero_title_2} />
             </span>
-            {/* "MASTERY" – extra bold for contrast and weight */}
+            {/* Third line – extra bold for contrast and weight */}
             <span className="block text-white font-bold">
-              MASTERY
+              {content.hero_title_3 ?? SITE_CONTENT_DEFAULTS.hero_title_3}
             </span>
           </motion.h1>
 
@@ -117,8 +123,7 @@ export const HeroSection = (): JSX.Element => {
             {...fadeUp}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            Industrial-grade mixing and mastering for the modern producer.
-            Crafted with technical precision and creative vision.
+            {content.hero_subtitle ?? SITE_CONTENT_DEFAULTS.hero_subtitle}
           </motion.p>
 
           {/* Buttons */}
@@ -148,7 +153,7 @@ export const HeroSection = (): JSX.Element => {
               />
               <span className="relative flex items-center gap-2">
                 <Briefcase className="h-4 w-4" weight="bold" />
-                View Services
+                {content.hero_cta_primary ?? SITE_CONTENT_DEFAULTS.hero_cta_primary}
               </span>
             </button>
 
@@ -162,7 +167,7 @@ export const HeroSection = (): JSX.Element => {
               onClick={() => setContactOpen(true)}
             >
               <span className="flex items-center gap-2">
-                Get Started
+                {content.hero_cta_secondary ?? SITE_CONTENT_DEFAULTS.hero_cta_secondary}
                 <ArrowRight
                   className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
                   weight="bold"

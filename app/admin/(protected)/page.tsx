@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-const COLLECTIONS = ['showcase', 'gallery', 'reviews', 'credits', 'legal', 'media']
+const COLLECTIONS = ['content', 'showcase', 'gallery', 'members', 'services', 'reviews', 'credits', 'legal', 'media']
 
 export default function AdminDashboard() {
   return (
