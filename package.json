@@ -14,6 +14,7 @@
     "scan:dry": "npx tsx --tsconfig tsconfig.json scripts/scan-audio.ts --dry-run",
     "setup": "bash scripts/setup.sh",
     "setup:db": "bash scripts/setup-db.sh",
+    "setup:supabase": "bash bin/setup-supabase.sh",
     "payload:init": "bash scripts/payload-init.sh"
   },
   "dependencies": {

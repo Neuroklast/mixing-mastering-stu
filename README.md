@@ -50,33 +50,35 @@ Before you deploy, you need a Supabase project with a few things configured.
 2. Choose a region close to your target audience
 3. Save your **database password** — you'll need it for `DATABASE_URI`
 
-#### 1.2 Apply the Database Schema
+#### 1.2 Apply the Database Schema & Create Buckets
 
-The SQL schema lives in `supabase/schema.sql`. Run it once to create all tables.
+The master SQL script `supabase/init_all.sql` creates all tables, enables RLS, sets up policies, and provisions the required storage buckets in a single idempotent transaction.
 
-**Option A — Supabase SQL Editor (easiest)**
+---
 
-1. Open your Supabase project → **SQL Editor** → **New query**
-2. Paste the contents of `supabase/schema.sql`
-3. Click **Run**
+##### ✅ Pro Way — Automated Script
 
-**Option B — psql / local script**
+The script checks for the Supabase CLI, guides you through login + project linking, applies the SQL, and generates a ready-to-paste `.env.production` file.
 
 ```bash
-# Set up .env.local first (see section 2), then:
-npm run setup:db
+npm run setup:supabase
 ```
 
-#### 1.3 Create the Media Storage Bucket
+After it finishes, a `.env.production` file is created in the project root.  Copy-paste its contents into **Vercel → Project Settings → Environment Variables** (Production environment).
 
-Payload uploads all CMS media (images, files) to a Supabase Storage bucket.
+---
 
-1. Supabase dashboard → **Storage** → **New bucket**
-2. Name it `media` (or any name — you'll use it as `S3_BUCKET`)
-3. Set to **Private** — Payload will serve files via its own URL
-4. Keep the default settings and click **Create bucket**
+##### 🐣 Noob Way — SQL Editor (no CLI needed)
 
-#### 1.4 Gather Your Credentials
+1. Open your Supabase project → **SQL Editor** → **New query**
+2. Copy the **entire contents** of `supabase/init_all.sql` and paste it in
+3. Click **Run**
+
+That's it — all tables, RLS policies, and storage buckets are created.  You still need to fill in the environment variables manually (see §1.4 below).
+
+---
+
+#### 1.3 Gather Your Credentials
 
 You need the following values from the Supabase dashboard:
 
@@ -334,7 +336,10 @@ Frontend image request ←── Payload resolves URL ←── S3 public URL
 # One-shot local setup (checks Node version, installs deps, copies .env, runs tests)
 npm run setup
 
-# Apply Supabase schema to a live database
+# Full Supabase provisioning: applies init_all.sql, generates .env.production
+npm run setup:supabase
+
+# Apply Supabase schema to a live database (requires DATABASE_URI in .env.local)
 npm run setup:db
 
 # Run Payload migrations + generate TypeScript types
@@ -343,7 +348,7 @@ npm run payload:init
 
 Make scripts executable after cloning:
 ```bash
-chmod +x scripts/*.sh
+chmod +x scripts/*.sh bin/*.sh
 ```
 
 ---
