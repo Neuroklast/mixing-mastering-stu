@@ -76,7 +76,7 @@ export default function MediaBrowserClient({ mediaFiles, audioFiles, supabaseUrl
             </thead>
             <tbody>
               {mediaFiles.map((file) => {
-                const publicUrl = `${supabaseUrl}/storage/v1/object/public/media/${file.name}`
+                const publicUrl = `${supabaseUrl}/storage/v1/object/public/media/${encodeURIComponent(file.name)}`
                 const isCopied = copiedUrl === publicUrl
                 return (
                   <tr key={file.name} style={{ borderBottom: '1px solid #1a1a1a' }}>

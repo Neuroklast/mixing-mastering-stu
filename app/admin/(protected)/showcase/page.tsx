@@ -36,7 +36,7 @@ export default async function ShowcaseAdminPage() {
               <td style={{ padding: '0.75rem' }}>{String(row.artist ?? '')}</td>
               <td style={{ padding: '0.75rem' }}>
                 {row.before_storage_path ? (
-                  <span title="Audio uploaded" style={{ fontSize: '1rem' }}>▶</span>
+                  <span title="Audio uploaded" aria-label="Audio uploaded" style={{ fontSize: '1rem' }}>▶</span>
                 ) : (
                   <span style={{ color: '#666', fontSize: '0.75rem' }}>—</span>
                 )}
