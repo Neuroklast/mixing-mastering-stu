@@ -1,10 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-vi.mock('@payload-config', () => ({ default: {} }))
-vi.mock('payload', () => ({
-  getPayload: vi.fn().mockResolvedValue({
-    find: vi.fn().mockResolvedValue({ docs: [] }),
-  }),
+vi.mock('@/lib/supabaseServer', () => ({
+  createClient: vi.fn().mockResolvedValue({}),
 }))
 
 describe('galleryService (dev mode)', () => {

@@ -1,41 +1,44 @@
-import { getPayload } from 'payload'
-import config from '@payload-config'
-import { isDev } from '@/lib/devMode'
+import { createClient } from '@/lib/supabaseServer'
 import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 import { creditSchema, type Credit } from '@/lib/schemas/credits'
-import { resolveMediaUrl } from '@/lib/payload/resolveMediaUrl'
 import { MOCK_CREDITS } from '@/lib/mockData'
-
-function docToCredit(doc: Record<string, unknown>): Credit | null {
-  const coverImageUrl = resolveMediaUrl(doc.coverImage)
-  const parsed = creditSchema.safeParse({
-    id: String(doc.id),
-    name: doc.name,
-    role: doc.role,
-    year: typeof doc.year === 'number' ? doc.year : undefined,
-    spotifyUrl: typeof doc.spotifyUrl === 'string' ? doc.spotifyUrl : undefined,
-    coverImage: coverImageUrl ? { url: coverImageUrl } : undefined,
-    featured: typeof doc.featured === 'boolean' ? doc.featured : false,
-  })
-  return parsed.success ? parsed.data : null
-}
+import { isDev } from '@/lib/devMode'
 
 export async function getAllCredits(): Promise<ServiceResult<Credit[]>> {
   if (isDev) return ok(MOCK_CREDITS)
 
   try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'credits',
-      sort: '-featured',
-      limit: 200,
-      depth: 1,
-    })
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('credits')
+      .select('*')
+      .order('featured', { ascending: false })
+      .limit(200)
+
+    if (error) return err(error.message)
 
     const credits: Credit[] = []
-    for (const doc of result.docs) {
-      const credit = docToCredit(doc as unknown as Record<string, unknown>)
-      if (credit) credits.push(credit)
+    for (const row of data ?? []) {
+      let coverImageUrl: string | null = null
+      if (row.cover_image_url) {
+        coverImageUrl = row.cover_image_url as string
+      } else if (row.cover_storage_path) {
+        const { data: urlData } = supabase.storage
+          .from('media')
+          .getPublicUrl(row.cover_storage_path as string)
+        coverImageUrl = urlData.publicUrl
+      }
+
+      const parsed = creditSchema.safeParse({
+        id: String(row.id),
+        name: row.name,
+        role: row.role,
+        year: row.year ?? undefined,
+        spotifyUrl: row.spotify_url ?? undefined,
+        coverImage: coverImageUrl ? { url: coverImageUrl } : undefined,
+        featured: row.featured ?? false,
+      })
+      if (parsed.success) credits.push(parsed.data)
     }
     return ok(credits)
   } catch (e) {

@@ -1,5 +1,5 @@
 /**
- * Audio Directory Scanner & CMS Sync
+ * Audio Directory Scanner & Supabase Sync
  *
  * Usage:
  *   npx tsx scripts/scan-audio.ts [--incoming <dir>] [--dry-run]
@@ -18,12 +18,12 @@
  *      24-bit/96 kHz (warns and skips if not).
  *   4. Waveform Peaks – generates 200 amplitude peak values from the
  *      master file's PCM data for fast waveform rendering.
- *   5. Payload CMS Upsert – creates or updates a Showcase document
- *      identified by a normalised slug (artist-title).
+ *   5. Supabase Upsert – creates or updates a showcase row identified
+ *      by a normalised slug (artist-title).
  *
- * Environment variables required (same as the Next.js app):
- *   POSTGRES_URL_NON_POOLING – PostgreSQL non-pooling connection string
- *   PAYLOAD_SECRET – Payload CMS secret
+ * Environment variables required:
+ *   NEXT_PUBLIC_SUPABASE_URL  – Supabase project URL
+ *   SUPABASE_SERVICE_ROLE_KEY – Service role key (bypasses RLS)
  */
 
 import * as fs   from 'node:fs'
@@ -347,58 +347,47 @@ function scanDirectory(): ScanResult[] {
   return results
 }
 
-// ─── Payload CMS Sync ─────────────────────────────────────────────────────────
+// ─── Supabase Sync ────────────────────────────────────────────────────────────
 
-async function syncToPayload(results: ScanResult[]): Promise<void> {
+async function syncToSupabase(results: ScanResult[]): Promise<void> {
   if (results.length === 0) {
     console.log('[sync] nothing to sync')
     return
   }
 
-  // Dynamic import to avoid issues when Payload is not configured
-  let payload: Awaited<ReturnType<typeof import('payload')['getPayload']>>
-  try {
-    const { getPayload } = await import('payload')
-    const { default: config } = await import('../payload.config')
-    payload = await getPayload({ config })
-  } catch (err) {
-    console.error('[sync] Could not initialise Payload (is POSTGRES_URL_NON_POOLING set?)', err)
-    console.log('[sync] Outputting scan results to /tmp/scan-results.json instead')
-    fs.writeFileSync('/tmp/scan-results.json', JSON.stringify(results, null, 2))
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error('[sync] NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set')
+    console.log('[sync] Outputting scan results to scan-results.json instead')
+    fs.writeFileSync('scan-results.json', JSON.stringify(results, null, 2))
     return
   }
 
+  const { createClient } = await import('@supabase/supabase-js')
+  const supabase = createClient(supabaseUrl, serviceRoleKey)
+
   for (const [i, result] of results.entries()) {
-    const { slug, artist, title, demoUrl, masterUrl, peaks } = result
+    const { artist, title, demoUrl, masterUrl } = result
 
-    // Check if entry already exists
-    const existing = await payload.find({
-      collection: 'showcase',
-      where: { slug: { equals: slug } },
-      limit: 1,
-    })
-
-    const data = {
-      slug,
+    const payload = {
       title,
       artist,
-      beforeUrl: demoUrl,
-      afterUrl: masterUrl,
-      waveformData: peaks,
-      order: i,
+      before_url: demoUrl,
+      after_url: masterUrl,
+      display_order: i,
       active: true,
     }
 
-    if (existing.docs.length > 0) {
-      await payload.update({
-        collection: 'showcase',
-        id: String(existing.docs[0]!.id),
-        data,
-      })
-      console.log(`[sync] updated: "${title}" (slug: ${slug})`)
+    const { error } = await supabase
+      .from('showcase')
+      .upsert(payload, { onConflict: 'title' })
+
+    if (error) {
+      console.error(`[sync] failed for "${title}":`, error.message)
     } else {
-      await payload.create({ collection: 'showcase', data })
-      console.log(`[sync] created: "${title}" (slug: ${slug})`)
+      console.log(`[sync] upserted: "${title}"`)
     }
   }
 }
@@ -432,9 +421,9 @@ async function main(): Promise<void> {
     return
   }
 
-  // Step 3: sync to Payload CMS
-  console.log('[sync] syncing to Payload CMS...')
-  await syncToPayload(results)
+  // Step 3: sync to Supabase
+  console.log('[sync] syncing to Supabase...')
+  await syncToSupabase(results)
   console.log('\n=== Done ===\n')
 }
 
