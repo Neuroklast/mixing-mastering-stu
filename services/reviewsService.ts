@@ -1,39 +1,34 @@
-import { getPayload } from 'payload'
-import config from '@payload-config'
-import { isDev } from '@/lib/devMode'
+import { createClient } from '@/lib/supabaseServer'
 import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 import { reviewSchema, type Review } from '@/lib/schemas/review'
 import { DEMO_REVIEWS } from '@/lib/mockData'
-
-function docToReview(doc: Record<string, unknown>): Review | null {
-  const parsed = reviewSchema.safeParse({
-    id: String(doc.id),
-    clientName: doc.clientName,
-    rating: doc.rating,
-    text: doc.text,
-    service: typeof doc.service === 'string' ? doc.service : undefined,
-    date: typeof doc.date === 'string' ? doc.date.slice(0, 10) : undefined,
-    projectLink: typeof doc.projectLink === 'string' ? doc.projectLink : undefined,
-  })
-  return parsed.success ? parsed.data : null
-}
+import { isDev } from '@/lib/devMode'
 
 export async function getAllReviews(): Promise<ServiceResult<Review[]>> {
   if (isDev) return ok(DEMO_REVIEWS)
 
   try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'reviews',
-      sort: '-date',
-      limit: 50,
-      depth: 0,
-    })
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .order('date', { ascending: false })
+      .limit(50)
+
+    if (error) return err(error.message)
 
     const reviews: Review[] = []
-    for (const doc of result.docs) {
-      const review = docToReview(doc as unknown as Record<string, unknown>)
-      if (review) reviews.push(review)
+    for (const row of data ?? []) {
+      const parsed = reviewSchema.safeParse({
+        id: String(row.id),
+        clientName: row.client_name,
+        rating: row.rating,
+        text: row.text,
+        service: row.service ?? undefined,
+        date: row.date ? String(row.date).slice(0, 10) : undefined,
+        projectLink: row.project_link ?? undefined,
+      })
+      if (parsed.success) reviews.push(parsed.data)
     }
     return ok(reviews)
   } catch (e) {

@@ -203,7 +203,7 @@ INSERT INTO storage.buckets (id, name, public)
   VALUES ('audio-files', 'audio-files', false)
   ON CONFLICT DO NOTHING;
 
--- Media bucket (Payload CMS uploads via @payloadcms/storage-s3)
+-- Media bucket (admin CMS media uploads)
 INSERT INTO storage.buckets (id, name, public)
   VALUES ('media', 'media', true)
   ON CONFLICT DO NOTHING;
@@ -246,7 +246,7 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- media bucket policies (Payload CMS assets — publicly readable)
+-- media bucket policies (admin uploads, publicly readable)
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -305,11 +305,193 @@ DO $$ BEGIN
 END $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- NOTE: Payload CMS collections (showcase, gallery, credits, reviews, legal,
--- media, users, orders, products) are managed by Payload's own migration
--- system and enforce access control at the application layer via collection
--- access functions. Run `npm run payload:init` after this script to create
--- those tables and apply Payload migrations.
+-- CMS tables (showcase, gallery, credits, reviews, legal, profiles)
+-- Managed directly via Supabase (no external CMS).
 -- ─────────────────────────────────────────────────────────────────────────────
+
+-- ── Profiles (for admin role assignment) ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS profiles (
+  id    UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  role  TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin'))
+);
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'Users can read own profile'
+  ) THEN
+    CREATE POLICY "Users can read own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'Service role can manage profiles'
+  ) THEN
+    CREATE POLICY "Service role can manage profiles" ON profiles FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+-- ── Showcase ──────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS showcase (
+  id                   UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  title                TEXT        NOT NULL,
+  artist               TEXT,
+  genre                TEXT,
+  equipment            TEXT,
+  label_before         TEXT        NOT NULL DEFAULT 'Demo',
+  label_after          TEXT        NOT NULL DEFAULT 'Final',
+  start_marker         NUMERIC     NOT NULL DEFAULT 0,
+  lufs_target          NUMERIC     NOT NULL DEFAULT -14,
+  before_storage_path  TEXT,
+  after_storage_path   TEXT,
+  before_url           TEXT,
+  after_url            TEXT,
+  active               BOOLEAN     NOT NULL DEFAULT true,
+  display_order        INTEGER     NOT NULL DEFAULT 0
+);
+ALTER TABLE showcase ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'showcase' AND policyname = 'Public can read active showcase'
+  ) THEN
+    CREATE POLICY "Public can read active showcase" ON showcase FOR SELECT USING (active = true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'showcase' AND policyname = 'Service role can manage showcase'
+  ) THEN
+    CREATE POLICY "Service role can manage showcase" ON showcase FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_showcase_active_order ON showcase(active, display_order);
+
+-- ── Gallery ───────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS gallery (
+  id            UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  image_url     TEXT,
+  storage_path  TEXT,
+  alt           TEXT,
+  caption       TEXT,
+  display_order INTEGER     NOT NULL DEFAULT 0,
+  active        BOOLEAN     NOT NULL DEFAULT true
+);
+ALTER TABLE gallery ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'gallery' AND policyname = 'Public can read active gallery'
+  ) THEN
+    CREATE POLICY "Public can read active gallery" ON gallery FOR SELECT USING (active = true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'gallery' AND policyname = 'Service role can manage gallery'
+  ) THEN
+    CREATE POLICY "Service role can manage gallery" ON gallery FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_gallery_active_order ON gallery(active, display_order);
+
+-- ── Credits ───────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS credits (
+  id                  UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  name                TEXT        NOT NULL,
+  role                TEXT        NOT NULL CHECK (role IN ('Mix', 'Master', 'Mix & Master', 'Producing')),
+  year                INTEGER,
+  spotify_url         TEXT,
+  cover_image_url     TEXT,
+  cover_storage_path  TEXT,
+  featured            BOOLEAN     NOT NULL DEFAULT false
+);
+ALTER TABLE credits ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'credits' AND policyname = 'Public can read credits'
+  ) THEN
+    CREATE POLICY "Public can read credits" ON credits FOR SELECT USING (true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'credits' AND policyname = 'Service role can manage credits'
+  ) THEN
+    CREATE POLICY "Service role can manage credits" ON credits FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_credits_featured ON credits(featured DESC);
+
+-- ── Reviews ───────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS reviews (
+  id            UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  client_name   TEXT        NOT NULL,
+  rating        INTEGER     NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  text          TEXT        NOT NULL,
+  service       TEXT        CHECK (service IN ('Mix', 'Master', 'Mix & Master', 'Producing')),
+  date          DATE,
+  project_link  TEXT
+);
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Public can read reviews'
+  ) THEN
+    CREATE POLICY "Public can read reviews" ON reviews FOR SELECT USING (true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Service role can manage reviews'
+  ) THEN
+    CREATE POLICY "Service role can manage reviews" ON reviews FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_reviews_date ON reviews(date DESC);
+
+-- ── Legal ─────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS legal (
+  id            UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  title         TEXT        NOT NULL,
+  slug          TEXT        NOT NULL UNIQUE,
+  content       TEXT        NOT NULL,
+  last_updated  DATE
+);
+ALTER TABLE legal ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'legal' AND policyname = 'Public can read legal pages'
+  ) THEN
+    CREATE POLICY "Public can read legal pages" ON legal FOR SELECT USING (true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'legal' AND policyname = 'Service role can manage legal'
+  ) THEN
+    CREATE POLICY "Service role can manage legal" ON legal FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_legal_slug ON legal(slug);
 
 COMMIT;

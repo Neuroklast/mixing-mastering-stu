@@ -7,7 +7,7 @@ const config = [
   ...nextConfig,
   {
     // Ignore generated / build artefacts and test infrastructure config.
-    ignores: ['tsconfig.tsbuildinfo', 'payload-types.ts'],
+    ignores: ['tsconfig.tsbuildinfo'],
   },
 ]
 

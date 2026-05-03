@@ -1,107 +1,8 @@
-import { getPayload } from 'payload'
-import config from '@payload-config'
-import { isDev } from '@/lib/devMode'
+import { createClient } from '@/lib/supabaseServer'
 import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 import { legalPageSchema, type LegalPage } from '@/lib/schemas/legal'
 import { MOCK_LEGAL_PAGES } from '@/lib/mockData'
-
-/**
- * Converts a Payload Lexical rich-text node tree to a plain HTML string.
- * Only handles the node types produced by the Lexical editor for legal content:
- * paragraphs, headings, links, and inline text with bold/italic formatting.
- */
-
-const HTML_ESCAPE_MAP: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-}
-
-function escapeHtml(str: string): string {
-  return str.replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char] ?? char)
-}
-
-/** Only allow safe URL schemes; default to '#' for anything suspicious. */
-function sanitizeUrl(url: string): string {
-  const trimmed = url.trim()
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
-    return trimmed
-  }
-  return '#'
-}
-
-function lexicalToHtml(root: unknown): string {
-  if (!root || typeof root !== 'object') return ''
-  const node = root as Record<string, unknown>
-  const type = node.type as string | undefined
-  const children = Array.isArray(node.children)
-    ? (node.children as unknown[]).map(lexicalToHtml).join('')
-    : ''
-
-  switch (type) {
-    case 'root':
-      return children
-    case 'paragraph':
-      return children ? `<p>${children}</p>` : ''
-    case 'heading': {
-      const tag = (node.tag as string) ?? 'h2'
-      return `<${tag}>${children}</${tag}>`
-    }
-    case 'list': {
-      const listTag = node.listType === 'number' ? 'ol' : 'ul'
-      return `<${listTag}>${children}</${listTag}>`
-    }
-    case 'listitem':
-      return `<li>${children}</li>`
-    case 'link': {
-      const rawUrl = typeof node.url === 'string' ? node.url : '#'
-      const url = sanitizeUrl(rawUrl)
-      return `<a href="${escapeHtml(url)}">${children}</a>`
-    }
-    case 'text': {
-      const raw = typeof node.text === 'string' ? node.text : ''
-      const text = escapeHtml(raw)
-      const format = typeof node.format === 'number' ? node.format : 0
-      // Payload Lexical format bitmask: 1=bold, 2=italic, 4=strikethrough, 8=underline, 16=code
-      let result = text
-      if (format & 1) result = `<strong>${result}</strong>`
-      if (format & 2) result = `<em>${result}</em>`
-      if (format & 8) result = `<u>${result}</u>`
-      if (format & 4) result = `<s>${result}</s>`
-      return result
-    }
-    default:
-      return children
-  }
-}
-
-function docToLegalPage(doc: Record<string, unknown>): LegalPage | null {
-  // Payload Lexical stores content as a JSON object — serialise to HTML string
-  const rawContent = doc.content
-  let content = ''
-  if (rawContent && typeof rawContent === 'object') {
-    content = lexicalToHtml(rawContent)
-  } else if (typeof rawContent === 'string') {
-    content = rawContent
-  }
-
-  const lastUpdated =
-    typeof doc.lastUpdated === 'string'
-      ? doc.lastUpdated.slice(0, 10) // ISO date → YYYY-MM-DD
-      : undefined
-
-  const parsed = legalPageSchema.safeParse({
-    id: String(doc.id),
-    title: doc.title,
-    slug: doc.slug,
-    content,
-    lastUpdated,
-  })
-
-  return parsed.success ? parsed.data : null
-}
+import { isDev } from '@/lib/devMode'
 
 export async function getLegalPageBySlug(
   slug: string,
@@ -113,20 +14,25 @@ export async function getLegalPageBySlug(
   }
 
   try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'legal',
-      where: { slug: { equals: slug } },
-      limit: 1,
-      depth: 0,
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('legal')
+      .select('*')
+      .eq('slug', slug)
+      .single()
+
+    if (error || !data) return err(`Legal page not found: ${slug}`)
+
+    const parsed = legalPageSchema.safeParse({
+      id: String(data.id),
+      title: data.title,
+      slug: data.slug,
+      content: data.content,
+      lastUpdated: data.last_updated ? String(data.last_updated).slice(0, 10) : undefined,
     })
 
-    const doc = result.docs[0]
-    if (!doc) return err(`Legal page not found: ${slug}`)
-
-    const page = docToLegalPage(doc as unknown as Record<string, unknown>)
-    if (!page) return err(`Failed to parse legal page: ${slug}`)
-    return ok(page)
+    if (!parsed.success) return err(`Failed to parse legal page: ${slug}`)
+    return ok(parsed.data)
   } catch (e) {
     return err(e instanceof Error ? e.message : `Failed to load legal page: ${slug}`)
   }
