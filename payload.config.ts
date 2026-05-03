@@ -12,10 +12,11 @@ import { Gallery } from './collections/Gallery'
 import { Media } from './collections/Media'
 import { Legal } from './collections/Legal'
 import path from 'path'
-import { fileURLToPath } from 'url'
 
-const filename = fileURLToPath(import.meta.url)
-const dirname = path.dirname(filename)
+// process.cwd() is the project root in all execution contexts (tsx CJS, Vercel, local).
+// Do NOT use import.meta.url here — that ESM-only syntax forces tsx into ESM mode,
+// where Node 24's strict resolver rejects extensionless TypeScript imports.
+const dirname = process.cwd()
 
 // Only enable S3 storage when all required credentials are present.
 // This allows `payload generate:types` to run without S3 credentials
