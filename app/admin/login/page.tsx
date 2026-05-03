@@ -9,7 +9,11 @@ export default function AdminLoginPage() {
   const params = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(params.get('error') === 'forbidden' ? 'Access denied.' : '')
+  const [error, setError] = useState(
+    params.get('error') === 'forbidden'
+      ? 'Du hast keine Admin-Rechte. Logge dich mit einem Admin-Account ein.'
+      : '',
+  )
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
