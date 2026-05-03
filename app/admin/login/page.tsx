@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabaseClient'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 function LoginForm() {
@@ -21,10 +21,10 @@ function LoginForm() {
     setLoading(true)
     setError('')
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    )
+    // Use the SSR-aware browser client so the session is stored as cookies
+    // that the Next.js middleware can read. Plain @supabase/supabase-js
+    // would only write to localStorage and the middleware would never see it.
+    const supabase = createClient()
 
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
     if (authError) {
