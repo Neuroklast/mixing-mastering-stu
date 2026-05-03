@@ -1,6 +1,7 @@
 import { buildConfig } from 'payload'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { s3Storage } from '@payloadcms/storage-s3'
 import { Users } from '@/collections/Users'
 import { Orders } from '@/collections/Orders'
 import { Products } from '@/collections/Products'
@@ -27,6 +28,25 @@ export default buildConfig({
     },
   },
   collections: [Users, Orders, Products, Media, Showcase, Credits, Reviews, Gallery],
+  plugins: [
+    s3Storage({
+      collections: {
+        media: true,
+      },
+      bucket: process.env.S3_BUCKET ?? '',
+      config: {
+        endpoint: process.env.S3_ENDPOINT,
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
+        },
+        // Supabase S3 is hosted in a single region; force-path-style is required
+        // because bucket names are not valid DNS hostnames on the Supabase endpoint.
+        forcePathStyle: true,
+        region: 'auto',
+      },
+    }),
+  ],
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI ?? '',
