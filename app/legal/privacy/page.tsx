@@ -110,17 +110,10 @@ export default function PrivacyPage(): JSX.Element {
             <strong>Sentry</strong> — error monitoring (data is anonymised where possible).
           </li>
           <li>
-            <strong>Google Fonts</strong> — font delivery via CDN (your IP is transmitted to
-            Google; see{' '}
-            <a
-              href="https://policies.google.com/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-2"
-            >
-              Google Privacy Policy
-            </a>
-            ).
+            <strong>Fonts</strong> — all typefaces (Inter, Space Grotesk, JetBrains Mono) are
+            downloaded at build time and self-hosted on our own servers via{' '}
+            <code>next/font</code>. No requests are made to Google Fonts or any external font
+            CDN at runtime.
           </li>
         </ul>
       </Section>

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CaretLeft, CaretRight, X } from '@phosphor-icons/react'
 import * as Dialog from '@radix-ui/react-dialog'
-import type { GalleryImage } from '@/types'
+import type { GalleryImage } from '@/lib/schemas/gallery'
 
 interface GallerySectionProps {
   images: GalleryImage[]
@@ -46,14 +46,14 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
           <div className="flex md:hidden gap-4 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 scroll-smooth">
             {images.map((img, i) => (
               <div
-                key={i}
+                key={img.id ?? i}
                 className="snap-center flex-shrink-0 w-[85vw] relative rounded overflow-hidden cursor-pointer"
                 style={{ aspectRatio: '4/3' }}
                 onClick={() => open(i)}
               >
                 <Image
-                  src={img.src}
-                  alt={img.alt}
+                  src={img.url}
+                  alt={img.alt ?? ''}
                   fill
                   className="object-cover"
                   sizes="85vw"
@@ -68,14 +68,14 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
           <div className="hidden md:block [column-count:1] sm:[column-count:2] lg:[column-count:3] gap-4">
             {images.map((img, i) => (
               <div
-                key={i}
+                key={img.id ?? i}
                 className="break-inside-avoid mb-4 relative overflow-hidden rounded cursor-pointer group"
-                style={{ aspectRatio: `${img.width}/${img.height}` }}
+                style={{ aspectRatio: '4/3' }}
                 onClick={() => open(i)}
               >
                 <Image
-                  src={img.src}
-                  alt={img.alt}
+                  src={img.url}
+                  alt={img.alt ?? ''}
                   fill
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -106,11 +106,11 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
                   className="relative max-w-5xl w-full max-h-[90vh] rounded overflow-hidden"
                 >
                   <Image
-                    src={images[lightboxIndex].src}
-                    alt={images[lightboxIndex].alt}
-                    width={images[lightboxIndex].width}
-                    height={images[lightboxIndex].height}
+                    src={images[lightboxIndex].url}
+                    alt={images[lightboxIndex].alt ?? ''}
+                    fill
                     className="object-contain w-full max-h-[80vh]"
+                    sizes="(max-width: 1280px) 100vw, 1280px"
                   />
 
                   {images.length > 1 && (

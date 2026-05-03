@@ -49,10 +49,5 @@ export interface License {
   stripe_payment_intent_id: string | null
 }
 
-/** A single image in the studio gallery. */
-export interface GalleryImage {
-  src: string
-  alt: string
-  width: number
-  height: number
-}
+/** A single image in the studio gallery. Re-exported from lib/schemas/gallery for backwards compatibility. */
+export type { GalleryImage } from '@/lib/schemas/gallery'

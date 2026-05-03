@@ -13,6 +13,9 @@ import { Toaster } from 'sonner'
 import { showcaseTrackSchema, type ShowcaseTrack } from '@/lib/schemas/showcase'
 import { MOCK_CREDITS, DEMO_REVIEWS, DEMO_GALLERY } from '@/lib/mockData'
 import { getActiveShowcaseTrack, getAllShowcaseTracks } from '@/services/showcaseService'
+import { getAllCredits } from '@/services/creditsService'
+import { getAllReviews } from '@/services/reviewsService'
+import { getAllGalleryImages } from '@/services/galleryService'
 import { PROFILE_ZARDONIC, PROFILE_KAIO } from '@/lib/content/engineers'
 
 const CreditsSection = dynamic(() =>
@@ -118,6 +121,15 @@ export default async function HomePage(): Promise<JSX.Element> {
             : await getActiveShowcaseTrack().then((t) => (t ? [t] : [FALLBACK_TRACK])),
         )
 
+  const creditsResult = await getAllCredits()
+  const credits = creditsResult.success ? creditsResult.data : MOCK_CREDITS
+
+  const reviewsResult = await getAllReviews()
+  const reviews = reviewsResult.success ? reviewsResult.data : DEMO_REVIEWS
+
+  const galleryResult = await getAllGalleryImages()
+  const gallery = galleryResult.success ? galleryResult.data : DEMO_GALLERY
+
   return (
     <ScrollProgressProvider>
       <>
@@ -133,7 +145,7 @@ export default async function HomePage(): Promise<JSX.Element> {
               <ClientMasteringPlayer tracks={tracks} />
             </ErrorBoundary>
             <ErrorBoundary>
-              <CreditsSection credits={MOCK_CREDITS} />
+              <CreditsSection credits={credits} />
             </ErrorBoundary>
             <ErrorBoundary>
               <ProfileSection profile={PROFILE_ZARDONIC} />
@@ -142,10 +154,10 @@ export default async function HomePage(): Promise<JSX.Element> {
               <ProfileSection profile={PROFILE_KAIO} />
             </ErrorBoundary>
             <ErrorBoundary>
-              <ReviewsSection reviews={DEMO_REVIEWS} />
+              <ReviewsSection reviews={reviews} />
             </ErrorBoundary>
             <ErrorBoundary>
-              <GallerySection images={DEMO_GALLERY} />
+              <GallerySection images={gallery} />
             </ErrorBoundary>
           </div>
         </main>

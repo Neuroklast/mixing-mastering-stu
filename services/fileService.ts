@@ -2,8 +2,10 @@ import { createClient } from '@/lib/supabaseServer'
 import { z } from 'zod'
 import type { AudioFile } from '@/types'
 import { MOCK_FILES } from '@/lib/mockData'
+import { isDev } from '@/lib/devMode'
+import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 
-const isDev = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
+export { type ServiceResult }
 
 const ALLOWED_MIME_TYPES = ['audio/wav', 'audio/mpeg'] as const
 const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024
@@ -15,10 +17,6 @@ export const uploadFileSchema = z.object({
   }),
   fileSizeBytes: z.number().max(MAX_FILE_SIZE_BYTES, 'File must not exceed 200 MB'),
 })
-
-export type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string }
 
 const buildStoragePath = (orderId: string, fileName: string): string =>
   `orders/${orderId}/${Date.now()}-${fileName}`
@@ -34,15 +32,12 @@ export const uploadAudioFile = async (
   })
 
   if (!validationResult.success) {
-    return {
-      success: false,
-      error: validationResult.error.errors.map((e) => e.message).join(', '),
-    }
+    return err(validationResult.error.errors.map((e) => e.message).join(', '))
   }
 
   if (isDev) {
     await new Promise((res) => setTimeout(res, 800))
-    return { success: true, data: { publicUrl: '/demo/incinerate-mixdown.wav' } }
+    return ok({ publicUrl: '/demo/incinerate-mixdown.wav' })
   }
 
   const supabase = await createClient()
@@ -52,7 +47,7 @@ export const uploadAudioFile = async (
     .from('audio-files')
     .upload(storagePath, file, { contentType: file.type, upsert: false })
 
-  if (storageError) return { success: false, error: storageError.message }
+  if (storageError) return err(storageError.message)
 
   const { data: urlData } = supabase.storage
     .from('audio-files')
@@ -68,19 +63,19 @@ export const uploadAudioFile = async (
     type: 'original',
   })
 
-  if (dbError) return { success: false, error: dbError.message }
+  if (dbError) return err(dbError.message)
 
-  return { success: true, data: { publicUrl: urlData.publicUrl } }
+  return ok({ publicUrl: urlData.publicUrl })
 }
 
 export const getFilesByOrderId = async (
   orderId: string,
 ): Promise<ServiceResult<AudioFile[]>> => {
-  if (!orderId) return { success: false, error: 'orderId is required' }
+  if (!orderId) return err('orderId is required')
 
   if (isDev) {
     await new Promise((res) => setTimeout(res, 300))
-    return { success: true, data: MOCK_FILES.filter((f) => f.order_id === orderId) }
+    return ok(MOCK_FILES.filter((f) => f.order_id === orderId))
   }
 
   const supabase = await createClient()
@@ -90,6 +85,7 @@ export const getFilesByOrderId = async (
     .eq('order_id', orderId)
     .order('created_at', { ascending: true })
 
-  if (error) return { success: false, error: error.message }
-  return { success: true, data: data as AudioFile[] }
+  if (error) return err(error.message)
+  // Cast needed due to @supabase/ssr generic type incompatibility (see lib/supabaseServer.ts)
+  return ok(data as AudioFile[])
 }

@@ -3,6 +3,12 @@ import type { CollectionConfig } from 'payload'
 export const Reviews: CollectionConfig = {
   slug: 'reviews',
   admin: { useAsTitle: 'clientName' },
+  access: {
+    read: () => true,
+    create: () => true,
+    update: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'engineer',
+    delete: ({ req }) => req.user?.role === 'admin',
+  },
   fields: [
     { name: 'clientName', type: 'text', required: true },
     { name: 'rating', type: 'number', min: 1, max: 5, required: true },
