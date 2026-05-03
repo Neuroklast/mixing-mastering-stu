@@ -2,13 +2,6 @@ import { withPayload } from '@payloadcms/next/withPayload'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: [
-    '@payloadcms/richtext-lexical',
-    '@payloadcms/db-postgres',
-    '@payloadcms/storage-s3',
-    'payload',
-    'sharp',
-  ],
   outputFileTracingExcludes: {
     '*': [
       'node_modules/three/**',
