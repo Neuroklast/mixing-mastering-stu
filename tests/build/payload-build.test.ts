@@ -16,7 +16,7 @@ describe('payload generate:types', () => {
         env: {
           ...process.env,
           // Minimal env so the config loads; no live DB connection needed for type generation
-          DATABASE_URI: 'postgresql://placeholder:placeholder@localhost:5432/test',
+          POSTGRES_URL_NON_POOLING: 'postgresql://placeholder:placeholder@localhost:5432/test',
           PAYLOAD_SECRET: 'test-secret-placeholder-at-least-32-characters-long',
           // Redirect output away from the repo to avoid dirty working tree in CI
           PAYLOAD_TS_OUTPUT_PATH: OUTPUT_FILE,

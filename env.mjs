@@ -4,9 +4,10 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL'),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
-  // Supabase Postgres connection string used by Payload CMS
-  // Format: postgresql://postgres.PROJECT_REF:PASSWORD@host:5432/postgres
-  DATABASE_URI: z.string().min(1, 'DATABASE_URI (Supabase Postgres) is required for Payload CMS'),
+  // Postgres non-pooling connection string used by Payload CMS migrations
+  // Format: postgresql://postgres.PROJECT_REF:PASSWORD@host:5432/postgres?sslmode=require
+  // Find in: Supabase dashboard → Project Settings → Database → Connection string → URI (non-pooling)
+  POSTGRES_URL_NON_POOLING: z.string().min(1, 'POSTGRES_URL_NON_POOLING (Supabase Postgres) is required for Payload CMS'),
   PAYLOAD_SECRET: z.string().min(32, 'PAYLOAD_SECRET must be at least 32 characters'),
   NEXT_PUBLIC_SITE_URL: z.string().url('NEXT_PUBLIC_SITE_URL must be a valid URL'),
   NEXT_PUBLIC_SERVER_URL: z.string().url('NEXT_PUBLIC_SERVER_URL must be a valid URL').optional().default('http://localhost:3000'),

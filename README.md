@@ -2,7 +2,7 @@
 
 Professional audio engineering studio – mixing & mastering services with future VST/digital product shop.
 
-[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNeuroklast%2Fmixing-mastering-stu&env=DATABASE_URI,PAYLOAD_SECRET,S3_ENDPOINT,S3_ACCESS_KEY_ID,S3_SECRET_ACCESS_KEY,S3_BUCKET,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,NEXT_PUBLIC_SITE_URL&envDescription=See%20the%20Environment%20Variables%20section%20in%20README.md%20for%20instructions&envLink=https%3A%2F%2Fgithub.com%2FNeuroklast%2Fmixing-mastering-stu%23environment-variables&project-name=sonorativa&repository-name=sonorativa)
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNeuroklast%2Fmixing-mastering-stu&env=POSTGRES_URL_NON_POOLING,PAYLOAD_SECRET,S3_ENDPOINT,S3_ACCESS_KEY_ID,S3_SECRET_ACCESS_KEY,S3_BUCKET,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,NEXT_PUBLIC_SITE_URL&envDescription=See%20the%20Environment%20Variables%20section%20in%20README.md%20for%20instructions&envLink=https%3A%2F%2Fgithub.com%2FNeuroklast%2Fmixing-mastering-stu%23environment-variables&project-name=sonorativa&repository-name=sonorativa)
 
 ---
 
@@ -48,7 +48,7 @@ Before you deploy, you need a Supabase project with a few things configured.
 
 1. Go to [app.supabase.com](https://app.supabase.com) → **New project**
 2. Choose a region close to your target audience
-3. Save your **database password** — you'll need it for `DATABASE_URI`
+3. Save your **database password** — you'll need it for `POSTGRES_URL_NON_POOLING`
 
 #### 1.2 Apply the Database Schema & Create Buckets
 
@@ -87,7 +87,7 @@ You need the following values from the Supabase dashboard:
 | `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API → `anon` `public` key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → `service_role` key (secret!) |
-| `DATABASE_URI` | Project Settings → Database → Connection string → URI (use Session pooler) |
+| `POSTGRES_URL_NON_POOLING` | Project Settings → Database → Connection string → URI (non-pooling) |
 | `S3_ENDPOINT` | Storage → S3 Connection → Endpoint |
 | `S3_ACCESS_KEY_ID` | Storage → S3 Connection → Access key ID |
 | `S3_SECRET_ACCESS_KEY` | Storage → S3 Connection → Secret access key |
@@ -132,7 +132,7 @@ Open `.env.local` and fill in the values you collected in Part 1. The file is pr
 npm run payload:init
 ```
 
-This runs `npx payload migrate` (creates tables in your Supabase Postgres) and `npx payload generate:types` (regenerates `payload-types.ts`).
+This runs `npm run migrate` (creates tables in your Supabase Postgres via the programmatic migration runner) and `npx payload generate:types` (regenerates `payload-types.ts`).
 
 #### 2.4 Start the Dev Server
 
@@ -206,7 +206,7 @@ The [Supabase Vercel Integration](https://vercel.com/integrations/supabase) auto
 3. Connect your Supabase organization and select your project
 4. Vercel automatically populates `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `DATABASE_URL`
 
-> **Note:** The integration uses slightly different variable names. After connecting, manually verify that the variable names match what `env.mjs` expects (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URI`). You may need to rename or copy the values.
+> **Note:** The integration uses slightly different variable names. After connecting, manually verify that the variable names match what `env.mjs` expects (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `POSTGRES_URL_NON_POOLING`). You may need to rename or copy the values.
 
 ---
 
@@ -281,7 +281,7 @@ See `.env.local.example` for a complete list with descriptions.
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Supabase `anon` public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase `service_role` key (server only) |
-| `DATABASE_URI` | ✅ | Supabase Postgres connection string (Session pooler URI) |
+| `POSTGRES_URL_NON_POOLING` | ✅ | Supabase Postgres non-pooling connection string (for Payload migrations) |
 | `PAYLOAD_SECRET` | ✅ | Min. 32 chars secret for Payload CMS JWT signing |
 | `NEXT_PUBLIC_SITE_URL` | ✅ | Full site URL, e.g. `https://sonorativa.com` |
 | `S3_ENDPOINT` | ✅ | Supabase S3 endpoint, e.g. `https://<ref>.supabase.co/storage/v1/s3` |
@@ -339,7 +339,7 @@ npm run setup
 # Full Supabase provisioning: applies init_all.sql, generates .env.production
 npm run setup:supabase
 
-# Apply Supabase schema to a live database (requires DATABASE_URI in .env.local)
+# Apply Supabase schema to a live database (requires POSTGRES_URL_NON_POOLING in .env.local)
 npm run setup:db
 
 # Run Payload migrations + generate TypeScript types

@@ -22,7 +22,7 @@
  *      identified by a normalised slug (artist-title).
  *
  * Environment variables required (same as the Next.js app):
- *   DATABASE_URI   – PostgreSQL connection string
+ *   POSTGRES_URL_NON_POOLING – PostgreSQL non-pooling connection string
  *   PAYLOAD_SECRET – Payload CMS secret
  */
 
@@ -362,7 +362,7 @@ async function syncToPayload(results: ScanResult[]): Promise<void> {
     const { default: config } = await import('../payload.config')
     payload = await getPayload({ config })
   } catch (err) {
-    console.error('[sync] Could not initialise Payload (is DATABASE_URI set?)', err)
+    console.error('[sync] Could not initialise Payload (is POSTGRES_URL_NON_POOLING set?)', err)
     console.log('[sync] Outputting scan results to /tmp/scan-results.json instead')
     fs.writeFileSync('/tmp/scan-results.json', JSON.stringify(results, null, 2))
     return

@@ -11,6 +11,7 @@ import { Reviews } from './collections/Reviews.ts'
 import { Gallery } from './collections/Gallery.ts'
 import { Media } from './collections/Media.ts'
 import { Legal } from './collections/Legal.ts'
+import { migrations } from './migrations/index.ts'
 import path from 'path'
 
 // process.cwd() is the project root in all execution contexts (tsx, Vercel, local).
@@ -69,7 +70,9 @@ db: postgresAdapter({
       rejectUnauthorized: false
     }
   },
-  push: process.env.NODE_ENV === 'development',
+  push: false,
+  migrationDir: './migrations',
+  prodMigrations: migrations,
 }),
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET ?? '',
