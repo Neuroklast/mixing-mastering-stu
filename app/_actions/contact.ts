@@ -43,7 +43,7 @@ export async function sendContactEmail(formData: FormData): Promise<ContactResul
     replyTo: email,
     subject: `[SONORATIVA Contact] ${subject}`,
     text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
-    html: `<p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p>${message.replace(/\n/g, '<br>')}</p>`,
+    html: `<p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p>${message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p>`,
   })
 
   if (error) return { success: false, error: error.message }
