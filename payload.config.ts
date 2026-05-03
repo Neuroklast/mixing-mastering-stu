@@ -64,7 +64,7 @@ export default buildConfig({
   ],
 db: postgresAdapter({
   pool: {
-    connectionString: process.env.POSTGRES_URL,
+    connectionString: process.env.POSTGRES_URL?.replace('?sslmode=require', '').replace('&sslmode=require', ''),
     ssl: {
       rejectUnauthorized: false
     }
