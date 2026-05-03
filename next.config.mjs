@@ -4,7 +4,6 @@ import { withPayload } from '@payloadcms/next/withPayload'
 const nextConfig = {
   serverExternalPackages: [
     '@payloadcms/richtext-lexical',
-    '@payloadcms/ui',
     '@payloadcms/db-postgres',
     '@payloadcms/storage-s3',
     'payload',
