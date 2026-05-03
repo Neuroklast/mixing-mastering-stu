@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# SONORATIVA — bin/setup-supabase.sh
+#
+# Automated Supabase provisioning script.
+# Guides you through:
+#   1. Supabase CLI check / install hint
+#   2. Login & project linking
+#   3. Applying supabase/init_all.sql
+#   4. Generating .env.production with all required keys
+#
+# Usage:
+#   bash bin/setup-supabase.sh
+#   npm run setup:supabase
+# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SQL_FILE="$REPO_ROOT/supabase/init_all.sql"
+ENV_OUT="$REPO_ROOT/.env.production"
+
+# ── Colour helpers ────────────────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
+info()    { echo -e "${CYAN}ℹ  $*${NC}"; }
+success() { echo -e "${GREEN}✅ $*${NC}"; }
+warn()    { echo -e "${YELLOW}⚠  $*${NC}"; }
+error()   { echo -e "${RED}❌ $*${NC}" >&2; }
+
+echo ""
+echo -e "${CYAN}🎛  SONORATIVA — Supabase Setup${NC}"
+echo "════════════════════════════════"
+echo ""
+
+# ── 1. Check Supabase CLI ─────────────────────────────────────────────────────
+if ! command -v supabase &>/dev/null; then
+  error "Supabase CLI is not installed."
+  echo ""
+  echo "Install it with one of:"
+  echo "  brew install supabase/tap/supabase     (macOS / Linux via Homebrew)"
+  echo "  npm install -g supabase                (npm global)"
+  echo "  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git"
+  echo "  scoop install supabase                 (Windows via Scoop)"
+  echo ""
+  echo "Then re-run: bash bin/setup-supabase.sh"
+  exit 1
+fi
+
+SUPABASE_VERSION=$(supabase --version 2>/dev/null || echo "unknown")
+success "Supabase CLI found: $SUPABASE_VERSION"
+
+# ── 2. Login ──────────────────────────────────────────────────────────────────
+echo ""
+info "Logging in to Supabase (browser will open)..."
+supabase login
+
+# ── 3. Collect project reference ──────────────────────────────────────────────
+echo ""
+echo "Find your Project Reference in:"
+echo "  Supabase dashboard → Project Settings → General → Reference ID"
+echo "  (looks like: abcdefghijklmnop)"
+echo ""
+read -r -p "Enter your Supabase project reference ID: " PROJECT_REF
+PROJECT_REF="${PROJECT_REF//[[:space:]]/}"
+if [[ -z "$PROJECT_REF" ]]; then
+  error "Project reference cannot be empty."
+  exit 1
+fi
+
+# ── 4. Link project ───────────────────────────────────────────────────────────
+echo ""
+info "Linking project $PROJECT_REF …"
+supabase link --project-ref "$PROJECT_REF"
+success "Project linked."
+
+# ── 5. Collect DATABASE_URI ───────────────────────────────────────────────────
+echo ""
+echo "You need the Postgres connection string (Session pooler URI)."
+echo "  Supabase dashboard → Project Settings → Database → Connection string → URI"
+echo "  Format: postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres"
+echo ""
+read -r -p "Enter DATABASE_URI: " DATABASE_URI
+DATABASE_URI="${DATABASE_URI//[[:space:]]/}"
+if [[ -z "$DATABASE_URI" ]]; then
+  error "DATABASE_URI cannot be empty."
+  exit 1
+fi
+
+# ── 6. Apply init_all.sql ─────────────────────────────────────────────────────
+echo ""
+info "Applying $SQL_FILE …"
+if command -v psql &>/dev/null; then
+  psql "$DATABASE_URI" < "$SQL_FILE"
+  success "init_all.sql applied via psql."
+else
+  warn "psql not found — falling back to supabase db execute."
+  supabase db execute --project-ref "$PROJECT_REF" < "$SQL_FILE"
+  success "init_all.sql applied via Supabase CLI."
+fi
+
+# ── 7. Collect remaining credentials ─────────────────────────────────────────
+echo ""
+echo "Collecting remaining credentials for .env.production…"
+echo "(All values come from Supabase dashboard → Project Settings → API)"
+echo ""
+
+read -r -p "NEXT_PUBLIC_SUPABASE_URL (Project URL, e.g. https://xxx.supabase.co): " SUPABASE_URL
+read -r -p "NEXT_PUBLIC_SUPABASE_ANON_KEY (anon / public key): " ANON_KEY
+read -r -s -p "SUPABASE_SERVICE_ROLE_KEY (service_role key — hidden): " SERVICE_ROLE_KEY
+echo ""
+
+echo ""
+echo "Supabase S3 credentials (Storage → S3 Connection):"
+read -r -p "S3_ENDPOINT (e.g. https://xxx.supabase.co/storage/v1/s3): " S3_ENDPOINT
+read -r -p "S3_ACCESS_KEY_ID: " S3_ACCESS_KEY_ID
+read -r -s -p "S3_SECRET_ACCESS_KEY (hidden): " S3_SECRET_ACCESS_KEY
+echo ""
+
+echo ""
+read -r -p "S3_BUCKET name (default: media): " S3_BUCKET
+S3_BUCKET="${S3_BUCKET:-media}"
+
+read -r -p "NEXT_PUBLIC_SITE_URL (e.g. https://sonorativa.com): " SITE_URL
+
+echo ""
+info "Generating a secure PAYLOAD_SECRET (64 hex chars)…"
+PAYLOAD_SECRET=$(openssl rand -hex 32 2>/dev/null || python3 -c "import secrets; print(secrets.token_hex(32))")
+
+# ── 8. Write .env.production ──────────────────────────────────────────────────
+cat > "$ENV_OUT" <<EOF
+# ── Generated by bin/setup-supabase.sh ───────────────────────────────────────
+# Copy-paste these values into Vercel → Project Settings → Environment Variables
+# Set each variable for the "Production" environment (and Preview if needed).
+
+# ── Supabase ──────────────────────────────────────────────────────────────────
+NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
+SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
+
+# ── Payload CMS ───────────────────────────────────────────────────────────────
+DATABASE_URI=${DATABASE_URI}
+PAYLOAD_SECRET=${PAYLOAD_SECRET}
+
+# ── Supabase S3 Storage ───────────────────────────────────────────────────────
+S3_ENDPOINT=${S3_ENDPOINT}
+S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+S3_BUCKET=${S3_BUCKET}
+
+# ── App ───────────────────────────────────────────────────────────────────────
+NEXT_PUBLIC_SITE_URL=${SITE_URL}
+NEXT_PUBLIC_SERVER_URL=${SITE_URL}
+NEXT_PUBLIC_DEV_MODE=false
+EOF
+
+chmod 600 "$ENV_OUT"
+success ".env.production written to $ENV_OUT"
+
+# ── 9. Print Vercel paste-ready summary ───────────────────────────────────────
+echo ""
+echo "════════════════════════════════════════════════════════"
+echo -e "${GREEN}🚀  Vercel Environment Variables${NC}"
+echo "════════════════════════════════════════════════════════"
+echo "  Copy the values below (or the .env.production file) into:"
+echo "  Vercel → Project → Settings → Environment Variables"
+echo ""
+cat "$ENV_OUT"
+echo ""
+echo "════════════════════════════════════════════════════════"
+echo ""
+success "Supabase setup complete!"
+echo ""
+echo "Next steps:"
+echo "  1. Add the variables above to Vercel (Production environment)"
+echo "  2. Run Payload migrations: npm run payload:init"
+echo "  3. Deploy: git push / trigger Vercel redeploy"
+echo "  4. Create first admin user at: https://your-project.vercel.app/admin-cms"
