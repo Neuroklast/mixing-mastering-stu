@@ -124,7 +124,7 @@ export async function getLegalPageBySlug(
     const doc = result.docs[0]
     if (!doc) return err(`Legal page not found: ${slug}`)
 
-    const page = docToLegalPage(doc as Record<string, unknown>)
+    const page = docToLegalPage(doc as unknown as Record<string, unknown>)
     if (!page) return err(`Failed to parse legal page: ${slug}`)
     return ok(page)
   } catch (e) {

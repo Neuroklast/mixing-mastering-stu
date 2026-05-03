@@ -35,7 +35,7 @@ export async function getAllGalleryImages(): Promise<ServiceResult<GalleryImage[
 
     const images: GalleryImage[] = []
     for (const doc of result.docs) {
-      const image = docToGalleryImage(doc as Record<string, unknown>)
+      const image = docToGalleryImage(doc as unknown as Record<string, unknown>)
       if (image) images.push(image)
     }
     return ok(images)
