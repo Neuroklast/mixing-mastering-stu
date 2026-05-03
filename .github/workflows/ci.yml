@@ -47,6 +47,6 @@ jobs:
       - name: Generate Payload types
         run: npx payload generate:types
         env:
-          DATABASE_URI: postgresql://placeholder:placeholder@localhost:5432/test
+          POSTGRES_URL_NON_POOLING: postgresql://placeholder:placeholder@localhost:5432/test
           PAYLOAD_SECRET: ci-placeholder-secret-at-least-32-characters-long
           PAYLOAD_TS_OUTPUT_PATH: /tmp/payload-types.ts

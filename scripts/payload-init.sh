@@ -5,7 +5,7 @@ echo "🚀 SONORATIVA — Payload CMS Init"
 echo "=================================="
 
 echo "⚙️  Running Payload migrations..."
-npx payload migrate
+npm run migrate
 
 echo "📝 Generating Payload types..."
 npx payload generate:types

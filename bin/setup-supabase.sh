@@ -73,16 +73,16 @@ info "Linking project $PROJECT_REF …"
 supabase link --project-ref "$PROJECT_REF"
 success "Project linked."
 
-# ── 5. Collect DATABASE_URI ───────────────────────────────────────────────────
+# ── 5. Collect POSTGRES_URL_NON_POOLING ───────────────────────────────────────
 echo ""
-echo "You need the Postgres connection string (Session pooler URI)."
-echo "  Supabase dashboard → Project Settings → Database → Connection string → URI"
-echo "  Format: postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres"
+echo "You need the Postgres non-pooling connection string (for Payload CMS migrations)."
+echo "  Supabase dashboard → Project Settings → Database → Connection string → URI (non-pooling)"
+echo "  Format: postgresql://postgres.PROJECT_REF:PASSWORD@db.PROJECT_REF.supabase.co:5432/postgres"
 echo ""
-read -r -p "Enter DATABASE_URI: " DATABASE_URI
-DATABASE_URI="${DATABASE_URI//[[:space:]]/}"
-if [[ -z "$DATABASE_URI" ]]; then
-  error "DATABASE_URI cannot be empty."
+read -r -p "Enter POSTGRES_URL_NON_POOLING: " POSTGRES_URL_NON_POOLING
+POSTGRES_URL_NON_POOLING="${POSTGRES_URL_NON_POOLING//[[:space:]]/}"
+if [[ -z "$POSTGRES_URL_NON_POOLING" ]]; then
+  error "POSTGRES_URL_NON_POOLING cannot be empty."
   exit 1
 fi
 
@@ -90,7 +90,7 @@ fi
 echo ""
 info "Applying $SQL_FILE …"
 if command -v psql &>/dev/null; then
-  psql "$DATABASE_URI" < "$SQL_FILE"
+  psql "$POSTGRES_URL_NON_POOLING" < "$SQL_FILE"
   success "init_all.sql applied via psql."
 else
   warn "psql not found — falling back to supabase db execute."
@@ -138,7 +138,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
 SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
 
 # ── Payload CMS ───────────────────────────────────────────────────────────────
-DATABASE_URI=${DATABASE_URI}
+POSTGRES_URL_NON_POOLING=${POSTGRES_URL_NON_POOLING}
 PAYLOAD_SECRET=${PAYLOAD_SECRET}
 
 # ── Supabase S3 Storage ───────────────────────────────────────────────────────

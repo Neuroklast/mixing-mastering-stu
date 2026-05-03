@@ -7,8 +7,9 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "payload migrate && next build",
-    "migrate": "payload migrate",
+    "build": "node --import tsx/esm scripts/migrate.ts && next build",
+    "migrate": "node --import tsx/esm scripts/migrate.ts",
+    "migrate:create": "payload migrate:create",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
