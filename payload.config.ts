@@ -64,12 +64,12 @@ export default buildConfig({
   ],
 db: postgresAdapter({
   pool: {
-    connectionString: process.env.POSTGRES_URL?.replace('?sslmode=require', '').replace('&sslmode=require', ''),
+    connectionString: process.env.POSTGRES_URL_NON_POOLING?.replace('?sslmode=require', '').replace('&sslmode=require', ''),
     ssl: {
       rejectUnauthorized: false
     }
   },
-  push: true
+  push: process.env.NODE_ENV === 'development',
 }),
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET ?? '',
