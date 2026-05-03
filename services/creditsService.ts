@@ -34,7 +34,7 @@ export async function getAllCredits(): Promise<ServiceResult<Credit[]>> {
 
     const credits: Credit[] = []
     for (const doc of result.docs) {
-      const credit = docToCredit(doc as Record<string, unknown>)
+      const credit = docToCredit(doc as unknown as Record<string, unknown>)
       if (credit) credits.push(credit)
     }
     return ok(credits)

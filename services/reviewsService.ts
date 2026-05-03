@@ -32,7 +32,7 @@ export async function getAllReviews(): Promise<ServiceResult<Review[]>> {
 
     const reviews: Review[] = []
     for (const doc of result.docs) {
-      const review = docToReview(doc as Record<string, unknown>)
+      const review = docToReview(doc as unknown as Record<string, unknown>)
       if (review) reviews.push(review)
     }
     return ok(reviews)

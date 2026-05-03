@@ -58,7 +58,7 @@ export async function getActiveShowcaseTrack(): Promise<ShowcaseTrack | null> {
 
     const doc = result.docs[0]
     if (!doc) return null
-    return docToShowcaseTrack(doc as Record<string, unknown>)
+    return docToShowcaseTrack(doc as unknown as Record<string, unknown>)
   } catch (e) {
     console.error('[showcaseService] getActiveShowcaseTrack failed:', e)
     return null
@@ -80,7 +80,7 @@ export async function getAllShowcaseTracks(): Promise<ShowcaseTrack[]> {
 
     const tracks: ShowcaseTrack[] = []
     for (const doc of result.docs) {
-      const track = docToShowcaseTrack(doc as Record<string, unknown>)
+      const track = docToShowcaseTrack(doc as unknown as Record<string, unknown>)
       if (track) tracks.push(track)
     }
     return tracks
