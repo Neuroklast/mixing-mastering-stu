@@ -26,6 +26,7 @@ export async function createService(formData: FormData) {
     active: formData.get('active') === 'true',
   })
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/services')
   redirect('/admin/services')
 }
@@ -47,6 +48,7 @@ export async function updateService(id: string, formData: FormData) {
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/services')
   redirect('/admin/services')
 }
@@ -55,5 +57,6 @@ export async function deleteService(id: string) {
   const supabase = createAdminClient()
   const { error } = await supabase.from('services').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/services')
 }

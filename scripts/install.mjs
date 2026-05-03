@@ -197,6 +197,38 @@ if (shouldPromptForVars) {
   if (!envVars['NEXT_PUBLIC_DEV_MODE']) {
     envVars['NEXT_PUBLIC_DEV_MODE'] = 'false'
   }
+
+  // ── Optional: Cloudflare R2 ────────────────────────────────────────────────
+  console.log(`\n  ${c.bold}Storage Provider${c.reset}`)
+  console.log(`  ${c.dim}Default: Supabase Storage (1 GB free). Cloudflare R2 offers 10 GB free.${c.reset}`)
+  console.log(`  ${c.dim}See docs/cloudflare-r2.md for setup instructions.${c.reset}`)
+  const useR2 = await confirm('  Use Cloudflare R2 for storage?', false)
+
+  if (useR2) {
+    envVars['STORAGE_PROVIDER'] = 'r2'
+    const R2_VARS = [
+      { key: 'R2_ACCOUNT_ID',        label: 'Cloudflare Account ID',     hint: 'Cloudflare Dashboard → R2 → Account ID (in the URL or overview)' },
+      { key: 'R2_ACCESS_KEY_ID',     label: 'R2 Access Key ID',           hint: 'R2 → Manage R2 API Tokens → S3-compatible token → Access Key ID' },
+      { key: 'R2_SECRET_ACCESS_KEY', label: 'R2 Secret Access Key',       hint: 'R2 → Manage R2 API Tokens → S3-compatible token → Secret Access Key' },
+      { key: 'R2_PUBLIC_HOST',       label: 'R2 Public Custom Domain',    hint: 'e.g. media.your-domain.com (linked to the sonorativa-media bucket)' },
+      { key: 'R2_BUCKET_MEDIA',      label: 'R2 Media Bucket name',       hint: 'Default: sonorativa-media' },
+      { key: 'R2_BUCKET_AUDIO',      label: 'R2 Audio Bucket name',       hint: 'Default: sonorativa-audio' },
+    ]
+    for (const { key, label, hint } of R2_VARS) {
+      const current = envVars[key] || ''
+      console.log(`\n  ${c.bold}${label}${c.reset}`)
+      console.log(`  ${c.dim}${hint}${c.reset}`)
+      const defaultValue = key === 'R2_BUCKET_MEDIA' ? 'sonorativa-media' : key === 'R2_BUCKET_AUDIO' ? 'sonorativa-audio' : ''
+      const value = await ask(`  ${key}`, current || defaultValue)
+      if (value) envVars[key] = value
+    }
+    info('R2 configured. Refer to docs/cloudflare-r2.md for bucket CORS setup.')
+  } else {
+    if (!envVars['STORAGE_PROVIDER']) {
+      envVars['STORAGE_PROVIDER'] = 'supabase'
+    }
+  }
+
   writeFileSync(envPath, serializeEnv(envVars))
   ok('.env.local updated')
 }

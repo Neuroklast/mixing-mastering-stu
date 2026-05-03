@@ -575,6 +575,9 @@ CREATE TABLE IF NOT EXISTS members (
 );
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 
+-- Add featured column if it doesn't exist yet (idempotent)
+ALTER TABLE members ADD COLUMN IF NOT EXISTS featured BOOLEAN NOT NULL DEFAULT false;
+
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE tablename = 'members' AND policyname = 'Public can read active members'

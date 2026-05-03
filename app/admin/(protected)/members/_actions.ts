@@ -19,8 +19,10 @@ export async function createMember(formData: FormData) {
     },
     display_order: Number(formData.get('display_order') ?? 0),
     active: formData.get('active') === 'true',
+    featured: formData.get('featured') === 'true',
   })
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/members')
   redirect('/admin/members')
 }
@@ -42,9 +44,11 @@ export async function updateMember(id: string, formData: FormData) {
       },
       display_order: Number(formData.get('display_order') ?? 0),
       active: formData.get('active') === 'true',
+      featured: formData.get('featured') === 'true',
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/members')
   redirect('/admin/members')
 }
@@ -53,5 +57,6 @@ export async function deleteMember(id: string) {
   const supabase = createAdminClient()
   const { error } = await supabase.from('members').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/members')
 }

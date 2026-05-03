@@ -16,6 +16,7 @@ export async function createCredit(formData: FormData) {
     featured: formData.get('featured') === 'true',
   })
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/credits')
   redirect('/admin/credits')
 }
@@ -35,6 +36,7 @@ export async function updateCredit(id: string, formData: FormData) {
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/credits')
   redirect('/admin/credits')
 }
@@ -43,5 +45,6 @@ export async function deleteCredit(id: string) {
   const supabase = createAdminClient()
   const { error } = await supabase.from('credits').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/credits')
 }

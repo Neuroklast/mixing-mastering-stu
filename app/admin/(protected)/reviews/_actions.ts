@@ -15,6 +15,7 @@ export async function createReview(formData: FormData) {
     project_link: formData.get('project_link') || null,
   })
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/reviews')
   redirect('/admin/reviews')
 }
@@ -33,6 +34,7 @@ export async function updateReview(id: string, formData: FormData) {
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/reviews')
   redirect('/admin/reviews')
 }
@@ -41,5 +43,6 @@ export async function deleteReview(id: string) {
   const supabase = createAdminClient()
   const { error } = await supabase.from('reviews').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/reviews')
 }

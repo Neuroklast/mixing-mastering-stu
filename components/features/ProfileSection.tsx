@@ -1,5 +1,13 @@
 'use client'
 
+/**
+ * @deprecated ProfileSection is no longer used on the public homepage.
+ * Featured engineers are rendered via MembersSection (with featured=true)
+ * which includes an equivalent MemberFeature layout.
+ * This file is kept as a no-op shim in case it's referenced in future tests
+ * or third-party code. Do not import it for new features.
+ */
+
 import { useState } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'

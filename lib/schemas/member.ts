@@ -18,6 +18,7 @@ export const memberSchema = z.object({
     .default({}),
   display_order: z.number().int().default(0),
   active: z.boolean().default(true),
+  featured: z.boolean().default(false),
 })
 
 export type Member = z.infer<typeof memberSchema>

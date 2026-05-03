@@ -21,7 +21,7 @@ export const ServicesModal = ({
   onSelectPackage,
 }: ServicesModalProps): JSX.Element => (
   <BaseModal.Root open={open} onOpenChange={onOpenChange}>
-    <BaseModalContent variant="wide" aria-describedby="services-modal-desc">
+    <BaseModalContent size="xl" aria-describedby="services-modal-desc">
       <BaseModalHeader>
         <BaseModalTitle className="text-3xl md:text-4xl">
           Service Packages
