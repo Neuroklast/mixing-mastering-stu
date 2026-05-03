@@ -7,6 +7,7 @@ import { Products } from '@/collections/Products'
 import { Showcase } from '@/collections/Showcase'
 import { Credits } from '@/collections/Credits'
 import { Reviews } from '@/collections/Reviews'
+import { Gallery } from '@/collections/Gallery'
 import { Media } from '@/collections/Media'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -25,7 +26,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Orders, Products, Media, Showcase, Credits, Reviews],
+  collections: [Users, Orders, Products, Media, Showcase, Credits, Reviews, Gallery],
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI ?? '',

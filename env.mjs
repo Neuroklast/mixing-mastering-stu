@@ -7,12 +7,14 @@ const serverEnvSchema = z.object({
   DATABASE_URI: z.string().min(1, 'DATABASE_URI (Supabase Postgres) is required for Payload CMS'),
   PAYLOAD_SECRET: z.string().min(32, 'PAYLOAD_SECRET must be at least 32 characters'),
   NEXT_PUBLIC_SITE_URL: z.string().url('NEXT_PUBLIC_SITE_URL must be a valid URL'),
+  NEXT_PUBLIC_SERVER_URL: z.string().url('NEXT_PUBLIC_SERVER_URL must be a valid URL').optional().default('http://localhost:3000'),
 })
 
 const clientEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   NEXT_PUBLIC_SITE_URL: z.string().url(),
+  NEXT_PUBLIC_SERVER_URL: z.string().url().optional().default('http://localhost:3000'),
 })
 
 const parseEnv = () => {

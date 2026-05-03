@@ -125,20 +125,28 @@ CREATE POLICY "Service role can manage licenses"
   ON licenses FOR ALL
   USING (auth.role() = 'service_role');
 
--- ── Storage bucket (run once via Supabase dashboard or CLI) ───────────────────
--- The bucket is private; files are accessed via signed URLs generated server-side.
---
--- INSERT INTO storage.buckets (id, name, public)
---   VALUES ('audio-files', 'audio-files', false)
---   ON CONFLICT DO NOTHING;
---
--- CREATE POLICY "Service role uploads audio"
---   ON storage.objects FOR INSERT
---   WITH CHECK (bucket_id = 'audio-files' AND auth.role() = 'service_role');
---
--- CREATE POLICY "Order owner can download own files"
---   ON storage.objects FOR SELECT
---   USING (
---     bucket_id = 'audio-files'
---     AND auth.role() = 'service_role'
---   );
+-- ── Storage bucket ─────────────────────────────────────────────────────────────
+INSERT INTO storage.buckets (id, name, public)
+  VALUES ('audio-files', 'audio-files', false)
+  ON CONFLICT DO NOTHING;
+
+CREATE POLICY "Service role uploads audio"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'audio-files' AND auth.role() = 'service_role');
+
+CREATE POLICY "Order owner can download own files"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'audio-files'
+    AND (
+      auth.role() = 'service_role'
+      OR (
+        EXISTS (
+          SELECT 1 FROM public.files f
+          JOIN public.orders o ON o.id = f.order_id
+          WHERE f.storage_path = storage.objects.name
+            AND o.client_email = (current_setting('request.jwt.claims', true)::jsonb ->> 'email')
+        )
+      )
+    )
+  );

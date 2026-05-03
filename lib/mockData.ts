@@ -1,7 +1,8 @@
 import type { ShowcaseTrack } from '@/lib/schemas/showcase'
 import type { Credit } from '@/lib/schemas/credits'
+import type { Review } from '@/lib/schemas/review'
+import type { GalleryImage } from '@/lib/schemas/gallery'
 import type { Order, AudioFile, Product } from '@/types'
-import type { Review } from '@/components/features/ReviewsSection'
 
 export const MOCK_SHOWCASE_TRACK: ShowcaseTrack = {
   title: 'Neuroklast – INCINERATE',
@@ -104,8 +105,6 @@ export const DEMO_REVIEWS: Review[] = [
     date: '2025-04-10',
   },
 ]
-
-import type { GalleryImage } from '@/types'
 
 /**
  * Gallery images are loaded from the CMS in production.  The DEMO_GALLERY is

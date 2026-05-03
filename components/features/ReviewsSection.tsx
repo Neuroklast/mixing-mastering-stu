@@ -3,16 +3,7 @@
 import { motion } from 'framer-motion'
 import { Star, StarHalf } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
-
-export interface Review {
-  id?: string
-  clientName: string
-  rating: number
-  text: string
-  projectLink?: string
-  service?: 'Mix' | 'Master' | 'Mix & Master' | 'Producing'
-  date?: string
-}
+import type { Review } from '@/lib/schemas/review'
 
 interface ReviewsSectionProps {
   reviews: Review[]

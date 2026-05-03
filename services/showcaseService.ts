@@ -2,20 +2,8 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { showcaseTrackSchema, type ShowcaseTrack } from '@/lib/schemas/showcase'
 import { MOCK_SHOWCASE_TRACK, MOCK_SHOWCASE_TRACKS } from '@/lib/mockData'
-
-const isDev = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
-
-function resolveMediaUrl(file: unknown): string | null {
-  if (!file || typeof file !== 'object') return null
-  const f = file as Record<string, unknown>
-  if (typeof f.url === 'string' && f.url) return f.url
-  // Payload stores uploads without host in local mode; prefix with NEXT_PUBLIC_SERVER_URL
-  if (typeof f.filename === 'string' && f.filename) {
-    const base = process.env.NEXT_PUBLIC_SERVER_URL ?? ''
-    return `${base}/media/${f.filename}`
-  }
-  return null
-}
+import { isDev } from '@/lib/devMode'
+import { resolveMediaUrl } from '@/lib/payload/resolveMediaUrl'
 
 function docToShowcaseTrack(doc: Record<string, unknown>): ShowcaseTrack | null {
   // Prefer direct text URL fields (populated by the scanner script) over upload relations
@@ -71,7 +59,8 @@ export async function getActiveShowcaseTrack(): Promise<ShowcaseTrack | null> {
     const doc = result.docs[0]
     if (!doc) return null
     return docToShowcaseTrack(doc as Record<string, unknown>)
-  } catch {
+  } catch (e) {
+    console.error('[showcaseService] getActiveShowcaseTrack failed:', e)
     return null
   }
 }
@@ -95,7 +84,8 @@ export async function getAllShowcaseTracks(): Promise<ShowcaseTrack[]> {
       if (track) tracks.push(track)
     }
     return tracks
-  } catch {
+  } catch (e) {
+    console.error('[showcaseService] getAllShowcaseTracks failed:', e)
     return []
   }
 }

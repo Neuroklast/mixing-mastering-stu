@@ -2,8 +2,10 @@ import { createClient } from '@/lib/supabaseServer'
 import { z } from 'zod'
 import type { Order } from '@/types'
 import { MOCK_ORDERS } from '@/lib/mockData'
+import { isDev } from '@/lib/devMode'
+import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 
-const isDev = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
+export { type ServiceResult }
 
 export const createOrderSchema = z.object({
   clientName: z.string().min(1, 'Name is required'),
@@ -16,21 +18,17 @@ export const createOrderSchema = z.object({
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>
 
-export type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string }
-
 export const createOrder = async (
   input: CreateOrderInput,
 ): Promise<ServiceResult<{ orderId: string }>> => {
   const parsed = createOrderSchema.safeParse(input)
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors.map((e) => e.message).join(', ') }
+    return err(parsed.error.errors.map((e) => e.message).join(', '))
   }
 
   if (isDev) {
     await new Promise((res) => setTimeout(res, 500))
-    return { success: true, data: { orderId: 'mock-order-1' } }
+    return ok({ orderId: 'mock-order-1' })
   }
 
   const supabase = await createClient()
@@ -48,17 +46,17 @@ export const createOrder = async (
     .select('id')
     .single()
 
-  if (error) return { success: false, error: error.message }
-  return { success: true, data: { orderId: data.id } }
+  if (error) return err(error.message)
+  return ok({ orderId: data.id })
 }
 
 export const getOrderById = async (orderId: string): Promise<ServiceResult<Order>> => {
-  if (!orderId) return { success: false, error: 'orderId is required' }
+  if (!orderId) return err('orderId is required')
 
   if (isDev) {
     await new Promise((res) => setTimeout(res, 300))
     const order = MOCK_ORDERS.find((o) => o.id === orderId) ?? MOCK_ORDERS[0]
-    return { success: true, data: order }
+    return ok(order)
   }
 
   const supabase = await createClient()
@@ -68,19 +66,20 @@ export const getOrderById = async (orderId: string): Promise<ServiceResult<Order
     .eq('id', orderId)
     .single()
 
-  if (error) return { success: false, error: error.message }
-  return { success: true, data: data as Order }
+  if (error) return err(error.message)
+  // Cast needed due to @supabase/ssr generic type incompatibility (see lib/supabaseServer.ts)
+  return ok(data as Order)
 }
 
 export const updateOrderStatus = async (
   orderId: string,
   status: Order['status'],
 ): Promise<ServiceResult<void>> => {
-  if (!orderId) return { success: false, error: 'orderId is required' }
+  if (!orderId) return err('orderId is required')
 
   if (isDev) {
     await new Promise((res) => setTimeout(res, 300))
-    return { success: true, data: undefined }
+    return ok(undefined)
   }
 
   const supabase = await createClient()
@@ -89,6 +88,6 @@ export const updateOrderStatus = async (
     .update({ status })
     .eq('id', orderId)
 
-  if (error) return { success: false, error: error.message }
-  return { success: true, data: undefined }
+  if (error) return err(error.message)
+  return ok(undefined)
 }
