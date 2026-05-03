@@ -2,6 +2,21 @@ import { withPayload } from '@payloadcms/next/withPayload'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: [
+    '@payloadcms/richtext-lexical',
+    '@payloadcms/ui',
+    '@payloadcms/db-postgres',
+    '@payloadcms/storage-s3',
+    'payload',
+    'sharp',
+  ],
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/three/**',
+      'node_modules/@react-three/**',
+      'node_modules/postprocessing/**',
+    ],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '210mb',
