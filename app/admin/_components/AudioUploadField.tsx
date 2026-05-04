@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useR2MultipartUpload } from '@/hooks/useR2MultipartUpload'
 
 interface AudioUploadFieldProps {
@@ -16,12 +16,15 @@ export default function AudioUploadField({
   defaultValue = '',
   showcaseId = 'track',
 }: AudioUploadFieldProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { status, progress, url, error, upload, cancel, reset } = useR2MultipartUpload()
   const [currentPath, setCurrentPath] = useState(defaultValue)
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setSelectedFileName(file.name)
 
     const fieldSuffix = name.includes('before') ? 'before' : 'after'
     const objectPath = `${showcaseId}/${fieldSuffix}-${Date.now()}.wav`
@@ -53,13 +56,39 @@ export default function AudioUploadField({
         </div>
       )}
 
+      {/* Hidden native file input — triggered by the styled button below */}
       <input
+        ref={fileInputRef}
         type="file"
         accept="audio/wav,audio/flac,audio/x-wav,.wav,.flac"
         onChange={handleFile}
         disabled={status === 'uploading'}
-        style={{ color: '#ccc', display: 'block', marginBottom: '0.4rem' }}
+        style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', clipPath: 'inset(50%)' }}
+        aria-hidden="true"
+        tabIndex={-1}
       />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          disabled={status === 'uploading'}
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            padding: '0.45rem 1rem',
+            background: '#27272a',
+            border: '1px solid #52525b',
+            borderRadius: '6px',
+            color: '#d4d4d8',
+            fontSize: '0.85rem',
+            cursor: status === 'uploading' ? 'not-allowed' : 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Choose file
+        </button>
+        <span style={{ fontSize: '0.8rem', color: '#71717a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '16rem' }}>
+          {selectedFileName ?? 'No file chosen'}
+        </span>
+      </div>
 
       {/* Progress bar */}
       {status === 'uploading' && (

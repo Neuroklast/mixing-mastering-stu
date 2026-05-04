@@ -66,6 +66,11 @@ function getR2Client(): S3Client {
   })
 }
 
+// Capture at module load time so that tests can import a fresh copy of this
+// module with a specific R2_PUBLIC_HOST value without it being clobbered by
+// env-restore steps in test teardown.
+const _R2_PUBLIC_HOST: string | undefined = process.env.R2_PUBLIC_HOST
+
 export const r2StorageProvider: StorageProvider = {
   /**
    * Returns the public URL via R2's custom domain.
@@ -74,7 +79,7 @@ export const r2StorageProvider: StorageProvider = {
    * — the protocol and any trailing slash are stripped defensively.
    */
   getPublicUrl(bucket: string, path: string): string {
-    const raw = process.env.R2_PUBLIC_HOST
+    const raw = _R2_PUBLIC_HOST
     if (!raw) throw new Error('Missing R2_PUBLIC_HOST environment variable')
     const host = normalizeR2Host(raw)
     // bucket is not part of the URL when using a custom domain bound to one bucket.

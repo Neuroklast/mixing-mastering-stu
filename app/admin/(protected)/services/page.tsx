@@ -18,6 +18,7 @@ export default async function ServicesAdminPage() {
           + New
         </Link>
       </div>
+      <div className="overflow-x-auto">
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid #333', textAlign: 'left' }}>
@@ -41,15 +42,18 @@ export default async function ServicesAdminPage() {
                 <td style={{ padding: '0.75rem' }}>{priceDisplay}</td>
                 <td style={{ padding: '0.75rem' }}>{String(row.display_order ?? '')}</td>
                 <td style={{ padding: '0.75rem' }}>{row.active ? '✓' : '–'}</td>
-                <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <Link href={`/admin/services/${String(row.id)}`} style={{ color: '#7c3aed' }}>Edit</Link>
-                  <ConfirmDeleteButton action={deleteService.bind(null, String(row.id))} />
+                <td style={{ padding: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <Link href={`/admin/services/${String(row.id)}`} style={{ color: '#7c3aed' }}>Edit</Link>
+                    <ConfirmDeleteButton action={deleteService.bind(null, String(row.id))} />
+                  </div>
                 </td>
               </tr>
             )
           })}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }
