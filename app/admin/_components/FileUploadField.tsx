@@ -131,7 +131,7 @@ export default function FileUploadField({
         accept={accept}
         onChange={handleFile}
         disabled={status === 'uploading'}
-        style={{ position: 'absolute', left: '-9999px', width: 1, height: 1 }}
+        style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', clipPath: 'inset(50%)' }}
         aria-hidden="true"
         tabIndex={-1}
       />
