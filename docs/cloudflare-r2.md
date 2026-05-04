@@ -59,10 +59,15 @@ Add to `.env.local` (local) and Vercel → Project → Environment Variables (pr
 R2_ACCOUNT_ID=your_cloudflare_account_id
 R2_ACCESS_KEY_ID=your_r2_access_key_id
 R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
-R2_PUBLIC_HOST=media.your-domain.com      # see §3.4
+R2_PUBLIC_HOST=media.your-domain.com      # see §3.4 — bare hostname, NO https://
 R2_BUCKET_MEDIA=sonorativa-media
 R2_BUCKET_AUDIO=sonorativa-audio
 ```
+
+> **`R2_PUBLIC_HOST` must be the bare hostname**, e.g. `pub-xyz.r2.dev` or
+> `media.example.com`. **Do NOT include `https://` or a trailing slash.**
+> The code strips both defensively, but keeping the value clean avoids
+> confusion and potential issues with tooling that doesn't strip them.
 
 ### 3.4 Enable a Public Custom Domain for `sonorativa-media`
 
@@ -70,7 +75,7 @@ R2_BUCKET_AUDIO=sonorativa-audio
 2. Enable **Custom domain** → add `media.your-domain.com`.
 3. Add the CNAME record shown by Cloudflare to your DNS provider.
 4. Wait for it to become active (usually < 5 minutes).
-5. Set `R2_PUBLIC_HOST=media.your-domain.com` in env.
+5. Set `R2_PUBLIC_HOST=media.your-domain.com` in env (bare hostname, no protocol).
 
 ---
 

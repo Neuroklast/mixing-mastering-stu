@@ -9,10 +9,12 @@ import { requireAdmin } from '@/app/admin/_actions/auth'
 const VALID_KEYS = new Set([
   'hero_badge', 'hero_title_1', 'hero_title_2', 'hero_title_3',
   'hero_subtitle', 'hero_cta_primary', 'hero_cta_secondary',
+  'hero_model_url',
   'about_title', 'about_body',
   'contact_email', 'contact_phone', 'contact_address',
   'social_instagram', 'social_soundcloud', 'social_spotify',
   'footer_tagline',
+  'favicon_url',
 ])
 
 const MAX_VALUE_LENGTH = 2000

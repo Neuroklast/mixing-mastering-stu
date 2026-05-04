@@ -31,6 +31,23 @@ function encodePathSegments(path: string): string {
   return path.split('/').map(encodeURIComponent).join('/')
 }
 
+/**
+ * Normalise R2_PUBLIC_HOST so it is always a bare host (+ optional path prefix).
+ *
+ * Handles users who mistakenly set the env var with a protocol prefix or a
+ * trailing slash, e.g.:
+ *   "https://pub-xyz.r2.dev"  → "pub-xyz.r2.dev"
+ *   "http://media.example.com/"  → "media.example.com"
+ *   "media.example.com/cdn/"  → "media.example.com/cdn"   (path prefix kept)
+ *   "media.example.com"       → "media.example.com"       (no-op)
+ */
+function normalizeR2Host(raw: string): string {
+  // Strip leading protocol (http:// or https://, case-insensitive)
+  const withoutProtocol = raw.replace(/^https?:\/\//i, '')
+  // Strip trailing slashes
+  return withoutProtocol.replace(/\/+$/, '')
+}
+
 function getR2Client(): S3Client {
   const accountId = process.env.R2_ACCOUNT_ID
   const accessKeyId = process.env.R2_ACCESS_KEY_ID
@@ -53,10 +70,13 @@ export const r2StorageProvider: StorageProvider = {
   /**
    * Returns the public URL via R2's custom domain.
    * Requires R2_PUBLIC_HOST to be set (e.g. "media.example.com").
+   * Also accepts full URLs with protocol prefix (e.g. "https://pub-xyz.r2.dev")
+   * — the protocol and any trailing slash are stripped defensively.
    */
   getPublicUrl(bucket: string, path: string): string {
-    const host = process.env.R2_PUBLIC_HOST
-    if (!host) throw new Error('Missing R2_PUBLIC_HOST environment variable')
+    const raw = process.env.R2_PUBLIC_HOST
+    if (!raw) throw new Error('Missing R2_PUBLIC_HOST environment variable')
+    const host = normalizeR2Host(raw)
     // bucket is not part of the URL when using a custom domain bound to one bucket.
     // If your domain maps to a specific bucket, omit the bucket prefix.
     return `https://${host}/${encodePathSegments(path)}`

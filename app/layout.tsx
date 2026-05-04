@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { LenisProvider } from '@/components/providers/LenisProvider'
 import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider'
+import { getSiteContent } from '@/services/contentService'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -26,31 +27,37 @@ const jetbrainsMono = JetBrains_Mono({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sonorativa.com'
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: 'SONORATIVA – Professional Audio Engineering',
-    template: '%s | SONORATIVA',
-  },
-  description:
-    'Industrial-grade mixing and mastering services for the modern producer. Crafted with technical precision.',
-  keywords: ['mixing', 'mastering', 'audio engineering', 'music production'],
-  openGraph: {
-    title: 'SONORATIVA – Professional Audio Engineering',
-    description: 'Industrial-grade mixing and mastering for the modern producer.',
-    type: 'website',
-    url: siteUrl,
-    siteName: 'SONORATIVA',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'SONORATIVA – Professional Audio Engineering',
-    description: 'Industrial-grade mixing and mastering for the modern producer.',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getSiteContent()
+  const faviconUrl = content.favicon_url || null
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: 'SONORATIVA – Professional Audio Engineering',
+      template: '%s | SONORATIVA',
+    },
+    description:
+      'Industrial-grade mixing and mastering services for the modern producer. Crafted with technical precision.',
+    keywords: ['mixing', 'mastering', 'audio engineering', 'music production'],
+    openGraph: {
+      title: 'SONORATIVA – Professional Audio Engineering',
+      description: 'Industrial-grade mixing and mastering for the modern producer.',
+      type: 'website',
+      url: siteUrl,
+      siteName: 'SONORATIVA',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'SONORATIVA – Professional Audio Engineering',
+      description: 'Industrial-grade mixing and mastering for the modern producer.',
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+    icons: faviconUrl ? { icon: faviconUrl } : { icon: '/favicon.ico' },
+  }
 }
 
 export default function RootLayout({

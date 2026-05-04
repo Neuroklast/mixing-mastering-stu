@@ -43,6 +43,11 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.r2.cloudflarestorage.com',
       },
+      // Cloudflare R2 public dev URLs (pub-xxx.r2.dev) — fallback when R2_PUBLIC_HOST is not set
+      {
+        protocol: 'https',
+        hostname: '*.r2.dev',
+      },
       // Cloudflare R2 custom domain — read from env so each environment whitelists its own host.
       // R2_PUBLIC_HOST must be set on Vercel for <Image> optimisation to work with R2 media.
       ...(r2Hostname

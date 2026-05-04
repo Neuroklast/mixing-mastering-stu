@@ -13,6 +13,7 @@ export const SITE_CONTENT_DEFAULTS: SiteContent = {
   hero_subtitle: 'Mixing & mastering for artists who care about every dB.',
   hero_cta_primary: 'Book a session',
   hero_cta_secondary: 'Hear the difference',
+  hero_model_url: '/video/3d_hero_model.glb',
   about_title: 'Studio',
   about_body: '',
   contact_email: '',
@@ -22,4 +23,5 @@ export const SITE_CONTENT_DEFAULTS: SiteContent = {
   social_instagram: '',
   social_soundcloud: '',
   social_spotify: '',
+  favicon_url: '',
 }
