@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useTusUpload } from '@/hooks/useTusUpload'
+import { useR2MultipartUpload } from '@/hooks/useR2MultipartUpload'
 
 interface AudioUploadFieldProps {
   label: string
@@ -16,7 +16,7 @@ export default function AudioUploadField({
   defaultValue = '',
   showcaseId = 'track',
 }: AudioUploadFieldProps) {
-  const { status, progress, url, error, upload, reset } = useTusUpload()
+  const { status, progress, url, error, upload, cancel, reset } = useR2MultipartUpload()
   const [currentPath, setCurrentPath] = useState(defaultValue)
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,7 +82,24 @@ export default function AudioUploadField({
               }}
             />
           </div>
-          <p style={{ fontSize: '0.8rem', color: '#aaa' }}>Uploading… {progressPct}%</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <p style={{ fontSize: '0.8rem', color: '#aaa' }}>Uploading… {progressPct}%</p>
+            <button
+              type="button"
+              onClick={cancel}
+              style={{
+                fontSize: '0.75rem',
+                color: '#f87171',
+                background: 'none',
+                border: '1px solid #444',
+                borderRadius: '4px',
+                padding: '0.2rem 0.5rem',
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
@@ -118,3 +135,4 @@ export default function AudioUploadField({
     </div>
   )
 }
+

@@ -198,43 +198,71 @@ if (shouldPromptForVars) {
     envVars['NEXT_PUBLIC_DEV_MODE'] = 'false'
   }
 
-  // ── Optional: Cloudflare R2 ────────────────────────────────────────────────
-  console.log(`\n  ${c.bold}Storage Provider${c.reset}`)
-  console.log(`  ${c.dim}Default: Supabase Storage (1 GB free). Cloudflare R2 offers 10 GB free.${c.reset}`)
-  console.log(`  ${c.dim}See docs/cloudflare-r2.md for setup instructions.${c.reset}`)
-  const useR2 = await confirm('  Use Cloudflare R2 for storage?', false)
-
-  if (useR2) {
-    envVars['STORAGE_PROVIDER'] = 'r2'
-    const R2_VARS = [
-      { key: 'R2_ACCOUNT_ID',        label: 'Cloudflare Account ID',     hint: 'Cloudflare Dashboard → R2 → Account ID (in the URL or overview)' },
-      { key: 'R2_ACCESS_KEY_ID',     label: 'R2 Access Key ID',           hint: 'R2 → Manage R2 API Tokens → S3-compatible token → Access Key ID' },
-      { key: 'R2_SECRET_ACCESS_KEY', label: 'R2 Secret Access Key',       hint: 'R2 → Manage R2 API Tokens → S3-compatible token → Secret Access Key' },
-      { key: 'R2_PUBLIC_HOST',       label: 'R2 Public Custom Domain',    hint: 'e.g. media.your-domain.com (linked to the sonorativa-media bucket)' },
-      { key: 'R2_BUCKET_MEDIA',      label: 'R2 Media Bucket name',       hint: 'Default: sonorativa-media' },
-      { key: 'R2_BUCKET_AUDIO',      label: 'R2 Audio Bucket name',       hint: 'Default: sonorativa-audio' },
-    ]
-    for (const { key, label, hint } of R2_VARS) {
-      const current = envVars[key] || ''
-      console.log(`\n  ${c.bold}${label}${c.reset}`)
-      console.log(`  ${c.dim}${hint}${c.reset}`)
-      const defaultValue = key === 'R2_BUCKET_MEDIA' ? 'sonorativa-media' : key === 'R2_BUCKET_AUDIO' ? 'sonorativa-audio' : ''
-      const value = await ask(`  ${key}`, current || defaultValue)
-      if (value) envVars[key] = value
-    }
-    info('R2 configured. Refer to docs/cloudflare-r2.md for bucket CORS setup.')
-  } else {
-    if (!envVars['STORAGE_PROVIDER']) {
-      envVars['STORAGE_PROVIDER'] = 'supabase'
-    }
+  // ── Cloudflare R2 (required) ───────────────────────────────────────────────
+  console.log(`\n  ${c.bold}Cloudflare R2 Storage${c.reset}`)
+  console.log(`  ${c.dim}Storage is handled exclusively by Cloudflare R2 (10 GB free tier).${c.reset}`)
+  console.log(`  ${c.dim}See docs/cloudflare-r2.md for bucket creation and CORS setup.${c.reset}`)
+  console.log(`  ${c.dim}Run 'node scripts/r2-setup.mjs' to provision buckets automatically.${c.reset}`)
+  const R2_VARS = [
+    { key: 'R2_ACCOUNT_ID',        label: 'Cloudflare Account ID',     hint: 'Cloudflare Dashboard → R2 → Account ID (visible in the page URL)' },
+    { key: 'R2_ACCESS_KEY_ID',     label: 'R2 Access Key ID',           hint: 'R2 → Manage R2 API Tokens → S3-compatible token → Access Key ID' },
+    { key: 'R2_SECRET_ACCESS_KEY', label: 'R2 Secret Access Key',       hint: 'R2 → Manage R2 API Tokens → S3-compatible token → Secret Access Key' },
+    { key: 'R2_PUBLIC_HOST',       label: 'R2 Public Custom Domain',    hint: 'e.g. media.your-domain.com (linked to the sonorativa-media bucket)' },
+    { key: 'R2_BUCKET_MEDIA',      label: 'R2 Media Bucket name',       hint: 'Default: sonorativa-media' },
+    { key: 'R2_BUCKET_AUDIO',      label: 'R2 Audio Bucket name',       hint: 'Default: sonorativa-audio' },
+  ]
+  for (const { key, label, hint } of R2_VARS) {
+    const current = envVars[key] || ''
+    console.log(`\n  ${c.bold}${label}${c.reset}`)
+    console.log(`  ${c.dim}${hint}${c.reset}`)
+    const defaultValue = key === 'R2_BUCKET_MEDIA' ? 'sonorativa-media' : key === 'R2_BUCKET_AUDIO' ? 'sonorativa-audio' : ''
+    const value = await ask(`  ${key}`, current || defaultValue)
+    if (value) envVars[key] = value
   }
+  info('R2 configured. Refer to docs/cloudflare-r2.md for bucket CORS and lifecycle setup.')
 
   writeFileSync(envPath, serializeEnv(envVars))
   ok('.env.local updated')
 }
 
-// ── Step 5: Database schema ───────────────────────────────────────────────────
-step(5, 'Database schema (supabase/init_all.sql)')
+// ── Step 5: R2 bucket provisioning ───────────────────────────────────────────
+step(5, 'Cloudflare R2 bucket provisioning')
+
+const r2Id = envVars['R2_ACCOUNT_ID']
+const r2Key = envVars['R2_ACCESS_KEY_ID']
+const r2Secret = envVars['R2_SECRET_ACCESS_KEY']
+const r2BucketMedia = envVars['R2_BUCKET_MEDIA'] || 'sonorativa-media'
+const r2BucketAudio = envVars['R2_BUCKET_AUDIO'] || 'sonorativa-audio'
+
+if (r2Id && r2Key && r2Secret && !r2Id.includes('your_')) {
+  const tryProvision = await confirm('Attempt to auto-create R2 buckets?', true)
+  if (tryProvision) {
+    const r2SetupPath = join(ROOT, 'scripts', 'r2-setup.mjs')
+    if (existsSync(r2SetupPath)) {
+      const r2Result = spawnSync('node', [r2SetupPath, '--non-interactive'], {
+        cwd: ROOT,
+        stdio: 'inherit',
+        env: { ...process.env, ...envVars },
+      })
+      if (r2Result.status === 0) {
+        ok('R2 buckets provisioned')
+      } else {
+        warn('R2 bucket provisioning failed — create them manually in the Cloudflare Dashboard')
+        console.log(`  Buckets needed: ${r2BucketMedia} (public), ${r2BucketAudio} (private)`)
+        console.log('  See docs/cloudflare-r2.md for manual setup steps.')
+      }
+    } else {
+      warn('r2-setup.mjs not found — skipping bucket provisioning')
+    }
+  } else {
+    info('Skipping R2 provisioning. Create buckets manually: ' + r2BucketMedia + ', ' + r2BucketAudio)
+  }
+} else {
+  warn('R2 credentials not set — skipping bucket provisioning. Set them in .env.local and re-run.')
+}
+
+
+step(6, 'Database schema (supabase/init_all.sql)')
 
 const sqlPath = join(ROOT, 'supabase', 'init_all.sql')
 if (existsSync(sqlPath)) {
@@ -260,8 +288,8 @@ if (existsSync(sqlPath)) {
   warn('supabase/init_all.sql not found — skipping schema step')
 }
 
-// ── Step 6: Create first admin user ──────────────────────────────────────────
-step(6, 'Admin user')
+// ── Step 7: Create first admin user ──────────────────────────────────────────
+step(7, 'Admin user')
 
 const createAdmin = await confirm('Would you like to create the first admin user now?', false)
 if (createAdmin) {
@@ -328,8 +356,8 @@ if (createAdmin) {
   }
 }
 
-// ── Step 7: Build verification ────────────────────────────────────────────────
-step(7, 'Build verification')
+// ── Step 8: Build verification ────────────────────────────────────────────────
+step(8, 'Build verification')
 
 const runBuild = await confirm('Run npm run build to verify the setup?', false)
 if (runBuild) {

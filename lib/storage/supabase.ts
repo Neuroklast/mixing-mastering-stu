@@ -1,8 +1,10 @@
 /**
- * Supabase Storage implementation of StorageProvider.
+ * @deprecated Supabase Storage is no longer used as a storage provider.
+ * Storage is now handled exclusively by Cloudflare R2 (see lib/storage/r2.ts).
+ * This file is kept only for the one-shot migration script
+ * (scripts/migrate-supabase-to-r2.mjs). Do not use in application code.
  *
- * Uses the Supabase JavaScript client for all storage operations.
- * This is the default provider when STORAGE_PROVIDER is unset or 'supabase'.
+ * See docs/cloudflare-r2.md for details and migration guidance.
  */
 
 import { createClient } from '@supabase/supabase-js'

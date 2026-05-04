@@ -1,0 +1,3 @@
+# Backups directory — created by scripts/backup-db.mjs
+# Timestamped .sql.gz files are written here.
+# Do NOT commit backup files to git (see .gitignore).

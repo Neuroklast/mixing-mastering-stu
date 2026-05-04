@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { getLegalPageBySlug } from '@/services/legalService'
 
 export const metadata: Metadata = {
-  title: 'Impressum – SONORATIVA',
-  description: 'Impressum und gesetzlich vorgeschriebene Informationen gemäß § 5 TMG.',
+  title: 'Imprint – SONORATIVA',
+  description: 'Legal imprint (Impressum) and mandatory information for SONORATIVA.',
 }
 
 export default async function ImpressumPage(): Promise<JSX.Element> {
@@ -13,10 +13,10 @@ export default async function ImpressumPage(): Promise<JSX.Element> {
     return (
       <article className="prose-legal">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tighter font-heading mb-2">
-          Impressum
+          Imprint
         </h1>
         <p className="text-sm text-muted-foreground font-mono mt-6">
-          Diese Seite wird gerade aktualisiert. Bitte versuchen Sie es später erneut.
+          This page is being updated. Please try again later.
         </p>
       </article>
     )
@@ -31,7 +31,7 @@ export default async function ImpressumPage(): Promise<JSX.Element> {
       </h1>
       {page.lastUpdated && (
         <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-10">
-          Zuletzt aktualisiert: {page.lastUpdated}
+          Last updated: {page.lastUpdated}
         </p>
       )}
       <div

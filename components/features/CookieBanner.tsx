@@ -29,11 +29,13 @@ export const CookieBanner = (): JSX.Element | null => {
 
   const accept = (): void => {
     try { localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted') } catch { /* ignore */ }
+    window.dispatchEvent(new Event('ConsentChanged'))
     setVisible(false)
   }
 
   const decline = (): void => {
     try { localStorage.setItem(COOKIE_CONSENT_KEY, 'declined') } catch { /* ignore */ }
+    window.dispatchEvent(new Event('ConsentChanged'))
     setVisible(false)
   }
 

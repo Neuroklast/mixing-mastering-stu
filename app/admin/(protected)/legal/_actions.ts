@@ -13,6 +13,7 @@ export async function createLegal(formData: FormData) {
     last_updated: formData.get('last_updated') || null,
   })
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/legal')
   redirect('/admin/legal')
 }
@@ -29,6 +30,7 @@ export async function updateLegal(id: string, formData: FormData) {
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/legal')
   redirect('/admin/legal')
 }
@@ -37,5 +39,6 @@ export async function deleteLegal(id: string) {
   const supabase = createAdminClient()
   const { error } = await supabase.from('legal').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/legal')
 }

@@ -4,6 +4,11 @@ import type { Order } from '@/types'
 import { MOCK_ORDERS } from '@/lib/mockData'
 import { isDev } from '@/lib/devMode'
 import { ok, err, type ServiceResult } from '@/lib/serviceResult'
+import { sendEmail } from '@/lib/email'
+import {
+  orderConfirmationTemplate,
+  adminOrderNotificationTemplate,
+} from '@/lib/email/templates'
 
 export { type ServiceResult }
 
@@ -47,7 +52,41 @@ export const createOrder = async (
     .single()
 
   if (error) return err(error.message)
-  return ok({ orderId: data.id })
+
+  const orderId = data.id
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ''
+  const adminEmail = process.env.ADMIN_EMAIL ?? process.env.CONTACT_FROM_EMAIL
+
+  // Send confirmation to client and notification to admin (best-effort)
+  try {
+    const { subject: cSubject, html: cHtml, text: cText } = orderConfirmationTemplate({
+      clientName: parsed.data.clientName,
+      service: parsed.data.serviceType,
+      orderId,
+      siteUrl,
+    })
+    await sendEmail({ to: parsed.data.clientEmail, subject: cSubject, html: cHtml, text: cText })
+  } catch (emailErr) {
+    console.error('[order] Failed to send confirmation email:', emailErr)
+  }
+
+  if (adminEmail) {
+    try {
+      const { subject: aSubject, html: aHtml, text: aText } = adminOrderNotificationTemplate({
+        clientName: parsed.data.clientName,
+        clientEmail: parsed.data.clientEmail,
+        service: parsed.data.serviceType,
+        orderId,
+        notes: parsed.data.notes,
+        adminUrl: `${siteUrl}/admin/orders`,
+      })
+      await sendEmail({ to: adminEmail, subject: aSubject, html: aHtml, text: aText })
+    } catch (emailErr) {
+      console.error('[order] Failed to send admin notification:', emailErr)
+    }
+  }
+
+  return ok({ orderId })
 }
 
 export const getOrderById = async (orderId: string): Promise<ServiceResult<Order>> => {

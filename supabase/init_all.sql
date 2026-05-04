@@ -204,147 +204,7 @@ RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
   )
 $$;
 
--- ── Storage buckets ───────────────────────────────────────────────────────────
-
--- Audio-files bucket (client audio uploads for orders)
-INSERT INTO storage.buckets (id, name, public)
-  VALUES ('audio-files', 'audio-files', false)
-  ON CONFLICT DO NOTHING;
-
--- Media bucket (admin CMS media uploads)
-INSERT INTO storage.buckets (id, name, public)
-  VALUES ('media', 'media', true)
-  ON CONFLICT DO NOTHING;
-
--- ── Storage RLS ───────────────────────────────────────────────────────────────
-
--- audio-files policies
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'objects' AND schemaname = 'storage'
-      AND policyname = 'Service role uploads audio'
-  ) THEN
-    CREATE POLICY "Service role uploads audio"
-      ON storage.objects FOR INSERT
-      WITH CHECK (bucket_id = 'audio-files' AND auth.role() = 'service_role');
-  END IF;
-END $$;
-
--- TUS resumable upload: authenticated admins can INSERT into audio-files
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'objects' AND schemaname = 'storage'
-      AND policyname = 'Admins can upload audio files'
-  ) THEN
-    CREATE POLICY "Admins can upload audio files"
-      ON storage.objects FOR INSERT
-      TO authenticated
-      WITH CHECK (
-        bucket_id = 'audio-files'
-        AND public.is_admin(auth.uid())
-      );
-  END IF;
-END $$;
-
--- TUS upsert (x-upsert: true header): authenticated admins can UPDATE audio-files
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'objects' AND schemaname = 'storage'
-      AND policyname = 'Admins can update audio files'
-  ) THEN
-    CREATE POLICY "Admins can update audio files"
-      ON storage.objects FOR UPDATE
-      TO authenticated
-      USING (
-        bucket_id = 'audio-files'
-        AND public.is_admin(auth.uid())
-      );
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'objects' AND schemaname = 'storage'
-      AND policyname = 'Order owner can download own files'
-  ) THEN
-    CREATE POLICY "Order owner can download own files"
-      ON storage.objects FOR SELECT
-      USING (
-        bucket_id = 'audio-files'
-        AND (
-          auth.role() = 'service_role'
-          OR EXISTS (
-            SELECT 1 FROM public.files f
-            JOIN public.orders o ON o.id = f.order_id
-            WHERE f.storage_path = storage.objects.name
-              AND o.client_email = (current_setting('request.jwt.claims', true)::jsonb ->> 'email')
-          )
-        )
-      );
-  END IF;
-END $$;
-
--- media bucket policies (admin uploads, publicly readable)
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'objects' AND schemaname = 'storage'
-      AND policyname = 'Public can read media assets'
-  ) THEN
-    CREATE POLICY "Public can read media assets"
-      ON storage.objects FOR SELECT
-      USING (bucket_id = 'media');
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'objects' AND schemaname = 'storage'
-      AND policyname = 'Authenticated admins can upload media'
-  ) THEN
-    CREATE POLICY "Authenticated admins can upload media"
-      ON storage.objects FOR INSERT
-      WITH CHECK (
-        bucket_id = 'media'
-        AND (auth.role() = 'service_role' OR auth.role() = 'authenticated')
-      );
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'objects' AND schemaname = 'storage'
-      AND policyname = 'Authenticated admins can update media'
-  ) THEN
-    CREATE POLICY "Authenticated admins can update media"
-      ON storage.objects FOR UPDATE
-      USING (
-        bucket_id = 'media'
-        AND (auth.role() = 'service_role' OR auth.role() = 'authenticated')
-      );
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE tablename = 'objects' AND schemaname = 'storage'
-      AND policyname = 'Authenticated admins can delete media'
-  ) THEN
-    CREATE POLICY "Authenticated admins can delete media"
-      ON storage.objects FOR DELETE
-      USING (
-        bucket_id = 'media'
-        AND (auth.role() = 'service_role' OR auth.role() = 'authenticated')
-      );
-  END IF;
-END $$;
+-- Storage handled by Cloudflare R2 (see docs/cloudflare-r2.md). No Supabase Storage policies needed.
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- CMS tables (showcase, gallery, credits, reviews, legal, profiles)
@@ -535,6 +395,44 @@ DO $$ BEGIN
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_legal_slug ON legal(slug);
+
+-- ── Seed legal placeholder pages ─────────────────────────────────────────────
+-- IMPORTANT: Replace these placeholders with your actual legal content
+-- before going live. Failure to do so may create legal liability.
+INSERT INTO legal (slug, title, content, last_updated) VALUES
+  (
+    'impressum',
+    'Imprint',
+    '<p><strong>⚠️ PLACEHOLDER — Replace with your actual imprint before going live.</strong></p>
+<h2>Information according to § 5 TMG</h2>
+<p>Company Name<br>Street Address<br>City, Country</p>
+<h2>Contact</h2>
+<p>E-mail: hello@your-domain.com</p>
+<h2>Responsible for content</h2>
+<p>Your Name</p>',
+    CURRENT_DATE
+  ),
+  (
+    'privacy',
+    'Privacy Policy',
+    '<p><strong>⚠️ PLACEHOLDER — Replace with your actual privacy policy before going live.</strong></p>
+<h2>1. Introduction</h2>
+<p>This is a placeholder privacy policy for SONORATIVA. Please replace this with your actual privacy policy before going live.</p>
+<h2>2. Data Controller</h2>
+<p>Company Name, Address, Email</p>
+<h2>3. Data We Collect</h2>
+<p>Contact form submissions: name, email, service request details.</p>',
+    CURRENT_DATE
+  ),
+  (
+    'terms',
+    'Terms of Service',
+    '<p><strong>⚠️ PLACEHOLDER — Replace with your actual terms of service before going live.</strong></p>
+<h2>1. Acceptance</h2>
+<p>By using this website you agree to these placeholder terms. Replace with real terms before launch.</p>',
+    CURRENT_DATE
+  )
+ON CONFLICT (slug) DO NOTHING;
 
 -- ── Site content (key/value for hero, about, footer, contact info) ────────────
 CREATE TABLE IF NOT EXISTS site_content (

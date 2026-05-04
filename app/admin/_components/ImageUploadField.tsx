@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createSignedUploadUrl } from '@/app/admin/_actions/uploads'
-import { createClient } from '@/lib/supabaseClient'
+import { createSignedUploadUrl, getPublicStorageUrl } from '@/app/admin/_actions/uploads'
 
 interface ImageUploadFieldProps {
   /** Label shown above the field */
@@ -15,7 +14,7 @@ interface ImageUploadFieldProps {
   defaultPath?: string
   /** Default image URL when editing an existing record */
   defaultUrl?: string
-  /** Storage bucket name (default: 'media') */
+  /** Storage bucket name (default: 'sonorativa-media') */
   bucket?: string
   /** Path prefix inside the bucket (e.g. 'gallery', 'credits', 'members') */
   pathPrefix?: string
@@ -31,7 +30,7 @@ export default function ImageUploadField({
   urlName,
   defaultPath = '',
   defaultUrl = '',
-  bucket = 'media',
+  bucket = 'sonorativa-media',
   pathPrefix = 'uploads',
   accept = 'image/jpeg,image/png,image/webp,image/avif',
 }: ImageUploadFieldProps) {
@@ -59,10 +58,10 @@ export default function ImageUploadField({
       const ext = file.name.split('.').pop() ?? 'jpg'
       const objectPath = `${pathPrefix}/${Date.now()}.${ext}`
 
-      // Get signed upload URL via server action
+      // Get signed upload URL via server action (goes to R2)
       const { signedUrl } = await createSignedUploadUrl(bucket, objectPath)
 
-      // Upload directly to Supabase Storage with progress tracking
+      // Upload directly to R2 with progress tracking
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         xhr.open('PUT', signedUrl)
@@ -78,10 +77,8 @@ export default function ImageUploadField({
         xhr.send(file)
       })
 
-      // Get public URL
-      const supabase = createClient()
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(objectPath)
-      const publicUrl = urlData.publicUrl
+      // Get the public URL from the server (uses R2_PUBLIC_HOST)
+      const publicUrl = await getPublicStorageUrl(bucket, objectPath)
 
       setStoragePath(objectPath)
       setImageUrl(publicUrl)
