@@ -12,6 +12,7 @@ export async function getAllReviews(): Promise<ServiceResult<Review[]>> {
     const { data, error } = await supabase
       .from('reviews')
       .select('*')
+      .eq('active', true)
       .order('date', { ascending: false })
       .limit(50)
 

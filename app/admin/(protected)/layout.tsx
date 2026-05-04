@@ -34,6 +34,8 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
         </header>
         <main className="flex-1 p-6 md:p-8 overflow-auto">{children}</main>
       </div>
+      {/* Subtle CRT overlay — same phosphor flicker used on the public site */}
+      <div className="crt-overlay" aria-hidden="true" />
     </div>
   )
 }

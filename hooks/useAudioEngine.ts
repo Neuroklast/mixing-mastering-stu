@@ -216,7 +216,7 @@ export function useAudioEngine(
           s.mid  = s.mid  * (1 - CORR_ALPHA) + corr.mid  * CORR_ALPHA
           s.high = s.high * (1 - CORR_ALPHA) + corr.high * CORR_ALPHA
           setMultibandCorrelation({ low: s.low, mid: s.mid, high: s.high })
-        }).catch(console.error)
+        }).catch(() => { /* StereoFieldAnalyzer attach failed; error already handled by AudioWorklet fallback */ })
       }
     },
     [getOrCreateGraph],

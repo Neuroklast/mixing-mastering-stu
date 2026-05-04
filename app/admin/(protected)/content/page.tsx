@@ -30,7 +30,14 @@ function labelFromKey(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-export default async function ContentAdminPage() {
+export default async function ContentAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>
+}) {
+  const params = await searchParams
+  const saved = params.saved === '1'
+
   const supabase = createAdminClient()
   const { data } = await supabase.from('site_content').select('key, value')
 
@@ -45,6 +52,11 @@ export default async function ContentAdminPage() {
       <p style={{ color: '#aaa', marginBottom: '2rem', fontSize: '0.9rem' }}>
         Edit all user-visible copy, contact details, and social links.
       </p>
+      {saved && (
+        <div style={{ marginBottom: '1.5rem', padding: '0.75rem 1rem', background: '#052e16', border: '1px solid #166534', borderRadius: '6px', color: '#4ade80', fontSize: '0.9rem' }}>
+          ✓ Changes saved successfully.
+        </div>
+      )}
       <form action={updateSiteContent}>
         {SECTIONS.map((section) => (
           <div key={section.title} style={{ marginBottom: '2rem' }}>
