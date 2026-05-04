@@ -1,6 +1,6 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import dynamic from 'next/dynamic'
+import nextDynamic from 'next/dynamic'
 import { ScrollProgressProvider } from '@/contexts/ScrollProgressContext'
 import { DynamicHeroScene3D as HeroScene3D } from '@/components/organisms/HeroScene3D/DynamicHeroScene3D'
 import { Navbar } from '@/components/features/Navbar'
@@ -21,24 +21,19 @@ import { getActiveMembers } from '@/services/membersService'
 
 export const dynamic = 'force-dynamic'
 
-const CreditsSection = dynamic(() =>
+const CreditsSection = nextDynamic(() =>
   import('@/components/features/CreditsSection').then((m) => ({ default: m.CreditsSection }))
 )
-const ReviewsSection = dynamic(() =>
+const ReviewsSection = nextDynamic(() =>
   import('@/components/features/ReviewsSection').then((m) => ({ default: m.ReviewsSection }))
 )
-const GallerySection = dynamic(() =>
+const GallerySection = nextDynamic(() =>
   import('@/components/features/GallerySection').then((m) => ({ default: m.GallerySection }))
 )
-const MembersSection = dynamic(() =>
+const MembersSection = nextDynamic(() =>
   import('@/components/features/MembersSection').then((m) => ({ default: m.MembersSection }))
 )
 
-/**
- * Local-file fallback used only when the filesystem song directory, CMS, and
- * active-track sources all return empty. The paths below point to the demo
- * audio files that ship with the project — no external third-party dependency.
- */
 const FALLBACK_TRACK: ShowcaseTrack = {
   title: 'Demo Track',
   artist: 'SONORATIVA',
@@ -48,11 +43,6 @@ const FALLBACK_TRACK: ShowcaseTrack = {
   labelAfter: 'FINAL',
 }
 
-/**
- * Scan public/player/songs/ for track folders.
- * Each folder must contain both a *_demo.* and *_final.* file to be included.
- * Folder name pattern: "ARTIST -- TITLE"
- */
 function loadPlayerSongs(): ShowcaseTrack[] {
   const SONGS_DIR = path.join(process.cwd(), 'public', 'player', 'songs')
   if (!fs.existsSync(SONGS_DIR)) return []
@@ -79,19 +69,15 @@ function loadPlayerSongs(): ShowcaseTrack[] {
       continue
     }
 
-    // Find the demo and final files (case-insensitive suffix match)
     const demoFile  = files.find((f) => /[_-]demo\.(wav|mp3|flac|ogg)$/i.test(f)) ?? null
     const finalFile = files.find((f) => /[_-]final\.(wav|mp3|flac|ogg)$/i.test(f)) ?? null
 
-    // Only include folders that have BOTH files
     if (!demoFile || !finalFile) continue
 
-    // Parse "ARTIST -- TITLE" from the folder name
     const separatorIdx = folderName.indexOf(' -- ')
     const artist = separatorIdx !== -1 ? folderName.slice(0, separatorIdx).trim() : 'UNKNOWN'
     const title  = separatorIdx !== -1 ? folderName.slice(separatorIdx + 4).trim() : folderName
 
-    // Build root-relative URLs (encode each path segment)
     const beforeUrl = `/player/songs/${encodeURIComponent(folderName)}/${encodeURIComponent(demoFile)}`
     const afterUrl  = `/player/songs/${encodeURIComponent(folderName)}/${encodeURIComponent(finalFile)}`
 
@@ -111,10 +97,8 @@ function loadPlayerSongs(): ShowcaseTrack[] {
 }
 
 export default async function HomePage(): Promise<JSX.Element> {
-  // 1. Try filesystem songs (public/player/songs/) — primary source
   const fsSongs = loadPlayerSongs()
 
-  // 2. Fall back to Payload CMS tracks, then single active track, then hard-coded fallback
   const tracks =
     fsSongs.length > 0
       ? fsSongs
