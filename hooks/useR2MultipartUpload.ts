@@ -15,7 +15,7 @@
  * matching the shape stored in showcase.before_storage_path / after_storage_path.
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   createMultipartUploadAction,
   signMultipartPartAction,
@@ -51,11 +51,37 @@ const initialState: R2UploadState = {
 
 export function useR2MultipartUpload() {
   const [state, setState] = useState<R2UploadState>(initialState)
-  // Keep a ref to the current uploadId so cancel() can abort it
+  // Keep a ref to the current uploadId so cancel() and beforeunload can abort it
   const [currentUpload, setCurrentUpload] = useState<{
     key: string
     uploadId: string
   } | null>(null)
+
+  // Mirror currentUpload in a ref so the beforeunload handler (a closure) can
+  // read the latest value without being stale.
+  const currentUploadRef = useRef(currentUpload)
+  useEffect(() => {
+    currentUploadRef.current = currentUpload
+  }, [currentUpload])
+
+  // Abort in-flight upload when the user navigates away to prevent orphaned
+  // multipart uploads that accumulate storage costs in R2.
+  useEffect(() => {
+    function handleBeforeUnload() {
+      const upload = currentUploadRef.current
+      if (!upload) return
+      // Fire-and-forget: we can't await in beforeunload, but the server action
+      // will complete asynchronously. The lifecycle rule is the final safety net.
+      abortMultipartUploadAction(upload.key, upload.uploadId).catch(() => {
+        // Intentionally ignore — lifecycle rule handles cleanup
+      })
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [])
 
   const upload = useCallback(async (file: File, objectKey: string): Promise<void> => {
     setState({ progress: 0, status: 'uploading', error: null, url: null })
@@ -114,7 +140,16 @@ export function useR2MultipartUpload() {
           throw new Error(`Part ${partNumber} upload failed: ${response.statusText}`)
         }
 
-        const etag = response.headers.get('ETag') ?? ''
+        // Strip surrounding quotes from ETag (S3/R2 returns `"abc123"`)
+        const rawEtag = response.headers.get('ETag') ?? ''
+        const etag = rawEtag.replace(/^"|"$/g, '')
+
+        if (!etag) {
+          // Empty ETag means R2 would reject the CompleteMultipartUpload call.
+          // Abort cleanly rather than leaving a hung upload.
+          throw new Error(`Part ${partNumber} returned no ETag — upload aborted`)
+        }
+
         completedParts.push({ PartNumber: partNumber, ETag: etag })
 
         // Persist resume state
@@ -133,7 +168,17 @@ export function useR2MultipartUpload() {
         }))
       }
 
-      await completeMultipartUploadAction(objectKey, uploadId, completedParts)
+      try {
+        await completeMultipartUploadAction(objectKey, uploadId, completedParts)
+      } catch (completeErr) {
+        // CompleteMultipartUpload failed — abort to avoid a hung upload
+        try {
+          await abortMultipartUploadAction(objectKey, uploadId)
+        } catch {
+          // Abort is best-effort; lifecycle rule is the final safety net
+        }
+        throw completeErr
+      }
 
       // Clean up resume state on success
       try {

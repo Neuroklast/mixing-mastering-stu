@@ -1,43 +1,40 @@
-import { createAdminClient } from '@/lib/supabaseAdmin'
+import { getStorageProvider } from '@/lib/storage'
 import MediaBrowserClient from './MediaBrowserClient'
 
-export default async function MediaAdminPage() {
-  const supabase = createAdminClient()
+const MEDIA_BUCKET = process.env.R2_BUCKET_MEDIA ?? 'sonorativa-media'
+const AUDIO_BUCKET = process.env.R2_BUCKET_AUDIO ?? 'sonorativa-audio'
 
-  const [mediaResult, audioResult] = await Promise.all([
-    supabase.storage.from('media').list('', { limit: 200, sortBy: { column: 'created_at', order: 'desc' } }),
-    supabase.storage.from('audio-files').list('', { limit: 200, sortBy: { column: 'created_at', order: 'desc' } }),
+export default async function MediaAdminPage() {
+  const storage = getStorageProvider()
+
+  const [mediaObjects, audioObjects] = await Promise.all([
+    storage.listObjects(MEDIA_BUCKET, '').catch(() => []),
+    storage.listObjects(AUDIO_BUCKET, '').catch(() => []),
   ])
 
-  const mediaFiles = (mediaResult.data ?? [])
+  const mediaFiles = mediaObjects
     .filter((f) => f.name !== '.emptyFolderPlaceholder')
-    .map((f) => {
-      const meta = (f.metadata ?? {}) as Record<string, unknown>
-      return {
-        name: f.name,
-        size: typeof meta.size === 'number' ? meta.size : 0,
-        created_at: String(f.created_at ?? ''),
-      }
-    })
+    .map((f) => ({
+      name: f.name,
+      size: f.size,
+      created_at: f.lastModified.toISOString(),
+      publicUrl: storage.getPublicUrl(MEDIA_BUCKET, f.name),
+    }))
 
-  const audioFiles = (audioResult.data ?? [])
+  const audioFiles = audioObjects
     .filter((f) => f.name !== '.emptyFolderPlaceholder')
-    .map((f) => {
-      const meta = (f.metadata ?? {}) as Record<string, unknown>
-      return {
-        name: f.name,
-        size: typeof meta.size === 'number' ? meta.size : 0,
-        created_at: String(f.created_at ?? ''),
-      }
-    })
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+    .map((f) => ({
+      name: f.name,
+      size: f.size,
+      created_at: f.lastModified.toISOString(),
+    }))
 
   return (
     <MediaBrowserClient
       mediaFiles={mediaFiles}
       audioFiles={audioFiles}
-      supabaseUrl={supabaseUrl}
+      mediaBucket={MEDIA_BUCKET}
+      audioBucket={AUDIO_BUCKET}
     />
   )
 }

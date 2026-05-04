@@ -27,6 +27,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Storage guard (no direct Supabase Storage calls)
+        run: node scripts/check-no-supabase-storage.mjs
+
   build:
     name: Build Check
     runs-on: ubuntu-latest

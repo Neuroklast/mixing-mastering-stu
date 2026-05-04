@@ -28,6 +28,19 @@ export interface StorageProvider {
     expiresInSec: number,
   ): Promise<string>
 
+  /**
+   * Uploads a binary object from the server side (e.g. a received File/FormData).
+   * Use this only for server-side uploads where you already have the bytes.
+   * For browser-side uploads, prefer createSignedUploadUrl (small files) or
+   * the S3 multipart flow via useR2MultipartUpload (large audio files).
+   */
+  uploadObject(
+    bucket: string,
+    path: string,
+    body: Buffer | Uint8Array | Blob,
+    contentType: string,
+  ): Promise<void>
+
   /** Deletes an object from the specified bucket. */
   deleteObject(bucket: string, path: string): Promise<void>
 

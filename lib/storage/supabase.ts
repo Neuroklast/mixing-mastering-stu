@@ -55,6 +55,20 @@ export const supabaseStorageProvider: StorageProvider = {
     return data.signedUrl
   },
 
+  async uploadObject(
+    bucket: string,
+    path: string,
+    body: Buffer | Uint8Array | Blob,
+    contentType: string,
+  ): Promise<void> {
+    const supabase = getSupabaseClient()
+    const { error } = await supabase.storage.from(bucket).upload(path, body, {
+      contentType,
+      upsert: false,
+    })
+    if (error) throw new Error(error.message)
+  },
+
   async deleteObject(bucket: string, path: string): Promise<void> {
     const supabase = getSupabaseClient()
     const { error } = await supabase.storage.from(bucket).remove([path])
