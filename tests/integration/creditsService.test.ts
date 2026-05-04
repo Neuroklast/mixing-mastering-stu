@@ -42,7 +42,12 @@ describe('creditsService (production, empty DB)', () => {
             }),
           }),
         }),
-        storage: { from: () => ({ getPublicUrl: () => ({ data: { publicUrl: '' } }) }) },
+      }),
+    }))
+    vi.doMock('@/lib/storage', () => ({
+      getStorageProvider: vi.fn().mockReturnValue({
+        getPublicUrl: vi.fn().mockReturnValue('https://r2.example.com/cover.jpg'),
+        createSignedDownloadUrl: vi.fn(),
       }),
     }))
     const { getAllCredits } = await import('@/services/creditsService')

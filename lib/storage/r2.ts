@@ -88,6 +88,22 @@ export const r2StorageProvider: StorageProvider = {
     return getSignedUrl(client, command, { expiresIn: expiresInSec })
   },
 
+  async uploadObject(
+    bucket: string,
+    path: string,
+    body: Buffer | Uint8Array | Blob,
+    contentType: string,
+  ): Promise<void> {
+    const client = getR2Client()
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: path,
+      Body: body instanceof Blob ? Buffer.from(await body.arrayBuffer()) : body,
+      ContentType: contentType,
+    })
+    await client.send(command)
+  },
+
   async deleteObject(bucket: string, path: string): Promise<void> {
     const client = getR2Client()
     const command = new DeleteObjectCommand({ Bucket: bucket, Key: path })

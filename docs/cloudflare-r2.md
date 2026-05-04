@@ -110,8 +110,10 @@ Audio files (WAV/MP3) are uploaded using **S3 Multipart Upload** via the
 `sessionStorage` keyed by file hash. A page refresh resumes from the last
 completed part.
 
-**Lifecycle rule — recommended:** Abort incomplete multipart uploads after 24h
-to prevent orphaned parts from incurring storage costs.
+**Lifecycle rule — ⚠️ MANDATORY:** Abort incomplete multipart uploads after 24h
+to prevent orphaned parts from incurring storage costs. Without this rule, a
+failed or abandoned upload leaves incomplete multipart parts in the bucket
+indefinitely, accumulating storage charges.
 
 ```json
 {
@@ -126,6 +128,11 @@ to prevent orphaned parts from incurring storage costs.
 ```
 
 Set in: Cloudflare Dashboard → R2 → `sonorativa-audio` → **Settings** → **Lifecycle**.
+
+> **This rule is the only safety net for orphaned uploads.** Always configure it
+> immediately after creating the `sonorativa-audio` bucket. Even with the hook's
+> `beforeunload` abort handler, network failures or browser crashes can still
+> leave multipart uploads incomplete.
 
 ---
 

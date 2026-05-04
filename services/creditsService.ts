@@ -1,8 +1,11 @@
 import { createClient } from '@/lib/supabaseServer'
+import { getStorageProvider } from '@/lib/storage'
 import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 import { creditSchema, type Credit } from '@/lib/schemas/credits'
 import { MOCK_CREDITS } from '@/lib/mockData'
 import { isDev } from '@/lib/devMode'
+
+const MEDIA_BUCKET = process.env.R2_BUCKET_MEDIA ?? 'sonorativa-media'
 
 export async function getAllCredits(): Promise<ServiceResult<Credit[]>> {
   if (isDev) return ok(MOCK_CREDITS)
@@ -17,16 +20,14 @@ export async function getAllCredits(): Promise<ServiceResult<Credit[]>> {
 
     if (error) return err(error.message)
 
+    const storage = getStorageProvider()
     const credits: Credit[] = []
     for (const row of data ?? []) {
       let coverImageUrl: string | null = null
       if (row.cover_image_url) {
         coverImageUrl = row.cover_image_url as string
       } else if (row.cover_storage_path) {
-        const { data: urlData } = supabase.storage
-          .from('media')
-          .getPublicUrl(row.cover_storage_path as string)
-        coverImageUrl = urlData.publicUrl
+        coverImageUrl = storage.getPublicUrl(MEDIA_BUCKET, row.cover_storage_path as string)
       }
 
       const parsed = creditSchema.safeParse({

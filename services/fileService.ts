@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabaseServer'
+import { getStorageProvider } from '@/lib/storage'
 import { z } from 'zod'
 import type { AudioFile } from '@/types'
 import { MOCK_FILES } from '@/lib/mockData'
@@ -17,6 +18,8 @@ export const uploadFileSchema = z.object({
   }),
   fileSizeBytes: z.number().max(MAX_FILE_SIZE_BYTES, 'File must not exceed 200 MB'),
 })
+
+const AUDIO_BUCKET = process.env.R2_BUCKET_AUDIO ?? 'sonorativa-audio'
 
 const buildStoragePath = (orderId: string, fileName: string): string =>
   `orders/${orderId}/${Date.now()}-${fileName}`
@@ -40,24 +43,24 @@ export const uploadAudioFile = async (
     return ok({ publicUrl: '/demo/incinerate-mixdown.wav' })
   }
 
-  const supabase = await createClient()
+  const storage = getStorageProvider()
   const storagePath = buildStoragePath(orderId, file.name)
 
-  const { error: storageError } = await supabase.storage
-    .from('audio-files')
-    .upload(storagePath, file, { contentType: file.type, upsert: false })
+  try {
+    await storage.uploadObject(AUDIO_BUCKET, storagePath, Buffer.from(await file.arrayBuffer()), file.type)
+  } catch (storageError) {
+    return err(storageError instanceof Error ? storageError.message : 'Upload failed')
+  }
 
-  if (storageError) return err(storageError.message)
+  // Audio files are private — return the storage path for later signed-URL generation
+  const publicUrl = storage.getPublicUrl(AUDIO_BUCKET, storagePath)
 
-  const { data: urlData } = supabase.storage
-    .from('audio-files')
-    .getPublicUrl(storagePath)
-
+  const supabase = await createClient()
   const { error: dbError } = await supabase.from('files').insert({
     order_id: orderId,
     filename: file.name,
     storage_path: storagePath,
-    public_url: urlData.publicUrl,
+    public_url: publicUrl,
     file_size_bytes: file.size,
     mime_type: file.type as 'audio/wav' | 'audio/mpeg',
     type: 'original',
@@ -65,7 +68,7 @@ export const uploadAudioFile = async (
 
   if (dbError) return err(dbError.message)
 
-  return ok({ publicUrl: urlData.publicUrl })
+  return ok({ publicUrl })
 }
 
 export const getFilesByOrderId = async (

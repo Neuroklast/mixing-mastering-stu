@@ -1,8 +1,11 @@
 import { createClient } from '@/lib/supabaseServer'
+import { getStorageProvider } from '@/lib/storage'
 import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 import { galleryImageSchema, type GalleryImage } from '@/lib/schemas/gallery'
 import { DEMO_GALLERY } from '@/lib/mockData'
 import { isDev } from '@/lib/devMode'
+
+const MEDIA_BUCKET = process.env.R2_BUCKET_MEDIA ?? 'sonorativa-media'
 
 export async function getAllGalleryImages(): Promise<ServiceResult<GalleryImage[]>> {
   if (isDev) return ok(DEMO_GALLERY)
@@ -18,14 +21,12 @@ export async function getAllGalleryImages(): Promise<ServiceResult<GalleryImage[
 
     if (error) return err(error.message)
 
+    const storage = getStorageProvider()
     const images: GalleryImage[] = []
     for (const row of data ?? []) {
       let url = row.image_url as string | null
       if (!url && row.storage_path) {
-        const { data: urlData } = supabase.storage
-          .from('media')
-          .getPublicUrl(row.storage_path as string)
-        url = urlData.publicUrl
+        url = storage.getPublicUrl(MEDIA_BUCKET, row.storage_path as string)
       }
       if (!url) continue
 

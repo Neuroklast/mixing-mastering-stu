@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabaseServer'
+import { getStorageProvider } from '@/lib/storage'
 import { showcaseTrackSchema, type ShowcaseTrack } from '@/lib/schemas/showcase'
 import { MOCK_SHOWCASE_TRACK, MOCK_SHOWCASE_TRACKS } from '@/lib/mockData'
 import { isDev } from '@/lib/devMode'
+
+const AUDIO_BUCKET = process.env.R2_BUCKET_AUDIO ?? 'sonorativa-audio'
 
 export async function getActiveShowcaseTrack(): Promise<ShowcaseTrack | null> {
   if (isDev) return MOCK_SHOWCASE_TRACK
@@ -18,22 +21,25 @@ export async function getActiveShowcaseTrack(): Promise<ShowcaseTrack | null> {
 
     if (error || !data) return null
 
-    // Generate signed URLs for audio files (1h expiry)
+    // Generate signed URLs for audio files via R2 (1h expiry)
+    const storage = getStorageProvider()
     let beforeUrl = data.before_url as string | null
     let afterUrl = data.after_url as string | null
 
     if (data.before_storage_path) {
-      const { data: signed } = await supabase.storage
-        .from('audio-files')
-        .createSignedUrl(data.before_storage_path as string, 3600)
-      if (signed?.signedUrl) beforeUrl = signed.signedUrl
+      beforeUrl = await storage.createSignedDownloadUrl(
+        AUDIO_BUCKET,
+        data.before_storage_path as string,
+        3600,
+      )
     }
 
     if (data.after_storage_path) {
-      const { data: signed } = await supabase.storage
-        .from('audio-files')
-        .createSignedUrl(data.after_storage_path as string, 3600)
-      if (signed?.signedUrl) afterUrl = signed.signedUrl
+      afterUrl = await storage.createSignedDownloadUrl(
+        AUDIO_BUCKET,
+        data.after_storage_path as string,
+        3600,
+      )
     }
 
     if (!beforeUrl || !afterUrl) return null
@@ -73,23 +79,26 @@ export async function getAllShowcaseTracks(): Promise<ShowcaseTrack[]> {
 
     if (error || !data) return []
 
+    const storage = getStorageProvider()
     const tracks: ShowcaseTrack[] = []
     for (const row of data) {
       let beforeUrl = row.before_url as string | null
       let afterUrl = row.after_url as string | null
 
       if (row.before_storage_path) {
-        const { data: signed } = await supabase.storage
-          .from('audio-files')
-          .createSignedUrl(row.before_storage_path as string, 3600)
-        if (signed?.signedUrl) beforeUrl = signed.signedUrl
+        beforeUrl = await storage.createSignedDownloadUrl(
+          AUDIO_BUCKET,
+          row.before_storage_path as string,
+          3600,
+        )
       }
 
       if (row.after_storage_path) {
-        const { data: signed } = await supabase.storage
-          .from('audio-files')
-          .createSignedUrl(row.after_storage_path as string, 3600)
-        if (signed?.signedUrl) afterUrl = signed.signedUrl
+        afterUrl = await storage.createSignedDownloadUrl(
+          AUDIO_BUCKET,
+          row.after_storage_path as string,
+          3600,
+        )
       }
 
       if (!beforeUrl || !afterUrl) continue

@@ -20,10 +20,11 @@ interface AudioFile {
 interface MediaBrowserClientProps {
   mediaFiles: MediaFile[]
   audioFiles: AudioFile[]
-  supabaseUrl: string
+  mediaBucket: string
+  audioBucket: string
 }
 
-export default function MediaBrowserClient({ mediaFiles, audioFiles, supabaseUrl }: MediaBrowserClientProps) {
+export default function MediaBrowserClient({ mediaFiles, audioFiles, mediaBucket, audioBucket }: MediaBrowserClientProps) {
   const [activeTab, setActiveTab] = useState<'media' | 'audio'>('media')
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
 
@@ -62,7 +63,7 @@ export default function MediaBrowserClient({ mediaFiles, audioFiles, supabaseUrl
       {activeTab === 'media' && (
         <div>
           <p style={{ color: '#aaa', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-            Public images in the <code>media</code> bucket.
+            Public images in the <code>{mediaBucket}</code> bucket.
           </p>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -76,7 +77,7 @@ export default function MediaBrowserClient({ mediaFiles, audioFiles, supabaseUrl
             </thead>
             <tbody>
               {mediaFiles.map((file) => {
-                const publicUrl = `${supabaseUrl}/storage/v1/object/public/media/${encodeURIComponent(file.name)}`
+                const publicUrl = file.publicUrl ?? ''
                 const isCopied = copiedUrl === publicUrl
                 return (
                   <tr key={file.name} style={{ borderBottom: '1px solid #1a1a1a' }}>
@@ -105,7 +106,7 @@ export default function MediaBrowserClient({ mediaFiles, audioFiles, supabaseUrl
                       >
                         {isCopied ? '✓ Copied' : 'Copy URL'}
                       </button>
-                      <ConfirmDeleteButton action={deleteMediaFile.bind(null, 'media', file.name)} />
+                      <ConfirmDeleteButton action={deleteMediaFile.bind(null, mediaBucket, file.name)} />
                     </td>
                   </tr>
                 )
@@ -118,7 +119,7 @@ export default function MediaBrowserClient({ mediaFiles, audioFiles, supabaseUrl
       {activeTab === 'audio' && (
         <div>
           <p style={{ color: '#aaa', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-            Private WAV files in the <code>audio-files</code> bucket. URLs expire after 1 hour.
+            Private WAV files in the <code>{audioBucket}</code> bucket. URLs expire after 1 hour.
           </p>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -136,7 +137,7 @@ export default function MediaBrowserClient({ mediaFiles, audioFiles, supabaseUrl
                   <td style={{ padding: '0.75rem' }}>{file.size > 0 ? `${Math.round(file.size / (1024 * 1024))} MB` : '–'}</td>
                   <td style={{ padding: '0.75rem' }}>{file.created_at.slice(0, 10)}</td>
                   <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <ConfirmDeleteButton action={deleteMediaFile.bind(null, 'audio-files', file.name)} />
+                    <ConfirmDeleteButton action={deleteMediaFile.bind(null, audioBucket, file.name)} />
                   </td>
                 </tr>
               ))}
