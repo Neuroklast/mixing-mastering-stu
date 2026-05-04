@@ -13,7 +13,7 @@ export async function getAllReviews(): Promise<ServiceResult<Review[]>> {
       .from('reviews')
       .select('*')
       .eq('active', true)
-      .order('date', { ascending: false })
+      .order('date', { ascending: false, nullsFirst: false })
       .limit(50)
 
     if (error) return err(error.message)

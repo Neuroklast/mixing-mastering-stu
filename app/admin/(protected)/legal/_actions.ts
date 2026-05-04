@@ -10,7 +10,7 @@ export async function createLegal(formData: FormData) {
     title: formData.get('title'),
     slug: formData.get('slug'),
     content: formData.get('content'),
-    last_updated: formData.get('last_updated') || null,
+    last_updated: String(formData.get('last_updated') || '').trim() || new Date().toISOString().slice(0, 10),
   })
   if (error) throw new Error(error.message)
   revalidatePath('/')
@@ -26,7 +26,7 @@ export async function updateLegal(id: string, formData: FormData) {
       title: formData.get('title'),
       slug: formData.get('slug'),
       content: formData.get('content'),
-      last_updated: formData.get('last_updated') || null,
+      last_updated: String(formData.get('last_updated') || '').trim() || new Date().toISOString().slice(0, 10),
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
