@@ -95,6 +95,7 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
           <Dialog.Overlay className="fixed inset-0 bg-black/90 z-50" />
           <Dialog.Content className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
             <Dialog.Title className="sr-only">Gallery Image</Dialog.Title>
+            <Dialog.Description className="sr-only">Gallery lightbox</Dialog.Description>
             <AnimatePresence mode="wait">
               {lightboxIndex !== null && (
                 <motion.div
@@ -103,13 +104,13 @@ export const GallerySection = ({ images }: GallerySectionProps): JSX.Element => 
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, type: 'spring', stiffness: 300, damping: 25 }}
-                  className="relative max-w-5xl w-full max-h-[90vh] rounded overflow-hidden"
+                  className="relative max-w-5xl w-full h-[90vh] rounded overflow-hidden"
                 >
                   <Image
                     src={images[lightboxIndex].url}
                     alt={images[lightboxIndex].alt ?? ''}
                     fill
-                    className="object-contain w-full max-h-[80vh]"
+                    className="object-contain"
                     sizes="(max-width: 1280px) 100vw, 1280px"
                   />
 
