@@ -19,6 +19,8 @@ import { getAllGalleryImages } from '@/services/galleryService'
 import { getSiteContent } from '@/services/contentService'
 import { getActiveMembers } from '@/services/membersService'
 
+export const dynamic = 'force-dynamic'
+
 const CreditsSection = dynamic(() =>
   import('@/components/features/CreditsSection').then((m) => ({ default: m.CreditsSection }))
 )
