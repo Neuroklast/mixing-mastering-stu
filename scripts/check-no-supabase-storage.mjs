@@ -72,6 +72,7 @@ for (const dir of SCAN_DIRS) {
           console.error(`  Line ${i + 1}: ${lines[i].trim()}`)
           console.error(`  Fix:     Use getStorageProvider() from @/lib/storage instead.\n`)
           violations++
+          break // one violation per line is enough
         }
       }
     }
