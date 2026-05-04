@@ -30,6 +30,7 @@
   - `sonorativa-media` — public (gallery images, member photos, credit covers). Use `getPublicUrl()`.
   - `sonorativa-audio` — private (showcase WAV files). Use `createSignedDownloadUrl()`.
 - Database columns store only the **object path** (e.g. `gallery/image-1234.jpg`), **not** a full URL. The URL is derived at render time via `storage.getPublicUrl(bucket, path)` or `storage.createSignedDownloadUrl(bucket, path, ttlSeconds)`.
+- **`R2_PUBLIC_HOST` is a required Vercel env var for production.** It must be set to the R2 custom domain (e.g. `https://pub-abc123.r2.dev` or `media.your-domain.com`). `next.config.mjs` reads this at **build time** to add the R2 domain to `images.remotePatterns`. Without it, `next/image` will return 400 for all R2-hosted images. The default `*.r2.cloudflarestorage.com` wildcard is always present as a fallback.
 
 ## Image Uploads (Admin)
 - Small files (images ≤ 100 MB): use `createSignedUploadUrl(bucket, path)` server action → browser PUT directly to R2 → save `storage_path` column in DB.
