@@ -13,7 +13,7 @@ export async function createReview(formData: FormData) {
     rating: Number(formData.get('rating')),
     text: formData.get('text'),
     service: formData.get('service') || null,
-    date: formData.get('date') || null,
+    date: String(formData.get('date') || '').trim() || new Date().toISOString().slice(0, 10),
     project_link: formData.get('project_link') || null,
     active: true,
   })
@@ -32,7 +32,7 @@ export async function updateReview(id: string, formData: FormData) {
       rating: Number(formData.get('rating')),
       text: formData.get('text'),
       service: formData.get('service') || null,
-      date: formData.get('date') || null,
+      date: String(formData.get('date') || '').trim() || new Date().toISOString().slice(0, 10),
       project_link: formData.get('project_link') || null,
     })
     .eq('id', id)

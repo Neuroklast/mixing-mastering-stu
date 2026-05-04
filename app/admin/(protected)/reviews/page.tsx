@@ -17,7 +17,7 @@ export default async function ReviewsAdminPage({
   const { data } = await supabase
     .from('reviews')
     .select('id, client_name, rating, service, date, active')
-    .order('date', { ascending: false })
+    .order('date', { ascending: false, nullsFirst: false })
 
   return (
     <div>
