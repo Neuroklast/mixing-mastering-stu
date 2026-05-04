@@ -33,11 +33,18 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.supabase.co',
       },
+      // Demo / placeholder images
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
-      // Cloudflare R2 public bucket (sonorativa-media)
+      // Cloudflare R2 default S3 endpoint (covers any bucket/account without a custom domain)
+      {
+        protocol: 'https',
+        hostname: '*.r2.cloudflarestorage.com',
+      },
+      // Cloudflare R2 custom domain — read from env so each environment whitelists its own host.
+      // R2_PUBLIC_HOST must be set on Vercel for <Image> optimisation to work with R2 media.
       ...(r2Hostname
         ? [{ protocol: /** @type {'https'} */ ('https'), hostname: r2Hostname }]
         : []),

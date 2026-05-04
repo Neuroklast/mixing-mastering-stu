@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -12,20 +12,23 @@ import { COOKIE_CONSENT_KEY } from '@/lib/site'
  *
  * Displays a dismissible banner at the bottom of the viewport on first visit.
  * Consent is persisted in localStorage. The banner is not rendered during SSR.
+ *
+ * Hydration safety: visible starts false on both server and client. The
+ * useEffect runs after mount (client-only) and flips it to true when no
+ * consent has been stored. This avoids the React #418 hydration mismatch that
+ * arises when a lazy useState initialiser reads localStorage synchronously.
  */
 export const CookieBanner = (): JSX.Element | null => {
-  // Lazy initialiser runs once on mount (client-side only).
-  // Using lazy useState avoids the setState-in-effect lint violation and
-  // eliminates the extra render cycle that a useEffect initialisation would cause.
-  const [visible, setVisible] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
     try {
-      return !localStorage.getItem(COOKIE_CONSENT_KEY)
+      if (!localStorage.getItem(COOKIE_CONSENT_KEY)) setVisible(true)
     } catch {
-      // localStorage may be blocked in private browsing – show banner
-      return true
+      // localStorage blocked (private browsing) — show banner
+      setVisible(true)
     }
-  })
+  }, [])
 
   const accept = (): void => {
     try { localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted') } catch { /* ignore */ }

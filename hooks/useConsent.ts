@@ -27,9 +27,14 @@ function readConsent(): ConsentState {
 }
 
 export function useConsent(): ConsentState {
-  const [consent, setConsent] = useState<ConsentState>(readConsent)
+  // Start with analytics:false on both server and client to avoid a hydration
+  // mismatch: the server always renders AnalyticsProvider as null, and the
+  // first client render must match. The useEffect then reads the real value.
+  const [consent, setConsent] = useState<ConsentState>({ analytics: false })
 
   useEffect(() => {
+    // Read localStorage only after mount (client-only), then subscribe.
+    setConsent(readConsent())
     const handler = () => setConsent(readConsent())
     window.addEventListener('ConsentChanged', handler)
     // Also check on storage changes from other tabs
