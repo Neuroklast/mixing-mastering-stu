@@ -118,7 +118,6 @@ export default async function ContentAdminPage({
           </p>
           <ImageUploadField
             label="Favicon Image"
-            pathName="favicon_storage_path"
             urlName="favicon_url"
             defaultUrl={current['favicon_url'] ?? ''}
             bucket={mediaBucket}

@@ -6,8 +6,8 @@ import { createSignedUploadUrl, getPublicStorageUrl } from '@/app/admin/_actions
 interface ImageUploadFieldProps {
   /** Label shown above the field */
   label: string
-  /** Hidden input name for the storage path (e.g. `storage_path`) */
-  pathName: string
+  /** Hidden input name for the storage path (e.g. `storage_path`). Optional — omit when only the URL needs to be stored. */
+  pathName?: string
   /** Hidden input name for the public URL (e.g. `image_url`) */
   urlName: string
   /** Default storage path when editing an existing record */
@@ -185,7 +185,7 @@ export default function ImageUploadField({
       )}
 
       {/* Hidden fields for form action */}
-      <input type="hidden" name={pathName} value={storagePath} />
+      {pathName && <input type="hidden" name={pathName} value={storagePath} />}
       <input type="hidden" name={urlName} value={imageUrl} />
     </div>
   )

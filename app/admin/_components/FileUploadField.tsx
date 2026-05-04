@@ -8,8 +8,17 @@ interface FileUploadFieldProps {
   label: string
   /** Hidden input name for the public URL */
   urlName: string
+  /**
+   * Optional hidden input name for the raw storage object path.
+   * When provided, the object path (e.g. `hero-model/1234.glb`) is also
+   * submitted alongside the full public URL — useful for future re-signing
+   * or migration. If omitted, only the URL is submitted.
+   */
+  pathName?: string
   /** Current URL value (shown as a link when set) */
   defaultUrl?: string
+  /** Current object path (only used when pathName is provided) */
+  defaultPath?: string
   /** Storage bucket name (default: 'sonorativa-media') */
   bucket?: string
   /** Path prefix inside the bucket (e.g. 'hero-model') */
@@ -25,7 +34,9 @@ type UploadStatus = 'idle' | 'uploading' | 'success' | 'error'
 export default function FileUploadField({
   label,
   urlName,
+  pathName,
   defaultUrl = '',
+  defaultPath = '',
   bucket = 'sonorativa-media',
   pathPrefix = 'uploads',
   accept = '*/*',
@@ -35,6 +46,7 @@ export default function FileUploadField({
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [fileUrl, setFileUrl] = useState(defaultUrl)
+  const [objectPath, setObjectPath] = useState(defaultPath)
 
   const reset = () => {
     setStatus('idle')
@@ -58,9 +70,9 @@ export default function FileUploadField({
 
     try {
       const ext = file.name.split('.').pop() ?? 'bin'
-      const objectPath = `${pathPrefix}/${Date.now()}.${ext}`
+      const newObjectPath = `${pathPrefix}/${Date.now()}.${ext}`
 
-      const { signedUrl } = await createSignedUploadUrl(bucket, objectPath)
+      const { signedUrl } = await createSignedUploadUrl(bucket, newObjectPath)
 
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest()
@@ -77,8 +89,9 @@ export default function FileUploadField({
         xhr.send(file)
       })
 
-      const publicUrl = await getPublicStorageUrl(bucket, objectPath)
+      const publicUrl = await getPublicStorageUrl(bucket, newObjectPath)
 
+      setObjectPath(newObjectPath)
       setFileUrl(publicUrl)
       setStatus('success')
       setProgress(1)
@@ -167,8 +180,9 @@ export default function FileUploadField({
         </div>
       )}
 
-      {/* Hidden field submitted with the form */}
+      {/* Hidden fields submitted with the form */}
       <input type="hidden" name={urlName} value={fileUrl} />
+      {pathName && <input type="hidden" name={pathName} value={objectPath} />}
     </div>
   )
 }
