@@ -80,7 +80,7 @@ const client = new S3Client({
 })
 
 console.log(`\n${c.bold}${c.cyan}☁  SONORATIVA — R2 Bucket Setup${c.reset}\n`)
-info(`Account:  ${accountId}`)
+info(`Account:  ${accountId.slice(0, 6)}${'*'.repeat(Math.max(0, accountId.length - 6))}`)
 info(`Buckets:  ${BUCKET_MEDIA} (media/public)  +  ${BUCKET_AUDIO} (audio/private)`)
 console.log('')
 

@@ -157,8 +157,9 @@ export function useR2MultipartUpload() {
     const { key, uploadId } = currentUpload
     try {
       await abortMultipartUploadAction(key, uploadId)
-    } catch {
-      // best-effort abort
+    } catch (err) {
+      // Log so admins know about orphaned multipart parts that may incur storage costs
+      console.error('[useR2MultipartUpload] Failed to abort multipart upload:', err)
     }
     setCurrentUpload(null)
     setState(initialState)

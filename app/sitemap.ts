@@ -11,47 +11,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 1,
     },
-    {
-      url: `${siteUrl}/legal/impressum`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    },
-    {
-      url: `${siteUrl}/legal/privacy`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    },
-    {
-      url: `${siteUrl}/legal/terms`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    },
   ]
 
-  // Add dynamic legal pages from DB
+  // Dynamic legal pages from DB (includes impressum, privacy, terms seeded in init_all.sql)
   try {
     const supabase = createAdminClient()
     const { data: legalPages } = await supabase
       .from('legal')
       .select('slug, last_updated')
 
-    if (legalPages) {
-      const dynamicLegal: MetadataRoute.Sitemap = legalPages
-        .filter((p) => !['impressum', 'privacy', 'terms'].includes(p.slug))
-        .map((p) => ({
-          url: `${siteUrl}/legal/${p.slug}`,
-          lastModified: p.last_updated ? new Date(p.last_updated) : new Date(),
-          changeFrequency: 'monthly' as const,
-          priority: 0.3,
-        }))
+    if (legalPages && legalPages.length > 0) {
+      const dynamicLegal: MetadataRoute.Sitemap = legalPages.map((p) => ({
+        url: `${siteUrl}/legal/${p.slug}`,
+        lastModified: p.last_updated ? new Date(p.last_updated) : new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.3,
+      }))
       return [...staticRoutes, ...dynamicLegal]
     }
   } catch {
-    // DB unavailable — return static routes only
+    // DB unavailable — fall back to static legal routes
   }
 
-  return staticRoutes
+  // Fallback static legal routes when DB is not available
+  return [
+    ...staticRoutes,
+    { url: `${siteUrl}/legal/impressum`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${siteUrl}/legal/privacy`,   lastModified: new Date(), changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${siteUrl}/legal/terms`,     lastModified: new Date(), changeFrequency: 'monthly', priority: 0.3 },
+  ]
 }

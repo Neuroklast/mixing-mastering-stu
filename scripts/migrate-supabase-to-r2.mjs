@@ -52,6 +52,17 @@ const warn = (msg) => console.log(`${c.yellow}⚠${c.reset}  ${msg}`)
 const info = (msg) => console.log(`${c.cyan}ℹ${c.reset}  ${msg}`)
 const fail = (msg) => { console.error(`${c.red}✖${c.reset}  ${msg}`); process.exit(1) }
 
+function inferContentType(path, fallback) {
+  if (fallback) return fallback
+  const ext = path.split('.').pop()?.toLowerCase()
+  const types = {
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+    webp: 'image/webp', avif: 'image/avif', gif: 'image/gif',
+    wav: 'audio/wav', mp3: 'audio/mpeg', flac: 'audio/flac',
+  }
+  return types[ext ?? ''] ?? 'application/octet-stream'
+}
+
 // ── Validate env ──────────────────────────────────────────────────────────────
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -88,7 +99,6 @@ const TABLES = [
   { table: 'gallery',  urlField: 'image_url',     pathField: 'storage_path', bucket: 'media' },
   { table: 'credits',  urlField: 'photo_url',     pathField: 'storage_path', bucket: 'media' },
   { table: 'members',  urlField: 'photo_url',     pathField: 'storage_path', bucket: 'media' },
-  { table: 'members',  urlField: 'photo_url',     pathField: null,           bucket: 'media' },
 ]
 
 const supabaseStorageHost = new URL(SUPABASE_URL).hostname
@@ -147,7 +157,7 @@ for (const { table, urlField, pathField, bucket } of TABLES) {
 
     // Upload to R2
     try {
-      const contentType = row.content_type || (objectPath.match(/\.(jpg|jpeg)$/i) ? 'image/jpeg' : objectPath.match(/\.png$/i) ? 'image/png' : objectPath.match(/\.webp$/i) ? 'image/webp' : 'application/octet-stream')
+      const contentType = inferContentType(objectPath, row.content_type)
       await r2.send(new PutObjectCommand({
         Bucket: BUCKET_MEDIA,
         Key: r2Key,

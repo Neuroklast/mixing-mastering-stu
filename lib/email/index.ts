@@ -26,11 +26,15 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
   const from = process.env.CONTACT_FROM_EMAIL ?? 'noreply@sonorativa.com'
 
   if (!apiKey || isDev) {
-    console.log('[email] Would send email:', {
-      from,
-      to: payload.to,
-      subject: payload.subject,
-    })
+    if (!apiKey && !isDev) {
+      console.warn('[email] RESEND_API_KEY is not set — email will NOT be sent in production. Set RESEND_API_KEY to enable email delivery.')
+    } else {
+      console.log('[email] Would send email:', {
+        from,
+        to: payload.to,
+        subject: payload.subject,
+      })
+    }
     return
   }
 
