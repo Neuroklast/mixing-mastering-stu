@@ -3,42 +3,50 @@
 import { useState } from 'react'
 import { createSignedUploadUrl, getPublicStorageUrl } from '@/app/admin/_actions/uploads'
 
-interface ImageUploadFieldProps {
+interface FileUploadFieldProps {
   /** Label shown above the field */
   label: string
-  /** Hidden input name for the storage path (e.g. `storage_path`). Optional — omit when only the URL needs to be stored. */
-  pathName?: string
-  /** Hidden input name for the public URL (e.g. `image_url`) */
+  /** Hidden input name for the public URL */
   urlName: string
-  /** Default storage path when editing an existing record */
-  defaultPath?: string
-  /** Default image URL when editing an existing record */
+  /**
+   * Optional hidden input name for the raw storage object path.
+   * When provided, the object path (e.g. `hero-model/1234.glb`) is also
+   * submitted alongside the full public URL — useful for future re-signing
+   * or migration. If omitted, only the URL is submitted.
+   */
+  pathName?: string
+  /** Current URL value (shown as a link when set) */
   defaultUrl?: string
+  /** Current object path (only used when pathName is provided) */
+  defaultPath?: string
   /** Storage bucket name (default: 'sonorativa-media') */
   bucket?: string
-  /** Path prefix inside the bucket (e.g. 'gallery', 'credits', 'members') */
+  /** Path prefix inside the bucket (e.g. 'hero-model') */
   pathPrefix?: string
-  /** Accepted MIME types */
+  /** Accepted MIME types / extensions */
   accept?: string
+  /** Max file size in bytes (shown in error message) */
+  maxBytes?: number
 }
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error'
 
-export default function ImageUploadField({
+export default function FileUploadField({
   label,
-  pathName,
   urlName,
-  defaultPath = '',
+  pathName,
   defaultUrl = '',
+  defaultPath = '',
   bucket = 'sonorativa-media',
   pathPrefix = 'uploads',
-  accept = 'image/jpeg,image/png,image/webp,image/avif',
-}: ImageUploadFieldProps) {
+  accept = '*/*',
+  maxBytes,
+}: FileUploadFieldProps) {
   const [status, setStatus] = useState<UploadStatus>('idle')
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [storagePath, setStoragePath] = useState(defaultPath)
-  const [imageUrl, setImageUrl] = useState(defaultUrl)
+  const [fileUrl, setFileUrl] = useState(defaultUrl)
+  const [objectPath, setObjectPath] = useState(defaultPath)
 
   const reset = () => {
     setStatus('idle')
@@ -50,18 +58,22 @@ export default function ImageUploadField({
     const file = e.target.files?.[0]
     if (!file) return
 
+    if (maxBytes && file.size > maxBytes) {
+      setError(`File is too large. Maximum size is ${Math.round(maxBytes / 1024 / 1024)} MB.`)
+      setStatus('error')
+      return
+    }
+
     setStatus('uploading')
     setError(null)
     setProgress(0)
 
     try {
-      const ext = file.name.split('.').pop() ?? 'jpg'
-      const objectPath = `${pathPrefix}/${Date.now()}.${ext}`
+      const ext = file.name.split('.').pop() ?? 'bin'
+      const newObjectPath = `${pathPrefix}/${Date.now()}.${ext}`
 
-      // Get signed upload URL via server action (goes to R2)
-      const { signedUrl } = await createSignedUploadUrl(bucket, objectPath)
+      const { signedUrl } = await createSignedUploadUrl(bucket, newObjectPath)
 
-      // Upload directly to R2 with progress tracking
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         xhr.open('PUT', signedUrl)
@@ -77,11 +89,10 @@ export default function ImageUploadField({
         xhr.send(file)
       })
 
-      // Get the public URL from the server (uses R2_PUBLIC_HOST)
-      const publicUrl = await getPublicStorageUrl(bucket, objectPath)
+      const publicUrl = await getPublicStorageUrl(bucket, newObjectPath)
 
-      setStoragePath(objectPath)
-      setImageUrl(publicUrl)
+      setObjectPath(newObjectPath)
+      setFileUrl(publicUrl)
       setStatus('success')
       setProgress(1)
     } catch (err) {
@@ -91,7 +102,7 @@ export default function ImageUploadField({
   }
 
   const progressPct = Math.round(progress * 100)
-  const previewUrl = imageUrl || defaultUrl
+  const currentUrl = fileUrl || defaultUrl
 
   return (
     <div style={{ marginBottom: '1.5rem' }}>
@@ -101,27 +112,13 @@ export default function ImageUploadField({
         {label}
       </label>
 
-      {/* Thumbnail preview */}
-      {previewUrl && (
-        <div style={{ marginBottom: '0.5rem' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={previewUrl}
-            alt="Preview"
-            style={{
-              width: '96px',
-              height: '96px',
-              objectFit: 'cover',
-              borderRadius: '4px',
-              border: '1px solid #333',
-              display: 'block',
-              marginBottom: '0.3rem',
-            }}
-          />
-          <p style={{ fontSize: '0.75rem', color: '#666' }}>
-            Path: <code style={{ color: '#888' }}>{storagePath || defaultPath}</code>
-          </p>
-        </div>
+      {currentUrl && (
+        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem', wordBreak: 'break-all' }}>
+          Current:{' '}
+          <a href={currentUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#7c3aed' }}>
+            {currentUrl}
+          </a>
+        </p>
       )}
 
       <input
@@ -132,7 +129,6 @@ export default function ImageUploadField({
         style={{ color: '#ccc', display: 'block', marginBottom: '0.4rem' }}
       />
 
-      {/* Progress bar */}
       {status === 'uploading' && (
         <div style={{ marginTop: '0.4rem' }}>
           <div
@@ -184,9 +180,9 @@ export default function ImageUploadField({
         </div>
       )}
 
-      {/* Hidden fields for form action */}
-      {pathName && <input type="hidden" name={pathName} value={storagePath} />}
-      <input type="hidden" name={urlName} value={imageUrl} />
+      {/* Hidden fields submitted with the form */}
+      <input type="hidden" name={urlName} value={fileUrl} />
+      {pathName && <input type="hidden" name={pathName} value={objectPath} />}
     </div>
   )
 }

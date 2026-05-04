@@ -18,8 +18,9 @@ import { useGLTF } from '@react-three/drei'
 import { Scene } from './Scene'
 import type { HeroSceneConfig } from '@/types/scene'
 
-const SCENE_CONFIG: HeroSceneConfig = {
-  modelPath: '/video/3d_hero_model.glb',
+const DEFAULT_MODEL_PATH = '/video/3d_hero_model.glb'
+
+const SCENE_CONFIG_BASE: Omit<HeroSceneConfig, 'modelPath'> = {
   fov: 40,
   maxTiltRad: 0.1,
   dampingLambda: 6,
@@ -48,7 +49,14 @@ class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: bo
 /** Cap DPR at 1.5 on high-DPI (>2) devices to reduce pixel fill rate on mobile GPUs. */
 const MAX_DPR = typeof window !== 'undefined' && window.devicePixelRatio > 2 ? 1.5 : 2
 
-export function HeroScene3D(): JSX.Element {
+interface HeroScene3DProps {
+  /** Path to the GLTF/GLB model. Falls back to the bundled default when omitted or empty. */
+  modelPath?: string | null
+}
+
+export function HeroScene3D({ modelPath }: HeroScene3DProps = {}): JSX.Element {
+  const resolvedPath = modelPath || DEFAULT_MODEL_PATH
+  const sceneConfig: HeroSceneConfig = { ...SCENE_CONFIG_BASE, modelPath: resolvedPath }
   return (
     <SceneErrorBoundary>
       <div
@@ -71,12 +79,12 @@ export function HeroScene3D(): JSX.Element {
           }}
           shadows={false}
         >
-          <Scene config={SCENE_CONFIG} />
+          <Scene config={sceneConfig} />
         </Canvas>
       </div>
     </SceneErrorBoundary>
   )
 }
 
-// Warm up GLTF cache so the model starts loading before the component mounts
-useGLTF.preload(SCENE_CONFIG.modelPath)
+// Warm up GLTF cache so the default model starts loading before the component mounts
+useGLTF.preload(DEFAULT_MODEL_PATH)

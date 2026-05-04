@@ -62,7 +62,7 @@ export default async function HomePage(): Promise<JSX.Element> {
     <ScrollProgressProvider>
       <>
         <Toaster position="top-right" theme="dark" richColors />
-        <HeroScene3D />
+        <HeroScene3D modelPath={siteContent.hero_model_url} />
         <Navbar />
         <main id="main-content">
           <div className="relative z-10">
