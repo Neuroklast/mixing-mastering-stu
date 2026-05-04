@@ -31,6 +31,7 @@ class MockAudio {
   currentTime = 0
   duration = 0
   preload = ''
+  crossOrigin: string | null = null
   private _map = new Map<string, ListenerEntry[]>()
 
   constructor(src = '') {
@@ -149,6 +150,11 @@ describe('useAudioEngine – track navigation guard (hasMountedRef fix)', () => 
     // A double-load would create 2 more (URL-change effect creates none –
     // it reuses existing elements – but this check confirms only mount ran).
     expect(mockInstances).toHaveLength(2)
+
+    // crossOrigin must be set to 'anonymous' on both elements so the Web Audio
+    // MediaElementAudioSourceNode does not silence cross-origin streams.
+    expect(mockInstances[0].crossOrigin).toBe('anonymous')
+    expect(mockInstances[1].crossOrigin).toBe('anonymous')
   })
 
   it('navigating to a new track (different URLs) triggers a reload → status goes loading → then ready after loadedmetadata fires on both elements', async () => {
