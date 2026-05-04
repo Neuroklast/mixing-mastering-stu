@@ -8,16 +8,19 @@ const SERVICE_OPTIONS = ['Mix', 'Master', 'Mix & Master', 'Producing']
 export default function SendInviteForm() {
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setPending(true)
+    setSendError(null)
     const formData = new FormData(e.currentTarget)
     try {
       await sendReviewInvite(formData)
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : 'Failed to send invite. Please try again.')
     } finally {
       setPending(false)
-      setOpen(false)
     }
   }
 
@@ -63,6 +66,11 @@ export default function SendInviteForm() {
         The client will receive an email with a personal link to leave a review. The submitted review
         will be inactive by default — activate it from the list below once you&apos;ve reviewed it.
       </p>
+      {sendError && (
+        <div style={{ marginBottom: '1rem', padding: '0.65rem 0.9rem', background: '#1c0000', border: '1px solid #7f1d1d', borderRadius: '6px', color: '#f87171', fontSize: '0.85rem' }}>
+          {sendError}
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <label style={{ display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '0.25rem' }}>
           Client Name *
@@ -103,7 +111,7 @@ export default function SendInviteForm() {
           </button>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={() => { setOpen(false); setSendError(null) }}
             style={{
               padding: '0.65rem 1.25rem',
               background: 'none',

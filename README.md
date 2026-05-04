@@ -31,7 +31,7 @@ This guide covers everything from cloning the repo to a production deployment on
 
 | Tool | Minimum version | Check |
 |---|---|---|
-| Node.js | 20 | `node -v` |
+| Node.js | 20+ | `node -v` |
 | npm | 9 | `npm -v` |
 | Git | any | `git --version` |
 | Supabase account | — | [supabase.com](https://supabase.com) |

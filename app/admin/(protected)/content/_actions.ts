@@ -27,7 +27,7 @@ export async function updateSiteContent(formData: FormData) {
     updates.push({ key, value: String(value), updated_at: new Date().toISOString() })
   }
 
-  if (updates.length === 0) redirect('/admin/content?saved=1')
+  if (updates.length === 0) redirect('/admin/content')
 
   const { error } = await supabase
     .from('site_content')
