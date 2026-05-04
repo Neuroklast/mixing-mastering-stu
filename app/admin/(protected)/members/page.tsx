@@ -19,6 +19,7 @@ export default async function MembersAdminPage() {
           + New
         </Link>
       </div>
+      <div className="overflow-x-auto">
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid #333', textAlign: 'left' }}>
@@ -52,14 +53,17 @@ export default async function MembersAdminPage() {
               <td style={{ padding: '0.75rem' }}>{String(row.display_order ?? '')}</td>
               <td style={{ padding: '0.75rem' }}>{row.active ? '✓' : '–'}</td>
               <td style={{ padding: '0.75rem' }}>{row.featured ? '★' : '–'}</td>
-              <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <Link href={`/admin/members/${String(row.id)}`} style={{ color: '#7c3aed' }}>Edit</Link>
-                <ConfirmDeleteButton action={deleteMember.bind(null, String(row.id))} />
+              <td style={{ padding: '0.75rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <Link href={`/admin/members/${String(row.id)}`} style={{ color: '#7c3aed' }}>Edit</Link>
+                  <ConfirmDeleteButton action={deleteMember.bind(null, String(row.id))} />
+                </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }
