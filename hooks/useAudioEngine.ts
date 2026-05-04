@@ -282,12 +282,20 @@ export function useAudioEngine(
     loadGenerationRef.current++
     const generation = loadGenerationRef.current
 
+    const beforeEl = new Audio()
+    beforeEl.crossOrigin = 'anonymous'
+    beforeEl.preload = 'metadata'
+    beforeEl.src = tracks.before.url
+
+    const afterEl = new Audio()
+    afterEl.crossOrigin = 'anonymous'
+    afterEl.preload = 'metadata'
+    afterEl.src = tracks.after.url
+
     const elements: Record<'before' | 'after', HTMLAudioElement> = {
-      before: new Audio(tracks.before.url),
-      after: new Audio(tracks.after.url),
+      before: beforeEl,
+      after: afterEl,
     }
-    elements.before.preload = 'metadata'
-    elements.after.preload = 'metadata'
 
     audioElementsRef.current = elements
     sourceNodesRef.current = new Map()

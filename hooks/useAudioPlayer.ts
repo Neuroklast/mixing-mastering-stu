@@ -40,11 +40,19 @@ export interface AudioPlayerControls {
   switchVersion: (version: AudioVersion) => void
 }
 
-const buildAudioElements = (tracks: AudioTracks): Record<AudioVersion, HTMLAudioElement> => ({
-  original: new Audio(tracks.original),
-  mixed: new Audio(tracks.mixed),
-  mastered: new Audio(tracks.mastered),
-})
+const buildAudioElements = (tracks: AudioTracks): Record<AudioVersion, HTMLAudioElement> => {
+  const make = (url: string): HTMLAudioElement => {
+    const a = new Audio()
+    a.crossOrigin = 'anonymous'
+    a.src = url
+    return a
+  }
+  return {
+    original: make(tracks.original),
+    mixed: make(tracks.mixed),
+    mastered: make(tracks.mastered),
+  }
+}
 
 const computeFrequencyBands = (
   analyser: AnalyserNode,
