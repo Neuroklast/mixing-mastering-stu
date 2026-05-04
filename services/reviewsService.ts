@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabaseServer'
 import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 import { reviewSchema, type Review } from '@/lib/schemas/review'
 import { DEMO_REVIEWS } from '@/lib/mockData'
-import { isDev } from '@/lib/devMode'
+import { isDev, hideDemoFallback } from '@/lib/devMode'
 
 export async function getAllReviews(): Promise<ServiceResult<Review[]>> {
   if (isDev) return ok(DEMO_REVIEWS)
@@ -31,8 +31,9 @@ export async function getAllReviews(): Promise<ServiceResult<Review[]>> {
       })
       if (parsed.success) reviews.push(parsed.data)
     }
-    // Fall back to demo data when the DB table is empty
-    return ok(reviews.length > 0 ? reviews : DEMO_REVIEWS)
+    // Fall back to demo data when the DB table is empty (unless explicitly disabled)
+    if (reviews.length === 0 && !hideDemoFallback) return ok(DEMO_REVIEWS)
+    return ok(reviews)
   } catch (e) {
     return err(e instanceof Error ? e.message : 'Failed to load reviews')
   }

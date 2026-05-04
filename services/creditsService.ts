@@ -3,7 +3,7 @@ import { getStorageProvider } from '@/lib/storage'
 import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 import { creditSchema, type Credit } from '@/lib/schemas/credits'
 import { MOCK_CREDITS } from '@/lib/mockData'
-import { isDev } from '@/lib/devMode'
+import { isDev, hideDemoFallback } from '@/lib/devMode'
 
 const MEDIA_BUCKET = process.env.R2_BUCKET_MEDIA ?? 'sonorativa-media'
 
@@ -24,10 +24,12 @@ export async function getAllCredits(): Promise<ServiceResult<Credit[]>> {
     const credits: Credit[] = []
     for (const row of data ?? []) {
       let coverImageUrl: string | null = null
-      if (row.cover_image_url) {
-        coverImageUrl = row.cover_image_url as string
-      } else if (row.cover_storage_path) {
-        coverImageUrl = storage.getPublicUrl(MEDIA_BUCKET, row.cover_storage_path as string)
+
+      // R2 cover_storage_path is the source of truth post-migration; prefer it over cover_image_url
+      if (row.cover_storage_path) {
+        coverImageUrl = storage.getPublicUrl(MEDIA_BUCKET, String(row.cover_storage_path))
+      } else if (row.cover_image_url) {
+        coverImageUrl = String(row.cover_image_url)
       }
 
       const parsed = creditSchema.safeParse({
@@ -41,8 +43,9 @@ export async function getAllCredits(): Promise<ServiceResult<Credit[]>> {
       })
       if (parsed.success) credits.push(parsed.data)
     }
-    // Fall back to demo data when the DB table is empty
-    return ok(credits.length > 0 ? credits : MOCK_CREDITS)
+    // Fall back to demo data when the DB table is empty (unless explicitly disabled)
+    if (credits.length === 0 && !hideDemoFallback) return ok(MOCK_CREDITS)
+    return ok(credits)
   } catch (e) {
     return err(e instanceof Error ? e.message : 'Failed to load credits')
   }

@@ -8,8 +8,8 @@ import type { Order, AudioFile, Product } from '@/types'
 export const MOCK_SHOWCASE_TRACK: ShowcaseTrack = {
   title: 'Neuroklast – INCINERATE',
   artist: 'NEUROKLAST',
-  beforeUrl: '/demo/incinerate-mixdown.wav',
-  afterUrl: '/demo/incinerate-master.wav',
+  beforeUrl: '',
+  afterUrl: '',
   labelBefore: 'DEMO',
   labelAfter: 'FINAL',
 }
@@ -20,8 +20,8 @@ export const MOCK_SHOWCASE_TRACKS: ShowcaseTrack[] = [
   {
     title: 'Kernel Breaker – FRAGMENT',
     artist: 'KERNEL BREAKER',
-    beforeUrl: '/demo/incinerate-mixdown.wav',
-    afterUrl: '/demo/incinerate-master.wav',
+    beforeUrl: '',
+    afterUrl: '',
     labelBefore: 'DEMO',
     labelAfter: 'FINAL',
   },
@@ -136,7 +136,7 @@ export const MOCK_FILES: AudioFile[] = [
     order_id: 'mock-order-1',
     filename: 'demo-track.wav',
     storage_path: 'orders/mock-order-1/demo-track.wav',
-    public_url: '/demo/incinerate-mixdown.wav',
+    public_url: '',
     file_size_bytes: 54_000_000,
     mime_type: 'audio/wav',
     type: 'original',

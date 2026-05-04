@@ -281,10 +281,43 @@ See `.env.local.example` for a complete list with descriptions.
 | `R2_ACCOUNT_ID` | Yes | Cloudflare account ID |
 | `R2_ACCESS_KEY_ID` | Yes | R2 API token key ID |
 | `R2_SECRET_ACCESS_KEY` | Yes | R2 API token secret |
-| `R2_PUBLIC_HOST` | Yes | Public custom domain for `sonorativa-media` bucket |
+| `R2_PUBLIC_HOST` | Yes | Public custom domain for `sonorativa-media` bucket (used by `next/image`) |
 | `R2_BUCKET_MEDIA` | No | Media bucket name (default: `sonorativa-media`) |
 | `R2_BUCKET_AUDIO` | No | Audio bucket name (default: `sonorativa-audio`) |
-| `NEXT_PUBLIC_DEV_MODE` | No | `true` enables mock data, no connections needed (default for local dev) |
+| `NEXT_PUBLIC_DEV_MODE` | No | `true` enables mock data, no connections needed. **Must be `false` or unset in production.** |
+| `NEXT_PUBLIC_HIDE_DEMO_FALLBACK` | No | `true` disables demo-content fallbacks — empty DB table → empty section (no demo data shown). Recommended for production. |
+
+---
+
+## Going Live Checklist
+
+Set these environment variables on Vercel before deploying to production:
+
+```
+Required:
+  NEXT_PUBLIC_SUPABASE_URL
+  NEXT_PUBLIC_SUPABASE_ANON_KEY
+  SUPABASE_SERVICE_ROLE_KEY
+  NEXT_PUBLIC_SITE_URL=https://mixing-mastering-stu.vercel.app
+  R2_ACCOUNT_ID
+  R2_ACCESS_KEY_ID
+  R2_SECRET_ACCESS_KEY
+  R2_PUBLIC_HOST          (e.g. https://pub-abc123.r2.dev or your custom domain)
+  R2_BUCKET_AUDIO=sonorativa-audio
+  R2_BUCKET_MEDIA=sonorativa-media
+
+Optional:
+  NEXT_PUBLIC_HIDE_DEMO_FALLBACK=true   (disable demo content fallbacks)
+  RESEND_API_KEY                         (contact form + review invites)
+  CONTACT_TO_EMAIL
+  CONTACT_FROM_EMAIL
+  NEXT_PUBLIC_SHOW_DEMO_BADGE=false      (hide "Demo" badge in production)
+
+Forbidden in production:
+  NEXT_PUBLIC_DEV_MODE=true              (must be false or unset)
+```
+
+> **Note on `R2_PUBLIC_HOST`:** This env var is parsed at **build time** by `next.config.mjs` to add the R2 domain to `images.remotePatterns`. Without it, `next/image` will return 400 for any gallery/member/credit cover images served from R2. Always set it on Vercel before deploying.
 
 ---
 

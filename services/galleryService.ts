@@ -3,9 +3,10 @@ import { getStorageProvider } from '@/lib/storage'
 import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 import { galleryImageSchema, type GalleryImage } from '@/lib/schemas/gallery'
 import { DEMO_GALLERY } from '@/lib/mockData'
-import { isDev } from '@/lib/devMode'
+import { isDev, hideDemoFallback } from '@/lib/devMode'
 
 const MEDIA_BUCKET = process.env.R2_BUCKET_MEDIA ?? 'sonorativa-media'
+const LEGACY_SUPABASE_HOST = 'supabase.co'
 
 export async function getAllGalleryImages(): Promise<ServiceResult<GalleryImage[]>> {
   if (isDev) return ok(DEMO_GALLERY)
@@ -24,10 +25,22 @@ export async function getAllGalleryImages(): Promise<ServiceResult<GalleryImage[
     const storage = getStorageProvider()
     const images: GalleryImage[] = []
     for (const row of data ?? []) {
-      let url = row.image_url as string | null
-      if (!url && row.storage_path) {
-        url = storage.getPublicUrl(MEDIA_BUCKET, row.storage_path as string)
+      let url: string | null = null
+
+      // R2 storage_path is the source of truth post-migration; prefer it over image_url
+      if (row.storage_path) {
+        url = storage.getPublicUrl(MEDIA_BUCKET, String(row.storage_path))
+      } else if (row.image_url) {
+        const legacyUrl = String(row.image_url)
+        if (legacyUrl.includes(LEGACY_SUPABASE_HOST)) {
+          console.warn(
+            `[galleryService] Row ${String(row.id)} has a legacy Supabase image_url and no storage_path — skipping. Re-upload via admin to fix.`,
+          )
+          continue
+        }
+        url = legacyUrl
       }
+
       if (!url) continue
 
       const parsed = galleryImageSchema.safeParse({
@@ -39,6 +52,8 @@ export async function getAllGalleryImages(): Promise<ServiceResult<GalleryImage[
       })
       if (parsed.success) images.push(parsed.data)
     }
+
+    if (images.length === 0 && !hideDemoFallback) return ok(DEMO_GALLERY)
     return ok(images)
   } catch (e) {
     return err(e instanceof Error ? e.message : 'Failed to load gallery')

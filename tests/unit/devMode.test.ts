@@ -21,3 +21,34 @@ describe('isDev flag', () => {
     expect(isDev).toBe(false)
   })
 })
+
+describe('hideDemoFallback flag', () => {
+  const ORIGINAL = process.env.NEXT_PUBLIC_HIDE_DEMO_FALLBACK
+
+  afterEach(() => {
+    if (ORIGINAL === undefined) {
+      delete process.env.NEXT_PUBLIC_HIDE_DEMO_FALLBACK
+    } else {
+      process.env.NEXT_PUBLIC_HIDE_DEMO_FALLBACK = ORIGINAL
+    }
+    vi.resetModules()
+  })
+
+  it('is false by default (env var absent)', async () => {
+    delete process.env.NEXT_PUBLIC_HIDE_DEMO_FALLBACK
+    const { hideDemoFallback } = await import('@/lib/devMode')
+    expect(hideDemoFallback).toBe(false)
+  })
+
+  it('is true when NEXT_PUBLIC_HIDE_DEMO_FALLBACK=true', async () => {
+    process.env.NEXT_PUBLIC_HIDE_DEMO_FALLBACK = 'true'
+    const { hideDemoFallback } = await import('@/lib/devMode')
+    expect(hideDemoFallback).toBe(true)
+  })
+
+  it('is false when NEXT_PUBLIC_HIDE_DEMO_FALLBACK=false', async () => {
+    process.env.NEXT_PUBLIC_HIDE_DEMO_FALLBACK = 'false'
+    const { hideDemoFallback } = await import('@/lib/devMode')
+    expect(hideDemoFallback).toBe(false)
+  })
+})
