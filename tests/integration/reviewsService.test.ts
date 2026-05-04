@@ -38,8 +38,10 @@ describe('reviewsService (production, empty DB)', () => {
       createClient: vi.fn().mockResolvedValue({
         from: () => ({
           select: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: [], error: null }),
+            eq: () => ({
+              order: () => ({
+                limit: () => Promise.resolve({ data: [], error: null }),
+              }),
             }),
           }),
         }),

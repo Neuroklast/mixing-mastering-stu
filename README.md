@@ -1,8 +1,6 @@
 # SONORATIVA
 
-Professional audio engineering studio – mixing & mastering services with future VST/digital product shop.
-
-[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNeuroklast%2Fmixing-mastering-stu&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,NEXT_PUBLIC_SITE_URL,RESEND_API_KEY,CONTACT_TO_EMAIL,CONTACT_FROM_EMAIL&envDescription=See%20the%20Environment%20Variables%20section%20in%20README.md%20for%20instructions&envLink=https%3A%2F%2Fgithub.com%2FNeuroklast%2Fmixing-mastering-stu%23environment-variables&project-name=sonorativa&repository-name=sonorativa)
+Professional audio engineering studio — mixing & mastering services.
 
 ---
 
@@ -15,8 +13,8 @@ Professional audio engineering studio – mixing & mastering services with futur
 | Styling | Tailwind CSS v4 (CSS-first, `@theme` directive) |
 | UI Components | Shadcn/UI (Radix primitives + `class-variance-authority`) |
 | Animations | Framer Motion + Lenis smooth scroll |
-| Database / Auth | Supabase (PostgreSQL + Storage + Auth) |
-| Audio Uploads | TUS resumable uploads via `tus-js-client` (≤5 GB/file, Free Tier) |
+| Database / Auth | Supabase (PostgreSQL + Auth) |
+| Storage | Cloudflare R2 (images + audio; S3 multipart for large WAV files) |
 | Email | Resend |
 | Validation | Zod (all inputs and service boundaries) |
 | Testing | Vitest (integration) + Playwright (E2E) |
@@ -33,11 +31,12 @@ This guide covers everything from cloning the repo to a production deployment on
 
 | Tool | Minimum version | Check |
 |---|---|---|
-| Node.js | 18 | `node -v` |
+| Node.js | 20+ | `node -v` |
 | npm | 9 | `npm -v` |
 | Git | any | `git --version` |
 | Supabase account | — | [supabase.com](https://supabase.com) |
 | Vercel account | — | [vercel.com](https://vercel.com) |
+| Cloudflare account | — | [cloudflare.com](https://cloudflare.com) (for file storage) |
 
 ---
 
@@ -49,59 +48,94 @@ Before you deploy, you need a Supabase project with a few things configured.
 
 1. Go to [app.supabase.com](https://app.supabase.com) → **New project**
 2. Choose a region close to your target audience
-3. Save your database password (you won't need to put it in Vercel — Supabase handles auth)
+3. Save your database password (you will not need to put it in Vercel — Supabase handles auth)
 
-#### 1.2 Apply the Database Schema & Create Buckets
+#### 1.2 Apply the Database Schema
 
-The master SQL script `supabase/init_all.sql` creates all tables, enables RLS, sets up policies, and provisions the required storage buckets in a single idempotent transaction.
+The master SQL script `supabase/init_all.sql` creates all tables, enables RLS, and sets up policies in a single idempotent transaction.
 
 ---
 
-##### ✅ Pro Way — Automated Script
+##### Pro Way — Automated Script
 
-The script checks for the Supabase CLI, guides you through login + project linking, applies the SQL, and generates a ready-to-paste `.env.production` file.
+The script checks for the Supabase CLI, guides you through login + project linking, and applies the SQL.
 
 ```bash
 npm run setup:supabase
 ```
 
-After it finishes, a `.env.production` file is created in the project root.  Copy-paste its contents into **Vercel → Project Settings → Environment Variables** (Production environment).
-
 ---
 
-##### 🐣 Noob Way — SQL Editor (no CLI needed)
+##### Noob Way — SQL Editor (no CLI needed)
 
 1. Open your Supabase project → **SQL Editor** → **New query**
 2. Copy the **entire contents** of `supabase/init_all.sql` and paste it in
 3. Click **Run**
 
-That's it — all tables, RLS policies, and storage buckets are created.  You still need to fill in the environment variables manually (see §1.4 below).
+That is it — all tables and RLS policies are created.
 
 ---
 
-#### 1.3 Gather Your Credentials
-
-You need the following values from the Supabase dashboard:
+#### 1.3 Gather Your Supabase Credentials
 
 | Credential | Where to find it |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API → `anon` `public` key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → `service_role` key (secret!) |
-
-You also need:
-
-| Variable | Where to get it |
-|---|---|
-| `RESEND_API_KEY` | [resend.com](https://resend.com) → API Keys |
-| `CONTACT_TO_EMAIL` | The email address that receives contact form submissions |
-| `CONTACT_FROM_EMAIL` | A verified sender address in your Resend account |
+| `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → `service_role` key (keep this secret!) |
 
 ---
 
-### Part 2 — Local Development Setup
+### Part 2 — Cloudflare R2 Setup
 
-#### 2.1 Clone and Install
+All file uploads (images and audio) use **Cloudflare R2** object storage. This gives you 10 GB free storage and unlimited egress.
+
+#### 2.1 Create R2 Buckets
+
+Run the automated setup script:
+
+```bash
+npm run r2:setup
+```
+
+This creates two buckets:
+- `sonorativa-media` — public bucket for gallery images and cover art
+- `sonorativa-audio` — private bucket for showcase WAV files
+
+#### 2.2 Gather R2 Credentials
+
+| Variable | Where to find it |
+|---|---|
+| `R2_ACCOUNT_ID` | Cloudflare Dashboard → R2 → Overview → Account ID |
+| `R2_ACCESS_KEY_ID` | R2 → Manage R2 API tokens → Create API token |
+| `R2_SECRET_ACCESS_KEY` | Same as above (shown once on creation) |
+| `R2_PUBLIC_HOST` | R2 → `sonorativa-media` → Settings → Public Access → Enable |
+| `R2_BUCKET_MEDIA` | `sonorativa-media` |
+| `R2_BUCKET_AUDIO` | `sonorativa-audio` |
+
+For detailed R2 instructions, see [docs/cloudflare-r2.md](docs/cloudflare-r2.md).
+
+---
+
+### Part 3 — Email Setup (Resend)
+
+Review invite emails and contact form notifications are sent via [Resend](https://resend.com).
+
+1. Sign up at [resend.com](https://resend.com)
+2. Create an API key
+3. Verify your sender domain (or use `@resend.dev` during testing)
+
+| Variable | Description |
+|---|---|
+| `RESEND_API_KEY` | Your Resend API key |
+| `CONTACT_TO_EMAIL` | Address that receives contact form submissions |
+| `CONTACT_FROM_EMAIL` | Verified sender address in your Resend account |
+
+---
+
+### Part 4 — Local Development Setup
+
+#### 4.1 Clone and Install
 
 ```bash
 git clone https://github.com/Neuroklast/mixing-mastering-stu.git
@@ -109,33 +143,27 @@ cd mixing-mastering-stu
 npm ci
 ```
 
-Or use the automated setup script which also checks your Node version:
-
-```bash
-npm run setup
-```
-
-#### 2.2 Configure Environment Variables
+#### 4.2 Configure Environment Variables
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-Open `.env.local` and fill in the values you collected in Part 1. The file is pre-populated with explanatory comments.
+Open `.env.local` and fill in the values you collected in Parts 1-3.
 
-> **Tip — Zero credentials dev mode:**  
-> Leave `NEXT_PUBLIC_DEV_MODE=true` (the default) to run entirely on mock data without any Supabase connection. All services return pre-defined sample data from `lib/mockData.ts`. This is ideal for frontend development and is safe to commit.
+> **Tip — Zero credentials dev mode:**
+> Leave `NEXT_PUBLIC_DEV_MODE=true` (the default) to run entirely on mock data without any Supabase or R2 connection. All services return pre-defined sample data. This is ideal for frontend development.
 
-#### 2.3 Start the Dev Server
+#### 4.3 Start the Dev Server
 
 ```bash
 npm run dev
 ```
 
-The app is now running at [http://localhost:3000](http://localhost:3000).  
+The app is now running at [http://localhost:3000](http://localhost:3000).
 The admin panel is at [http://localhost:3000/admin](http://localhost:3000/admin).
 
-#### 2.4 Create Your First Admin User
+#### 4.4 Create Your First Admin User
 
 1. Go to your Supabase project → **Authentication** → **Users** → **Invite user**
 2. After the user accepts the invite, open **SQL Editor** and run:
@@ -146,32 +174,19 @@ The admin panel is at [http://localhost:3000/admin](http://localhost:3000/admin)
 
 ---
 
-### Part 3 — Vercel Deployment
+### Part 5 — Vercel Deployment
 
-#### Option A — One-Click Deploy (recommended)
-
-Click the button at the top of this README. Vercel will:
-
-1. Fork/clone the repository into your GitHub account
-2. Ask you to fill in the environment variables (listed below)
-3. Run `next build` automatically
-4. Deploy the app
-
-When Vercel asks for environment variables, use the values from Part 1.
-
-#### Option B — Manual Vercel Setup
-
-**Step 1 — Import the repository**
+#### Step 1 — Import the repository
 
 1. Go to [vercel.com/new](https://vercel.com/new)
 2. Select **Import Git Repository** → connect GitHub → choose `mixing-mastering-stu`
 3. Framework preset will be detected as **Next.js** automatically
 
-**Step 2 — Add environment variables**
+#### Step 2 — Add environment variables
 
-Under **Environment Variables**, add every variable from the table in the [Environment Variables](#environment-variables) section. Make sure they are set for **Production**, **Preview**, and **Development** environments.
+Under **Environment Variables**, add every variable from the [Environment Variables](#environment-variables) section. Set them for **Production**, **Preview**, and **Development** environments.
 
-**Step 3 — Deploy**
+#### Step 3 — Deploy
 
 Click **Deploy**. Vercel will install dependencies and run `next build`.
 
@@ -186,18 +201,15 @@ Click **Deploy**. Vercel will install dependencies and run `next build`.
 
 ---
 
-### Part 4 — Supabase + Vercel Integration (Optional but Recommended)
+### Part 6 — Supabase + Vercel Integration (Optional but Recommended)
 
-The [Supabase Vercel Integration](https://vercel.com/integrations/supabase) automatically injects your Supabase credentials into Vercel environment variables — no copy-pasting of secrets required.
-
-**How to use it:**
+The [Supabase Vercel Integration](https://vercel.com/integrations/supabase) automatically injects your Supabase credentials into Vercel environment variables.
 
 1. Go to your Vercel project → **Settings** → **Integrations**
 2. Search for **Supabase** → **Add Integration**
 3. Connect your Supabase organization and select your project
-4. Vercel automatically populates `SUPABASE_URL`, `SUPABASE_ANON_KEY`, etc.
 
-> **Note:** The integration uses slightly different variable names. After connecting, verify they match what `env.mjs` expects (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`). You may need to rename them.
+> **Note:** After connecting, verify the variable names match what `env.mjs` expects (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`). You may need to rename them.
 
 ---
 
@@ -206,49 +218,45 @@ The [Supabase Vercel Integration](https://vercel.com/integrations/supabase) auto
 ```
 /
 ├── app/                       # Next.js App Router
-│   ├── layout.tsx             # Root layout – lang="en", skip-to-content, viewport
+│   ├── layout.tsx             # Root layout
 │   ├── page.tsx               # Homepage (Server Component)
-│   ├── globals.css            # Tailwind v4 + SONORATIVA design tokens (B/W/Red CI)
+│   ├── globals.css            # Tailwind v4 + SONORATIVA design tokens
 │   ├── _actions/              # Public-facing Server Actions
-│   │   ├── contact.ts         # Contact form → Resend
-│   │   └── generateSignedUrl.ts
-│   ├── actions/               # Legacy Server Actions (audio upload, order creation)
-│   ├── admin/                 # Admin area (Supabase Auth gated)
-│   │   ├── _actions/          # Admin-only server actions
-│   │   │   ├── auth.ts        # requireAdmin() — checks session + profiles.role
-│   │   │   └── uploads.ts     # createSignedUploadUrl + getTusUploadCredentials
-│   │   ├── _components/       # Shared admin UI components
-│   │   │   └── AudioUploadField.tsx  # TUS upload widget with progress bar
-│   │   ├── showcase/          # Showcase CRUD (audio player with TUS uploads)
-│   │   ├── gallery/           # Gallery CRUD
-│   │   ├── reviews/           # Reviews CRUD
-│   │   ├── credits/           # Credits CRUD
-│   │   ├── legal/             # Legal pages CRUD
-│   │   └── media/             # Media browser
-│   └── legal/                 # Public legal pages (SSR)
+│   │   └── contact.ts         # Contact form → Resend
+│   ├── actions/               # Server Actions (order creation, audio upload)
+│   ├── review/[token]/        # Public review submission page (invite link)
+│   └── admin/                 # Admin area (Supabase Auth gated)
+│       ├── _actions/          # Admin-only server actions
+│       │   ├── auth.ts        # requireAdmin() checks session + profiles.role
+│       │   ├── uploads.ts     # createSignedUploadUrl (images up to 100 MB)
+│       │   └── r2Multipart.ts # S3 multipart upload actions (large audio)
+│       ├── _components/       # Shared admin UI components
+│       │   └── AudioUploadField.tsx  # R2 multipart upload widget
+│       ├── content/           # Site copy editor
+│       ├── showcase/          # Showcase CRUD (before/after audio tracks)
+│       ├── gallery/           # Gallery CRUD
+│       ├── members/           # Team member CRUD
+│       ├── reviews/           # Reviews CRUD + invite email sender
+│       ├── credits/           # Credits CRUD
+│       ├── legal/             # Legal pages CRUD
+│       └── media/             # File browser
 ├── hooks/
-│   ├── useAudioEngine.ts      # FSM audio engine
-│   └── useTusUpload.ts        # TUS resumable upload hook (large files)
+│   ├── useAudioEngine.ts      # FSM audio engine (before/after player)
+│   └── useR2MultipartUpload.ts # S3 multipart upload hook (large WAV files)
 ├── lib/
-│   ├── devMode.ts             # ★ Single source of truth for NEXT_PUBLIC_DEV_MODE flag
-│   ├── serviceResult.ts       # ★ Shared ServiceResult<T> type + ok/err helpers
+│   ├── devMode.ts             # Single source of truth for NEXT_PUBLIC_DEV_MODE
+│   ├── serviceResult.ts       # ServiceResult<T> type + ok/err helpers
 │   ├── supabaseServer.ts      # Supabase server client (cookie-based auth)
 │   ├── supabaseAdmin.ts       # Supabase admin client (service role)
-│   ├── supabaseClient.ts      # Supabase browser client
-│   ├── mockData.ts            # Mock data for dev mode
+│   ├── email/                 # Email service (Resend) + HTML templates
+│   ├── storage/               # Storage abstraction (Cloudflare R2)
 │   └── schemas/               # Zod schemas (single source of truth for data shapes)
-├── services/                  # Data access layer (Supabase-only, no UI logic)
-│   ├── showcaseService.ts     # Generates 1-hour signed URLs for audio files
-│   ├── creditsService.ts
-│   ├── galleryService.ts
-│   ├── reviewsService.ts
-│   ├── legalService.ts
-│   ├── orderService.ts
-│   ├── fileService.ts
-│   └── productService.ts
+├── services/                  # Data access layer (Supabase, no UI logic)
+│   ├── showcaseService.ts     # Generates signed URLs for audio files
+│   ├── reviewsService.ts      # Fetches active (approved) reviews only
+│   └── ...
 ├── supabase/
-│   └── init_all.sql           # Idempotent schema + RLS + storage policies
-├── middleware.ts               # Protects /admin/* — Supabase Auth + profiles.role='admin'
+│   └── init_all.sql           # Idempotent schema + RLS policies
 └── tests/
     ├── integration/           # Vitest – service + schema tests
     ├── unit/                  # Vitest – hook unit tests
@@ -263,14 +271,20 @@ See `.env.local.example` for a complete list with descriptions.
 
 | Variable | Required | Description |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Supabase `anon` public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase `service_role` key (server only) |
-| `NEXT_PUBLIC_SITE_URL` | ✅ | Full site URL, e.g. `https://sonorativa.com` |
-| `RESEND_API_KEY` | ✅ | Resend API key for contact form emails |
-| `CONTACT_TO_EMAIL` | ✅ | Email address that receives contact form submissions |
-| `CONTACT_FROM_EMAIL` | ✅ | Verified sender address in Resend |
-| `NEXT_PUBLIC_DEV_MODE` | ❌ | `true` → mock data, no connections needed (default for local dev) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase `anon` public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase `service_role` key (server only) |
+| `NEXT_PUBLIC_SITE_URL` | Yes | Full site URL, e.g. `https://sonorativa.com` |
+| `RESEND_API_KEY` | Yes | Resend API key for email delivery |
+| `CONTACT_TO_EMAIL` | Yes | Email address that receives contact form submissions |
+| `CONTACT_FROM_EMAIL` | Yes | Verified sender address in Resend |
+| `R2_ACCOUNT_ID` | Yes | Cloudflare account ID |
+| `R2_ACCESS_KEY_ID` | Yes | R2 API token key ID |
+| `R2_SECRET_ACCESS_KEY` | Yes | R2 API token secret |
+| `R2_PUBLIC_HOST` | Yes | Public custom domain for `sonorativa-media` bucket |
+| `R2_BUCKET_MEDIA` | No | Media bucket name (default: `sonorativa-media`) |
+| `R2_BUCKET_AUDIO` | No | Audio bucket name (default: `sonorativa-audio`) |
+| `NEXT_PUBLIC_DEV_MODE` | No | `true` enables mock data, no connections needed (default for local dev) |
 
 ---
 
@@ -281,94 +295,60 @@ See `.env.local.example` for a complete list with descriptions.
 | Mode | Env | Behaviour |
 |---|---|---|
 | **Dev mode** | `NEXT_PUBLIC_DEV_MODE=true` | All services return mock data. No network calls. |
-| **Production mode** | `NEXT_PUBLIC_DEV_MODE=false` | Live Supabase + Payload CMS data. |
-
-### Shared Utilities
-
-**`lib/devMode.ts`** — Single source of truth for the dev mode flag:
-```typescript
-export const isDev = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
-```
-
-**`lib/serviceResult.ts`** — Shared `ServiceResult<T>` type + helpers:
-```typescript
-export type ServiceResult<T> = { success: true; data: T } | { success: false; error: string }
-export const ok = <T>(data: T): ServiceResult<T> => ({ success: true, data })
-export const err = (error: string): ServiceResult<never> => ({ success: false, error })
-```
+| **Production mode** | `NEXT_PUBLIC_DEV_MODE=false` | Live Supabase data + R2 storage. |
 
 ### Audio Upload Architecture
 
-Audio files (WAVs up to 75 MB, 150 MB per A/B comparison) use **TUS resumable uploads** so they never pass through a Next.js route:
+Audio files are uploaded directly from the browser to Cloudflare R2 using **S3 Multipart Upload**. Files never pass through the Next.js server.
 
 ```
 Admin selects WAV file
        ↓
-useTusUpload hook calls getTusUploadCredentials() (Server Action)
-       ↓ returns access_token + endpoint
-Browser uploads in 6 MB chunks via TUS directly to Supabase Storage
-       ↓ on success: objectPath saved to showcase.before_storage_path
+useR2MultipartUpload hook calls createMultipartUpload() (Server Action)
+       ↓ returns uploadId + presigned part URLs
+Browser uploads in 5 MB chunks directly to Cloudflare R2
+       ↓ on completion: completeMultipartUpload() (Server Action)
+objectPath saved to showcase record
 Server renders public page
        ↓
-showcaseService.ts calls createSignedUrl(objectPath, 3600)
-       ↓ 1-hour signed URL
-Audio player streams WAV directly from Supabase Storage
+showcaseService.ts generates a 2-hour signed download URL
+Audio player streams WAV directly from R2
 ```
-
-- **TUS** (resumable upload protocol) is supported on Supabase Free Tier up to **5 GB per file**
-- Standard PUT uploads are limited to 50 MB — not viable for 75 MB WAVs
-- The `useTusUpload` hook in `hooks/useTusUpload.ts` handles chunking, progress, and resume
 
 ### Storage Architecture
 
 | Bucket | Visibility | Used for |
 |---|---|---|
-| `audio-files` | Private (signed URL) | Showcase WAV files (before/after) |
-| `media` | Public | Gallery images, other media |
-
-By default, SONORATIVA uses **Supabase Storage**. You can switch to **Cloudflare R2** (10 GB free tier, unlimited egress) by setting `STORAGE_PROVIDER=r2` — see [docs/cloudflare-r2.md](docs/cloudflare-r2.md) for setup instructions.
-
----
-
-## Setup Scripts
-
-```bash
-# One-shot local setup (checks Node version, installs deps, copies .env, runs tests)
-npm run setup
-
-# Full Supabase provisioning: applies init_all.sql, generates .env.production
-npm run setup:supabase
-
-# Apply Supabase schema to a live database
-npm run setup:db
-```
-
-Make scripts executable after cloning:
-```bash
-chmod +x scripts/*.sh bin/*.sh
-```
+| `sonorativa-media` | Public (custom domain) | Gallery images, cover art, other media |
+| `sonorativa-audio` | Private (signed URL) | Showcase WAV files (before/after) |
 
 ---
 
 ## Admin Content Management
 
-The admin panel at `/admin` manages 6 collections:
+The admin panel at `/admin` manages these content areas:
 
-| Collection | Description |
+| Section | Description |
 |---|---|
-| **Showcase** | A/B player tracks — WAV audio uploaded via TUS resumable uploads |
+| **Content** | Edit all site copy: hero text, about section, contact details, social links |
+| **Showcase** | A/B player tracks — WAV audio uploaded via S3 multipart |
 | **Gallery** | Studio gallery images |
+| **Members** | Team member profiles |
 | **Credits** | Artist/band credits (name, role, year, cover image, Spotify URL) |
-| **Reviews** | Client reviews (name, rating, text, service, date) |
-| **Legal** | Impressum, Datenschutz pages |
-| **Media** | File browser for Supabase Storage |
+| **Reviews** | Client reviews with invite-by-email flow |
+| **Legal** | Impressum, Privacy Policy, Terms of Service |
+| **Media** | File browser for Cloudflare R2 |
 
-To add a showcase track with audio:
-1. Open `/admin` → **Showcase** → **New**
-2. Fill in title, artist, genre etc.
-3. For **Before Audio** and **After Audio**: click **Choose File**, select your WAV
-4. The progress bar shows upload progress — files upload directly to Supabase (no size limit issues)
-5. On success the storage path is saved; click **Save** to persist the record
+### Sending a Review Invite
+
+The review invite system lets you request a review from a client without them needing to create an account:
+
+1. Open `/admin` → **Reviews** → **Send Invite**
+2. Enter the client name, email address, and the service they received
+3. Click **Send Email** — the client receives a personalised link valid for 30 days
+4. The client opens the link, fills in their rating and review text
+5. The submitted review appears in the admin with status **Hidden** (inactive)
+6. Review the content, then click **Hidden → Live** to publish it on the public site
 
 ---
 
@@ -386,12 +366,33 @@ Tests never require real credentials — services are tested with `NEXT_PUBLIC_D
 
 ---
 
-## Legal
+## Setup Scripts
+
+```bash
+# Automated Supabase provisioning: applies init_all.sql
+npm run setup:supabase
+
+# Apply Supabase schema to a live database
+npm run setup:db
+
+# Provision R2 buckets automatically
+npm run r2:setup
+
+# Back up the database
+npm run backup:db
+```
+
+---
+
+## Legal Pages
 
 Legal pages are server-rendered under `/legal/`:
 
-- `/legal/privacy` – Privacy Policy (GDPR compliant)
-- `/legal/terms` – Terms of Service
+- `/legal/impressum` — Imprint
+- `/legal/privacy` — Privacy Policy
+- `/legal/terms` — Terms of Service
+
+Edit these in the admin panel under **Legal**.
 
 ---
 
@@ -399,7 +400,7 @@ Legal pages are server-rendered under `/legal/`:
 
 | Token | Value | Usage |
 |---|---|---|
-| `--color-background` | `#121212` | Page background |
+| `--color-background` | `#0d0d0d` | Page background |
 | `--color-foreground` | `#F5F5F5` | Body text |
 | `--color-accent` | `#D94848` | CTA, highlights, borders |
 | `--color-card` | `#1E1E1E` | Card / modal background |

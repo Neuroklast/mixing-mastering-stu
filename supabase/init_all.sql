@@ -347,13 +347,26 @@ CREATE TABLE IF NOT EXISTS reviews (
   date          DATE,
   project_link  TEXT
 );
+
+-- Add active column for admin approval workflow (idempotent)
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT true;
+
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+
+-- Drop legacy permissive policy if it exists (must happen before creating the narrower one)
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Public can read reviews'
+  ) THEN
+    DROP POLICY "Public can read reviews" ON reviews;
+  END IF;
+END $$;
 
 DO $$ BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Public can read reviews'
+    SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Public can read active reviews'
   ) THEN
-    CREATE POLICY "Public can read reviews" ON reviews FOR SELECT USING (true);
+    CREATE POLICY "Public can read active reviews" ON reviews FOR SELECT USING (active = true);
   END IF;
 END $$;
 
@@ -365,7 +378,53 @@ DO $$ BEGIN
   END IF;
 END $$;
 
-CREATE INDEX IF NOT EXISTS idx_reviews_date ON reviews(date DESC);
+-- Allow inserting reviews via invite token (anonymous public submit)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Public can submit reviews via invite'
+  ) THEN
+    CREATE POLICY "Public can submit reviews via invite" ON reviews FOR INSERT WITH CHECK (true);
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_reviews_date   ON reviews(date DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_active ON reviews(active);
+
+-- ── Review invites ────────────────────────────────────────────────────────────
+-- Stores one-time tokens sent to clients so they can submit a review without
+-- needing a login.  The token is included in the invite link URL.
+CREATE TABLE IF NOT EXISTS review_invites (
+  id           UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  token        TEXT        NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(24), 'hex'),
+  client_name  TEXT        NOT NULL,
+  client_email TEXT        NOT NULL,
+  service      TEXT        CHECK (service IN ('Mix', 'Master', 'Mix & Master', 'Producing')),
+  sent_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  used_at      TIMESTAMPTZ,
+  expires_at   TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '30 days')
+);
+ALTER TABLE review_invites ENABLE ROW LEVEL SECURITY;
+
+-- Service role (admin actions) can manage all invites
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'review_invites' AND policyname = 'Service role can manage review invites'
+  ) THEN
+    CREATE POLICY "Service role can manage review invites" ON review_invites FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+-- Public can read a single invite by token to render the review form
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'review_invites' AND policyname = 'Public can read invite by token'
+  ) THEN
+    CREATE POLICY "Public can read invite by token" ON review_invites FOR SELECT USING (true);
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_review_invites_token ON review_invites(token);
 
 -- ── Legal ─────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS legal (
