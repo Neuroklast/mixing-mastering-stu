@@ -4,16 +4,20 @@
  * BaseModal – single source of truth for all modal overlays in SONORATIVA.
  *
  * Design tokens: black/white/red CI, backdrop-blur, border-border, bg-card.
- * Variants:
- *   'center' – centred overlay, max-w-lg (default; use for forms, confirmations)
- *   'wide'   – top-aligned overlay, max-w-6xl, overflow-y-auto (use for full-page panels)
+ * Use the `size` prop to control max-width:
+ *   'md'  – max-w-lg   (default; forms, confirmations)
+ *   'lg'  – max-w-2xl  (medium panels)
+ *   'xl'  – max-w-6xl  (full-page panels such as Service Packages)
  *
- * Both variants share:
+ * All sizes share:
  *   - Radix Dialog primitives (focus trap, ESC, aria-modal, aria-labelledby)
  *   - Identical backdrop (bg-black/85 backdrop-blur-md)
- *   - Identical close button (top-right, ✕)
- *   - SONORATIVA border / bg tokens
- *   - Framer-motion-like enter/exit via Radix data-state animations
+ *   - Identical close button (top-right, ✕, 8×8 touch target)
+ *   - Same bg-card / border / rounded / padding / shadow tokens
+ *   - Same enter/exit animation (fade + zoom)
+ *
+ * Legacy `variant` prop is still accepted for backwards-compatibility but
+ * ignored — use `size` instead.
  */
 
 import * as React from 'react'
@@ -61,46 +65,60 @@ const BaseModalCloseButton = (): JSX.Element => (
   </DialogPrimitive.Close>
 )
 
-// ── Variant config ─────────────────────────────────────────────────────────────
-type ModalVariant = 'center' | 'wide'
+// ── Size config ────────────────────────────────────────────────────────────────
+type ModalSize = 'md' | 'lg' | 'xl'
 
-const VARIANT_CONTENT_CLASS: Record<ModalVariant, string> = {
-  center:
-    'fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto' +
-    ' bg-card border border-border rounded p-6 shadow-2xl' +
-    ' data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]' +
-    ' data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]' +
-    ' duration-200',
-  wide:
-    'fixed left-1/2 top-[5vh] z-50 w-full max-w-6xl -translate-x-1/2 max-h-[90vh] overflow-y-auto' +
-    ' bg-card border border-border rounded p-8 md:p-12 shadow-2xl' +
-    ' data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-4' +
-    ' data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-4' +
-    ' duration-200',
+/** Max-width class per size. The rest of the shell is identical. */
+const SIZE_MAX_W: Record<ModalSize, string> = {
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  xl: 'max-w-6xl',
 }
+
+/** Shared shell classes applied to every BaseModalContent. */
+const SHELL_CLASS =
+  'fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 max-h-[90vh] overflow-y-auto' +
+  ' bg-card border border-border rounded-lg p-6 md:p-8 shadow-2xl' +
+  ' data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95' +
+  ' data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]' +
+  ' data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95' +
+  ' data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]' +
+  ' duration-200'
 
 // ── BaseModalContent ──────────────────────────────────────────────────────────
 export interface BaseModalContentProps
   extends Omit<React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>, 'title'> {
-  variant?: ModalVariant
+  /** Controls max-width. Default 'md'. */
+  size?: ModalSize
+  /**
+   * @deprecated Use `size` instead. Kept for backwards-compatibility.
+   * 'wide' maps to size='xl', 'center' maps to size='md'.
+   */
+  variant?: 'center' | 'wide'
 }
 
 export const BaseModalContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   BaseModalContentProps
->(({ className, children, variant = 'center', ...props }, ref) => (
-  <DialogPrimitive.Portal>
-    <BaseModalOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(VARIANT_CONTENT_CLASS[variant], className)}
-      {...props}
-    >
-      {children}
-      <BaseModalCloseButton />
-    </DialogPrimitive.Content>
-  </DialogPrimitive.Portal>
-))
+>(({ className, children, size, variant, ...props }, ref) => {
+  // Resolve size: explicit `size` wins; otherwise map legacy `variant`
+  const resolvedSize: ModalSize =
+    size ?? (variant === 'wide' ? 'xl' : 'md')
+
+  return (
+    <DialogPrimitive.Portal>
+      <BaseModalOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        className={cn(SHELL_CLASS, SIZE_MAX_W[resolvedSize], className)}
+        {...props}
+      >
+        {children}
+        <BaseModalCloseButton />
+      </DialogPrimitive.Content>
+    </DialogPrimitive.Portal>
+  )
+})
 BaseModalContent.displayName = 'BaseModalContent'
 
 // ── Header (title + optional description) ────────────────────────────────────

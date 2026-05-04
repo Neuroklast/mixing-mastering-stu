@@ -42,6 +42,10 @@ export default async function EditMemberPage({ params }: { params: Promise<{ id:
           <option value="true">Yes</option>
           <option value="false">No</option>
         </FormField>
+        <FormField label="Featured" name="featured" as="select" defaultValue={row.featured ? 'true' : 'false'}>
+          <option value="false">No – show in grid</option>
+          <option value="true">Yes – full portrait + bio above grid</option>
+        </FormField>
         <button type="submit" style={{ padding: '0.75rem 1.5rem', background: '#7c3aed', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
           Save
         </button>

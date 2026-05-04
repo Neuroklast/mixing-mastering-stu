@@ -15,6 +15,7 @@ export async function createGallery(formData: FormData) {
     active: formData.get('active') === 'true',
   })
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/gallery')
   redirect('/admin/gallery')
 }
@@ -33,6 +34,7 @@ export async function updateGallery(id: string, formData: FormData) {
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/gallery')
   redirect('/admin/gallery')
 }
@@ -41,5 +43,6 @@ export async function deleteGallery(id: string) {
   const supabase = createAdminClient()
   const { error } = await supabase.from('gallery').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/gallery')
 }

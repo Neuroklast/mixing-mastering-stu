@@ -101,7 +101,7 @@ export const ContactDialog = ({
 
   return (
     <BaseModal.Root open={open} onOpenChange={onOpenChange}>
-      <BaseModalContent variant="center" className="sm:max-w-[600px]" aria-describedby="contact-modal-desc">
+      <BaseModalContent size="lg" aria-describedby="contact-modal-desc">
         <BaseModalHeader>
           <BaseModalTitle>Get Started</BaseModalTitle>
           <BaseModalDescription id="contact-modal-desc">

@@ -21,6 +21,7 @@ export async function createShowcase(formData: FormData) {
     display_order: Number(formData.get('display_order') ?? 0),
   })
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/showcase')
   redirect('/admin/showcase')
 }
@@ -45,6 +46,7 @@ export async function updateShowcase(id: string, formData: FormData) {
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/showcase')
   redirect('/admin/showcase')
 }
@@ -53,5 +55,6 @@ export async function deleteShowcase(id: string) {
   const supabase = createAdminClient()
   const { error } = await supabase.from('showcase').delete().eq('id', id)
   if (error) throw new Error(error.message)
+  revalidatePath('/')
   revalidatePath('/admin/showcase')
 }

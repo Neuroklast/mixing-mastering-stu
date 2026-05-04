@@ -8,7 +8,7 @@ export default async function MembersAdminPage() {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('members')
-    .select('id, name, role, photo_url, display_order, active')
+    .select('id, name, role, photo_url, display_order, active, featured')
     .order('display_order', { ascending: true })
 
   return (
@@ -27,6 +27,7 @@ export default async function MembersAdminPage() {
             <th style={{ padding: '0.75rem' }}>Role</th>
             <th style={{ padding: '0.75rem' }}>Order</th>
             <th style={{ padding: '0.75rem' }}>Active</th>
+            <th style={{ padding: '0.75rem' }}>Featured</th>
             <th style={{ padding: '0.75rem' }}>Actions</th>
           </tr>
         </thead>
@@ -50,6 +51,7 @@ export default async function MembersAdminPage() {
               <td style={{ padding: '0.75rem' }}>{String(row.role ?? '')}</td>
               <td style={{ padding: '0.75rem' }}>{String(row.display_order ?? '')}</td>
               <td style={{ padding: '0.75rem' }}>{row.active ? '✓' : '–'}</td>
+              <td style={{ padding: '0.75rem' }}>{row.featured ? '★' : '–'}</td>
               <td style={{ padding: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <Link href={`/admin/members/${String(row.id)}`} style={{ color: '#7c3aed' }}>Edit</Link>
                 <ConfirmDeleteButton action={deleteMember.bind(null, String(row.id))} />

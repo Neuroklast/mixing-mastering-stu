@@ -12,6 +12,7 @@ const DEMO_MEMBERS: Member[] = [
     social_links: { instagram: '', soundcloud: '', spotify: '' },
     display_order: 0,
     active: true,
+    featured: true,
   },
   {
     id: 'demo-2',
@@ -22,6 +23,7 @@ const DEMO_MEMBERS: Member[] = [
     social_links: { instagram: '', soundcloud: '', spotify: '' },
     display_order: 1,
     active: true,
+    featured: false,
   },
 ]
 
@@ -51,6 +53,7 @@ export async function getActiveMembers(): Promise<Member[]> {
         social_links: (row.social_links as Record<string, unknown>) ?? {},
         display_order: typeof row.display_order === 'number' ? row.display_order : 0,
         active: Boolean(row.active),
+        featured: Boolean(row.featured),
       })
       if (parsed.success) members.push(parsed.data)
     }

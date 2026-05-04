@@ -22,9 +22,6 @@ import { getActiveMembers } from '@/services/membersService'
 const CreditsSection = dynamic(() =>
   import('@/components/features/CreditsSection').then((m) => ({ default: m.CreditsSection }))
 )
-const ProfileSection = dynamic(() =>
-  import('@/components/features/ProfileSection').then((m) => ({ default: m.ProfileSection }))
-)
 const ReviewsSection = dynamic(() =>
   import('@/components/features/ReviewsSection').then((m) => ({ default: m.ReviewsSection }))
 )
@@ -34,8 +31,6 @@ const GallerySection = dynamic(() =>
 const MembersSection = dynamic(() =>
   import('@/components/features/MembersSection').then((m) => ({ default: m.MembersSection }))
 )
-
-import { PROFILE_ZARDONIC, PROFILE_KAIO } from '@/lib/content/engineers'
 
 /**
  * Local-file fallback used only when the filesystem song directory, CMS, and
@@ -157,12 +152,6 @@ export default async function HomePage(): Promise<JSX.Element> {
             </ErrorBoundary>
             <ErrorBoundary>
               <CreditsSection credits={credits} />
-            </ErrorBoundary>
-            <ErrorBoundary>
-              <ProfileSection profile={PROFILE_ZARDONIC} />
-            </ErrorBoundary>
-            <ErrorBoundary>
-              <ProfileSection profile={PROFILE_KAIO} />
             </ErrorBoundary>
             <ErrorBoundary>
               <MembersSection members={members} />

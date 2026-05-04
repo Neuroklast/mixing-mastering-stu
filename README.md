@@ -326,6 +326,8 @@ Audio player streams WAV directly from Supabase Storage
 | `audio-files` | Private (signed URL) | Showcase WAV files (before/after) |
 | `media` | Public | Gallery images, other media |
 
+By default, SONORATIVA uses **Supabase Storage**. You can switch to **Cloudflare R2** (10 GB free tier, unlimited egress) by setting `STORAGE_PROVIDER=r2` — see [docs/cloudflare-r2.md](docs/cloudflare-r2.md) for setup instructions.
+
 ---
 
 ## Setup Scripts
