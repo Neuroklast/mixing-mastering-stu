@@ -113,7 +113,7 @@ export default function FileUploadField({
       </label>
 
       {currentUrl && (
-        <p style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem', wordBreak: 'break-all' }}>
+        <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem', wordBreak: 'break-all' }}>
           Current:{' '}
           <a href={currentUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#7c3aed' }}>
             {currentUrl}

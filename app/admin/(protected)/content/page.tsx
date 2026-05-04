@@ -34,6 +34,15 @@ function labelFromKey(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+const SECTION_HEADING_STYLE = {
+  fontSize: '1rem',
+  fontWeight: 600,
+  color: '#7c3aed',
+  marginBottom: '1rem',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.1em',
+}
+
 export default async function ContentAdminPage({
   searchParams,
 }: {
@@ -50,8 +59,6 @@ export default async function ContentAdminPage({
     current[String(row.key ?? '')] = String(row.value ?? '')
   }
 
-  const mediaBucket = MEDIA_BUCKET
-
   return (
     <div style={{ maxWidth: '700px' }}>
       <h1 style={{ marginBottom: '0.5rem' }}>Site Content</h1>
@@ -66,7 +73,7 @@ export default async function ContentAdminPage({
       <form action={updateSiteContent}>
         {SECTIONS.map((section) => (
           <div key={section.title} style={{ marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#7c3aed', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <h2 style={SECTION_HEADING_STYLE}>
               {section.title}
             </h2>
             {section.keys.map((key) => {
@@ -86,7 +93,7 @@ export default async function ContentAdminPage({
 
         {/* 3D Hero Model */}
         <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#7c3aed', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          <h2 style={SECTION_HEADING_STYLE}>
             3D Hero Model
           </h2>
           <p style={{ color: '#888', fontSize: '0.8rem', marginBottom: '1rem' }}>
@@ -97,19 +104,19 @@ export default async function ContentAdminPage({
             label="Hero Model File (.glb / .gltf)"
             urlName="hero_model_url"
             defaultUrl={current['hero_model_url'] ?? ''}
-            bucket={mediaBucket}
+            bucket={MEDIA_BUCKET}
             pathPrefix="hero-model"
             accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
             maxBytes={50 * 1024 * 1024}
           />
-          <p style={{ color: '#555', fontSize: '0.75rem', marginTop: '-0.5rem' }}>
+          <p style={{ color: '#888', fontSize: '0.75rem', marginTop: '-0.5rem' }}>
             Default: <code>/video/3d_hero_model.glb</code> (served from <code>/public</code>)
           </p>
         </div>
 
         {/* Favicon */}
         <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#7c3aed', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          <h2 style={SECTION_HEADING_STYLE}>
             Favicon
           </h2>
           <p style={{ color: '#888', fontSize: '0.8rem', marginBottom: '1rem' }}>
@@ -120,7 +127,7 @@ export default async function ContentAdminPage({
             label="Favicon Image"
             urlName="favicon_url"
             defaultUrl={current['favicon_url'] ?? ''}
-            bucket={mediaBucket}
+            bucket={MEDIA_BUCKET}
             pathPrefix="branding/favicon"
             accept=".ico,.png,.svg,image/x-icon,image/png,image/svg+xml"
           />
