@@ -3,13 +3,18 @@ import Image from 'next/image'
 import { createAdminClient } from '@/lib/supabaseAdmin'
 import { deleteGallery } from './_actions'
 import ConfirmDeleteButton from '@/app/admin/_components/ConfirmDeleteButton'
+import { getStorageProvider } from '@/lib/storage'
+
+const MEDIA_BUCKET = process.env.R2_BUCKET_MEDIA ?? 'sonorativa-media'
 
 export default async function GalleryAdminPage() {
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('gallery')
-    .select('id, alt, display_order, active, image_url')
+    .select('id, alt, display_order, active, image_url, storage_path')
     .order('display_order', { ascending: true })
+
+  const storage = getStorageProvider()
 
   return (
     <div>
@@ -31,12 +36,18 @@ export default async function GalleryAdminPage() {
           </tr>
         </thead>
         <tbody>
-          {(data ?? []).map((row) => (
+          {(data ?? []).map((row) => {
+            const thumbUrl = row.storage_path
+              ? storage.getPublicUrl(MEDIA_BUCKET, String(row.storage_path))
+              : row.image_url
+              ? String(row.image_url)
+              : null
+            return (
             <tr key={String(row.id)} style={{ borderBottom: '1px solid #1a1a1a' }}>
               <td style={{ padding: '0.75rem' }}>
-                {row.image_url ? (
+                {thumbUrl ? (
                   <Image
-                    src={String(row.image_url)}
+                    src={thumbUrl}
                     alt={String(row.alt ?? '')}
                     width={48}
                     height={48}
@@ -56,7 +67,8 @@ export default async function GalleryAdminPage() {
                 </div>
               </td>
             </tr>
-          ))}
+            )
+          })}
         </tbody>
       </table>
       </div>
