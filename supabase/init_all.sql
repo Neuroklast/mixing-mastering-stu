@@ -353,20 +353,20 @@ ALTER TABLE reviews ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT tru
 
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Public can read active reviews'
-  ) THEN
-    CREATE POLICY "Public can read active reviews" ON reviews FOR SELECT USING (active = true);
-  END IF;
-END $$;
-
--- Drop legacy permissive policy if it exists
+-- Drop legacy permissive policy if it exists (must happen before creating the narrower one)
 DO $$ BEGIN
   IF EXISTS (
     SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Public can read reviews'
   ) THEN
     DROP POLICY "Public can read reviews" ON reviews;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Public can read active reviews'
+  ) THEN
+    CREATE POLICY "Public can read active reviews" ON reviews FOR SELECT USING (active = true);
   END IF;
 END $$;
 

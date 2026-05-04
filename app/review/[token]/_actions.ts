@@ -30,7 +30,7 @@ export async function submitReviewViaToken(token: string, formData: FormData) {
     redirect(`/review/${token}?error=already_used`)
   }
 
-  if (invite.expires_at && new Date(String(invite.expires_at)) < new Date()) {
+  if (invite.expires_at && new Date(invite.expires_at as string) < new Date()) {
     redirect(`/review/${token}?error=expired`)
   }
 

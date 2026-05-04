@@ -36,6 +36,8 @@ export default function SendInviteForm() {
     marginBottom: '0.75rem',
   }
 
+  const handleClose = () => { setOpen(false); setSendError(null) }
+
   if (!open) {
     return (
       <button
@@ -111,7 +113,7 @@ export default function SendInviteForm() {
           </button>
           <button
             type="button"
-            onClick={() => { setOpen(false); setSendError(null) }}
+            onClick={handleClose}
             style={{
               padding: '0.65rem 1.25rem',
               background: 'none',

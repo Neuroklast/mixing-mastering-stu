@@ -31,7 +31,7 @@ export default async function ReviewPage({
   if (!invite) notFound()
 
   const expired =
-    invite.expires_at && new Date(String(invite.expires_at)) < new Date()
+    invite.expires_at && new Date(invite.expires_at as string) < new Date()
   const alreadyUsed = Boolean(invite.used_at)
 
   const submitAction = submitReviewViaToken.bind(null, token)

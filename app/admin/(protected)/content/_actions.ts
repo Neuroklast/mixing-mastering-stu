@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabaseAdmin'
+import { requireAdmin } from '@/app/admin/_actions/auth'
 
 /** Valid site_content keys — prevents arbitrary keys from being upserted */
 const VALID_KEYS = new Set([
@@ -14,17 +15,21 @@ const VALID_KEYS = new Set([
   'footer_tagline',
 ])
 
+const MAX_VALUE_LENGTH = 2000
+
 /**
  * Update all site_content key/value pairs from the form.
  * The form sends all keys as individual named inputs.
  */
 export async function updateSiteContent(formData: FormData) {
+  await requireAdmin()
   const supabase = createAdminClient()
 
   const updates: Array<{ key: string; value: string; updated_at: string }> = []
   for (const [key, value] of formData.entries()) {
     if (!VALID_KEYS.has(key)) continue
-    updates.push({ key, value: String(value), updated_at: new Date().toISOString() })
+    const safeValue = String(value).slice(0, MAX_VALUE_LENGTH)
+    updates.push({ key, value: safeValue, updated_at: new Date().toISOString() })
   }
 
   if (updates.length === 0) redirect('/admin/content')
