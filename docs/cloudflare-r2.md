@@ -1,134 +1,182 @@
-# Cloudflare R2 Storage Integration
+# Cloudflare R2 Storage
 
-SONORATIVA ships with a pluggable storage layer. By default it uses **Supabase Storage**, which requires no extra configuration. This document explains how to switch to **Cloudflare R2** — a cost-effective alternative with a generous free tier.
+SONORATIVA uses **Cloudflare R2** as the exclusive storage provider for images and audio files.
+Supabase Storage is not used. All uploads and downloads go through R2.
 
 ---
 
 ## 1. Why R2?
 
-| | Supabase Storage (Free) | Cloudflare R2 (Free) |
+| | Cloudflare R2 (Free) | Supabase Storage (Free) |
 |---|---|---|
-| Storage | 1 GB | **10 GB** |
-| Egress | 2 GB/month | **Unlimited** |
-| Requests | 50k/month | 10 M/month |
-| CDN | Via Supabase CDN | Via Cloudflare CDN |
-
-For studios that upload many high-resolution images and audio reference files, R2 dramatically reduces hosting costs.
+| Storage | **10 GB** | 1 GB |
+| Egress | **Unlimited** | 2 GB/month |
+| Requests | 10 M/month | 50k/month |
+| Audio uploads | **S3 Multipart (any size)** | TUS protocol |
+| CDN | Cloudflare CDN | Supabase CDN |
 
 ---
 
-## 2. Setup (step by step)
+## 2. Bucket Layout
 
-### 2.1 Create R2 Buckets
+| Bucket | Access | Contents |
+|---|---|---|
+| `sonorativa-media` | Public (custom domain) | Admin images (gallery, members, credits, showcase) |
+| `sonorativa-audio` | Private (signed URLs) | Audio files (WAV/MP3 showcase tracks) |
+
+---
+
+## 3. Initial Setup
+
+### 3.1 Create Buckets
+
+**Option A — Automatic (recommended):**
+
+```bash
+node scripts/r2-setup.mjs
+# or via the install wizard:
+npm run install:all
+```
+
+**Option B — Manual:**
 
 1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com) → select your account.
-2. In the sidebar, go to **R2 Object Storage** → **Create bucket**.
-3. Create two buckets:
-   - `sonorativa-media` — for images (public)
-   - `sonorativa-audio` — for private audio files
+2. Go to **R2 Object Storage** → **Create bucket**.
+3. Create `sonorativa-media` (leave settings as default — public URL set later).
+4. Create `sonorativa-audio` (default — no public access).
 
-### 2.2 Generate S3-Compatible API Credentials
+### 3.2 Generate S3-Compatible API Credentials
 
-1. In R2 → **Manage R2 API Tokens** → **Create API Token**.
-2. Set permissions: **Object Read & Write** for both buckets.
-3. Copy the **Access Key ID** and **Secret Access Key** — you won't see the secret again.
-4. Note your **Account ID** (visible in the R2 overview page URL: `dash.cloudflare.com/<account-id>/r2/...`).
+1. R2 → **Manage R2 API Tokens** → **Create API Token**.
+2. Permissions: **Object Read & Write** for both buckets.
+3. Copy **Account ID**, **Access Key ID**, and **Secret Access Key**.
 
-### 2.3 Configure CORS on the `sonorativa-media` Bucket
+### 3.3 Configure Environment Variables
 
-In R2 → `sonorativa-media` → **Settings** → **CORS policy**, paste:
+Add to `.env.local` (local) and Vercel → Project → Environment Variables (production):
+
+```bash
+R2_ACCOUNT_ID=your_cloudflare_account_id
+R2_ACCESS_KEY_ID=your_r2_access_key_id
+R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+R2_PUBLIC_HOST=media.your-domain.com      # see §3.4
+R2_BUCKET_MEDIA=sonorativa-media
+R2_BUCKET_AUDIO=sonorativa-audio
+```
+
+### 3.4 Enable a Public Custom Domain for `sonorativa-media`
+
+1. R2 → `sonorativa-media` → **Settings** → **Public Access**.
+2. Enable **Custom domain** → add `media.your-domain.com`.
+3. Add the CNAME record shown by Cloudflare to your DNS provider.
+4. Wait for it to become active (usually < 5 minutes).
+5. Set `R2_PUBLIC_HOST=media.your-domain.com` in env.
+
+---
+
+## 4. CORS Configuration
+
+Apply to `sonorativa-media` (needed for the admin image upload flow):
 
 ```json
 [
   {
-    "AllowedOrigins": ["https://your-domain.com"],
-    "AllowedMethods": ["GET", "PUT"],
+    "AllowedOrigins": ["https://your-domain.com", "http://localhost:3000"],
+    "AllowedMethods": ["GET", "PUT", "POST", "HEAD", "DELETE"],
     "AllowedHeaders": ["*"],
     "MaxAgeSeconds": 3600
   }
 ]
 ```
 
-Replace `https://your-domain.com` with your actual Vercel deployment URL.
-
-### 2.4 Enable a Public Custom Domain
-
-1. In R2 → `sonorativa-media` → **Settings** → **Public access**.
-2. Enable **Custom domain** and add your subdomain (e.g. `media.your-domain.com`).
-3. Follow the DNS instructions (add a CNAME in your DNS provider).
-4. Wait for the domain to become active (usually < 5 minutes).
-
-### 2.5 Add Environment Variables
-
-Add these to your `.env.local` (local dev) and **Vercel → Project → Settings → Environment Variables** (production):
-
-```bash
-STORAGE_PROVIDER=r2
-R2_ACCOUNT_ID=your_account_id
-R2_ACCESS_KEY_ID=your_access_key_id
-R2_SECRET_ACCESS_KEY=your_secret_access_key
-R2_PUBLIC_HOST=media.your-domain.com
-R2_BUCKET_MEDIA=sonorativa-media
-R2_BUCKET_AUDIO=sonorativa-audio
-```
-
-### 2.6 Re-deploy
-
-Trigger a new Vercel deployment (push a commit, or click **Redeploy** in the Vercel dashboard). The app will now use R2 for image uploads and signed audio download URLs.
+The `r2-setup.mjs` script applies this automatically. For manual setup:
+Cloudflare Dashboard → R2 → `sonorativa-media` → **Settings** → **CORS policy**.
 
 ---
 
-## 3. Migrating Existing Files from Supabase to R2
+## 5. S3 Multipart Upload (Audio)
 
-Use [rclone](https://rclone.org/) to copy files between providers.
+Audio files (WAV/MP3) are uploaded using **S3 Multipart Upload** via the
+`useR2MultipartUpload` hook. This replaces the previous TUS protocol.
 
-### Configure rclone
+**Flow:**
+1. `createMultipartUploadAction()` — initiates upload, returns `uploadId`
+2. `signMultipartPartAction()` × N — presigned PUT URL per 5 MB chunk
+3. Browser PUTs each chunk directly to R2
+4. `completeMultipartUploadAction()` — assembles the file
+5. On error/cancel: `abortMultipartUploadAction()` — cleans up
 
-```bash
-rclone config
+**Resumability:** The hook stores `{ uploadId, completedParts }` in
+`sessionStorage` keyed by file hash. A page refresh resumes from the last
+completed part.
+
+**Lifecycle rule — recommended:** Abort incomplete multipart uploads after 24h
+to prevent orphaned parts from incurring storage costs.
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "AbortIncompleteMultipart",
+      "Status": "Enabled",
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 1 }
+    }
+  ]
+}
 ```
 
-Add two remotes:
-- `supabase-s3` — S3-compatible, endpoint `https://<project>.supabase.co/storage/v1/s3`, your Supabase S3 credentials.
-- `r2` — S3-compatible, endpoint `https://<account_id>.r2.cloudflarestorage.com`, your R2 credentials.
+Set in: Cloudflare Dashboard → R2 → `sonorativa-audio` → **Settings** → **Lifecycle**.
 
-### Copy buckets
+---
+
+## 6. Migrating Existing Files from Supabase Storage to R2
+
+If you have existing files in Supabase Storage, use the migration script:
 
 ```bash
-# Copy the media bucket
-rclone copy supabase-s3:media r2:sonorativa-media --progress
+# Dry run — shows what would be migrated without touching anything:
+node scripts/migrate-supabase-to-r2.mjs
 
-# Copy the audio-files bucket
+# Write mode — actually migrates files and updates the database:
+node scripts/migrate-supabase-to-r2.mjs --write
+```
+
+The script:
+- Reads all rows from `gallery`, `credits`, `members`, `showcase` tables
+- Downloads each Supabase URL → uploads to R2 → rewrites the DB URL
+- Is idempotent — skips rows already pointing to `R2_PUBLIC_HOST`
+
+**Alternative for bulk binary copy (rclone):**
+
+```bash
+rclone config  # add supabase-s3 and r2 remotes
+rclone copy supabase-s3:media r2:sonorativa-media --progress
 rclone copy supabase-s3:audio-files r2:sonorativa-audio --progress
 ```
 
-After migration, update any `image_url` / `photo_url` values in the database that still point to Supabase Storage URLs to use the new R2 public domain.
+Then run the migration script in dry-run mode to find any DB rows still
+pointing to old Supabase URLs, and update them with `--write`.
 
 ---
 
-## 4. TUS Limitation
+## 7. How the Storage Abstraction Works
 
-**R2 does not support the TUS resumable upload protocol.**
-
-Chunked audio uploads (WAV files via the `useTusUpload` hook in the admin showcase form) always go through **Supabase Storage** — even when `STORAGE_PROVIDER=r2`. This is because TUS is the only way to reliably upload 75 MB+ files on the Supabase Free Tier without hitting the 50 MB single-PUT limit.
-
-**Impact when `STORAGE_PROVIDER=r2`:**
-- ✅ Image uploads (admin media, gallery, member photos) — go to R2.
-- ✅ Signed download URLs for private audio — served from R2.
-- ⚠️ WAV uploads via the admin Showcase form — still go to Supabase Storage (via TUS).
-
-A future PR will add S3 Multipart Upload support for R2, replacing TUS for audio uploads.
-
----
-
-## 5. How the Storage Abstraction Works
-
-All storage calls go through `lib/storage/index.ts`:
+All storage operations go through `lib/storage/index.ts`:
 
 ```ts
 import { getStorageProvider } from '@/lib/storage'
 const storage = getStorageProvider()
+
+// Public URL for images
 const url = storage.getPublicUrl('sonorativa-media', 'members/photo.jpg')
+
+// Signed download URL for private audio (60 min TTL)
+const signedUrl = await storage.createSignedDownloadUrl('sonorativa-audio', 'track/before.wav', 3600)
+
+// Signed PUT URL for image uploads (< 100 MB)
+const { signedUrl } = await storage.createSignedUploadUrl('sonorativa-media', 'gallery/photo.jpg')
 ```
 
-The factory reads `process.env.STORAGE_PROVIDER` at startup and returns either the Supabase or R2 implementation — both satisfy the same `StorageProvider` interface defined in `lib/storage/types.ts`.
+`getStorageProvider()` always returns the R2 provider. The Supabase Storage
+provider (`lib/storage/supabase.ts`) is kept only for the migration script
+and is `@deprecated`.

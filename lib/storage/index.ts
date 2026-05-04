@@ -1,21 +1,26 @@
 /**
  * Storage provider factory.
  *
- * Returns the configured StorageProvider singleton based on the
- * STORAGE_PROVIDER environment variable:
- *   'supabase' (default) – Supabase Storage (lib/storage/supabase.ts)
- *   'r2'                 – Cloudflare R2   (lib/storage/r2.ts)
+ * Always returns the Cloudflare R2 provider (r2StorageProvider).
+ * Supabase Storage is no longer used — see docs/cloudflare-r2.md.
+ *
+ * Required environment variables:
+ *   R2_ACCOUNT_ID          – Cloudflare account ID
+ *   R2_ACCESS_KEY_ID       – R2 S3-compatible access key ID
+ *   R2_SECRET_ACCESS_KEY   – R2 S3-compatible secret access key
+ *   R2_PUBLIC_HOST         – Public custom domain for sonorativa-media
+ *   R2_BUCKET_MEDIA        – Media bucket name (default: sonorativa-media)
+ *   R2_BUCKET_AUDIO        – Audio bucket name (default: sonorativa-audio)
  *
  * Usage (server-side only):
  *   import { getStorageProvider } from '@/lib/storage'
  *   const storage = getStorageProvider()
- *   const url = storage.getPublicUrl('media', 'uploads/photo.jpg')
+ *   const url = storage.getPublicUrl('sonorativa-media', 'uploads/photo.jpg')
  *
- * See docs/cloudflare-r2.md for R2 setup instructions.
+ * See docs/cloudflare-r2.md for full setup instructions.
  */
 
 import type { StorageProvider } from './types'
-import { supabaseStorageProvider } from './supabase'
 import { r2StorageProvider } from './r2'
 
 export type { StorageProvider, StorageObject } from './types'
@@ -24,15 +29,7 @@ let _instance: StorageProvider | null = null
 
 export function getStorageProvider(): StorageProvider {
   if (_instance) return _instance
-
-  const provider = process.env.STORAGE_PROVIDER ?? 'supabase'
-
-  if (provider === 'r2') {
-    _instance = r2StorageProvider
-  } else {
-    _instance = supabaseStorageProvider
-  }
-
+  _instance = r2StorageProvider
   return _instance
 }
 

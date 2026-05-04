@@ -2,18 +2,18 @@
  * Cloudflare R2 implementation of StorageProvider.
  *
  * R2 is S3-compatible, so we use @aws-sdk/client-s3 with R2's endpoint.
- * Enabled by setting STORAGE_PROVIDER=r2 in environment variables.
+ * This is the only storage provider — Supabase Storage is no longer used.
  *
- * Required env vars when STORAGE_PROVIDER=r2:
+ * Required env vars:
  *   R2_ACCOUNT_ID          – Cloudflare account ID
  *   R2_ACCESS_KEY_ID       – R2 S3-compatible access key ID
  *   R2_SECRET_ACCESS_KEY   – R2 S3-compatible secret access key
  *   R2_PUBLIC_HOST         – Public custom domain (e.g. media.example.com)
+ *   R2_BUCKET_MEDIA        – Media bucket name (default: sonorativa-media)
+ *   R2_BUCKET_AUDIO        – Audio bucket name (default: sonorativa-audio)
  *
- * TUS limitation: R2 does not support TUS protocol. Chunked audio uploads
- * (WAVs via useTusUpload hook) remain on Supabase Storage. For image uploads
- * and signed download URLs, R2 is fully supported.
- * See docs/cloudflare-r2.md for details and migration guidance.
+ * Audio uploads use S3 Multipart Upload via the useR2MultipartUpload hook.
+ * See docs/cloudflare-r2.md for full setup instructions.
  */
 
 import {
@@ -64,11 +64,9 @@ export const r2StorageProvider: StorageProvider = {
 
   /**
    * Creates a presigned PUT URL for direct browser upload.
-   *
-   * NOTE: R2 does not support TUS (resumable uploads). This returns a
-   * single-PUT presigned URL suitable for files up to ~100 MB. For chunked
-   * audio uploads use Supabase TUS (STORAGE_PROVIDER=supabase).
-   * A future PR will add S3 multipart support for larger audio files on R2.
+   * Used for small files (images, documents).
+   * For large audio files (WAV/MP3), use S3 Multipart via the
+   * useR2MultipartUpload hook and app/admin/_actions/r2Multipart.ts.
    */
   async createSignedUploadUrl(
     bucket: string,
