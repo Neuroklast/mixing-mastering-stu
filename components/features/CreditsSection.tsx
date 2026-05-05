@@ -117,21 +117,29 @@ const LogoMarquee = ({ credits }: { credits: Credit[] }): JSX.Element => {
 
 // ── Tab definitions ────────────────────────────────────────────────────────────
 
-type TabValue = 'all' | 'mastering' | 'mixing' | 'remixes' | 'sound-design' | 'producing'
+// Values match the role enum in lib/schemas/credits.ts exactly so the filter
+// can do strict equality checks instead of fragile substring matching.
+type TabValue = 'all' | 'mix' | 'master' | 'mix-master' | 'producing'
 
 const TABS: { label: string; value: TabValue }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Mastering', value: 'mastering' },
-  { label: 'Mixing', value: 'mixing' },
-  { label: 'Remixes', value: 'remixes' },
-  { label: 'Producing', value: 'producing' },
+  { label: 'All',          value: 'all' },
+  { label: 'Mix',          value: 'mix' },
+  { label: 'Master',       value: 'master' },
+  { label: 'Mix & Master', value: 'mix-master' },
+  { label: 'Producing',    value: 'producing' },
 ]
 
 // ── Filter helpers ─────────────────────────────────────────────────────────────
 
 function filterByTab(credits: Credit[], tab: TabValue): Credit[] {
   if (tab === 'all') return credits
-  return credits.filter((c) => c.role.toLowerCase().includes(tab.replace('-', ' ')))
+  // 'Mix' and 'Master' tabs intentionally include 'Mix & Master' credits so
+  // that work labelled as both disciplines surfaces under each individual tab.
+  if (tab === 'mix')        return credits.filter((c) => c.role === 'Mix' || c.role === 'Mix & Master')
+  if (tab === 'master')     return credits.filter((c) => c.role === 'Master' || c.role === 'Mix & Master')
+  if (tab === 'mix-master') return credits.filter((c) => c.role === 'Mix & Master')
+  if (tab === 'producing')  return credits.filter((c) => c.role === 'Producing')
+  return credits
 }
 
 function filterBySearch(credits: Credit[], query: string): Credit[] {

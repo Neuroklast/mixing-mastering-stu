@@ -4,6 +4,7 @@ import './globals.css'
 import { LenisProvider } from '@/components/providers/LenisProvider'
 import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider'
 import { getSiteContent } from '@/services/contentService'
+import { SITE_CONTENT_DEFAULTS } from '@/lib/schemas/siteContent'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -28,7 +29,8 @@ const jetbrainsMono = JetBrains_Mono({
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sonorativa.com'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const content = await getSiteContent()
+  const contentResult = await getSiteContent()
+  const content = contentResult.success ? contentResult.data : SITE_CONTENT_DEFAULTS
   const faviconUrl = content.favicon_url || null
 
   return {

@@ -12,7 +12,9 @@ describe('membersService (dev mode)', () => {
 
   it('returns demo members in dev mode', async () => {
     const { getActiveMembers } = await import('@/services/membersService')
-    const members = await getActiveMembers()
+    const result = await getActiveMembers()
+    expect(result.success).toBe(true)
+    const members = result.success ? result.data : []
     expect(members.length).toBeGreaterThan(0)
     expect(members[0]).toHaveProperty('name')
     expect(members[0]).toHaveProperty('role')
@@ -20,7 +22,9 @@ describe('membersService (dev mode)', () => {
 
   it('demo members include featured field and Zardonic is featured', async () => {
     const { getActiveMembers } = await import('@/services/membersService')
-    const members = await getActiveMembers()
+    const result = await getActiveMembers()
+    expect(result.success).toBe(true)
+    const members = result.success ? result.data : []
     expect(members[0]).toHaveProperty('featured')
     const zardonic = members.find((m) => m.name.toLowerCase().includes('zardonic'))
     expect(zardonic?.featured).toBe(true)
@@ -57,7 +61,9 @@ describe('membersService (production, empty DB)', () => {
       }),
     }))
     const { getActiveMembers } = await import('@/services/membersService')
-    const members = await getActiveMembers()
+    const result = await getActiveMembers()
+    expect(result.success).toBe(true)
+    const members = result.success ? result.data : []
     expect(members.length).toBeGreaterThan(0)
   })
 
@@ -96,7 +102,9 @@ describe('membersService (production, empty DB)', () => {
       }),
     }))
     const { getActiveMembers } = await import('@/services/membersService')
-    const members = await getActiveMembers()
+    const result = await getActiveMembers()
+    expect(result.success).toBe(true)
+    const members = result.success ? result.data : []
     expect(members).toHaveLength(1)
     expect(members[0].featured).toBe(true)
   })
@@ -138,7 +146,9 @@ describe('membersService (production, empty DB)', () => {
     }))
 
     const { getActiveMembers } = await import('@/services/membersService')
-    const members = await getActiveMembers()
+    const result = await getActiveMembers()
+    expect(result.success).toBe(true)
+    const members = result.success ? result.data : []
     expect(members).toHaveLength(1)
     expect(members[0].photo_url).toBe(mockPhotoUrl)
   })
@@ -163,7 +173,9 @@ describe('membersService (production, empty DB)', () => {
     }))
 
     const { getActiveMembers } = await import('@/services/membersService')
-    const members = await getActiveMembers()
+    const result = await getActiveMembers()
+    expect(result.success).toBe(true)
+    const members = result.success ? result.data : []
     expect(members).toHaveLength(0)
   })
 })

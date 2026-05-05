@@ -12,36 +12,31 @@ const FADE_MS = 150
 
 /**
  * Manages playlist state for a list of showcase tracks.
- * Wraps MasteringPlayer with Previous / Next navigation and a CSS fade
- * on track change.  The audio engine handles the actual URL switch in the
- * background — the player never fully remounts, giving a seamless UX.
+ * Wraps MasteringPlayer with a track-selector dropdown.
+ * The audio engine handles URL switching in the background — the player
+ * never fully remounts, giving a seamless UX.
  */
 export const PlaylistPlayer = ({ tracks }: PlaylistPlayerProps): JSX.Element | null => {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const navigate = useCallback(
-    (delta: number): void => {
-      if (transitioning) return
+  const selectTrack = useCallback(
+    (index: number): void => {
+      if (transitioning || index === currentIndex) return
 
       setTransitioning(true)
 
       transitionTimerRef.current = setTimeout(() => {
-        setCurrentIndex((prev) => (prev + delta + tracks.length) % tracks.length)
+        setCurrentIndex(index)
         requestAnimationFrame(() => setTransitioning(false))
       }, FADE_MS)
     },
-    [transitioning, tracks.length],
+    [transitioning, currentIndex],
   )
-
-  const handlePrev = useCallback(() => navigate(-1), [navigate])
-  const handleNext = useCallback(() => navigate(1), [navigate])
 
   const currentTrack = tracks[currentIndex]
   if (!currentTrack) return null
-
-  const hasMultiple = tracks.length > 1
 
   return (
     <div
@@ -53,10 +48,9 @@ export const PlaylistPlayer = ({ tracks }: PlaylistPlayerProps): JSX.Element | n
     >
       <MasteringPlayer
         track={currentTrack}
+        tracks={tracks}
         currentTrackIndex={currentIndex}
-        totalTracks={tracks.length}
-        onPrev={hasMultiple ? handlePrev : undefined}
-        onNext={hasMultiple ? handleNext : undefined}
+        onSelectTrack={selectTrack}
       />
     </div>
   )

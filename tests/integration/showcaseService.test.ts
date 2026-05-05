@@ -12,7 +12,9 @@ describe('showcaseService (dev mode)', () => {
 
   it('getActiveShowcaseTrack returns mock track', async () => {
     const { getActiveShowcaseTrack } = await import('@/services/showcaseService')
-    const track = await getActiveShowcaseTrack()
+    const result = await getActiveShowcaseTrack()
+    expect(result.success).toBe(true)
+    const track = result.success ? result.data : null
     expect(track).not.toBeNull()
     expect(track?.beforeUrl).toBeDefined()
     expect(track?.afterUrl).toBeDefined()
@@ -20,7 +22,9 @@ describe('showcaseService (dev mode)', () => {
 
   it('getAllShowcaseTracks returns array with at least one track', async () => {
     const { getAllShowcaseTracks } = await import('@/services/showcaseService')
-    const tracks = await getAllShowcaseTracks()
+    const result = await getAllShowcaseTracks()
+    expect(result.success).toBe(true)
+    const tracks = result.success ? result.data : []
     expect(tracks.length).toBeGreaterThan(0)
   })
 })
@@ -78,8 +82,10 @@ describe('showcaseService (production, with storage paths)', () => {
     }))
 
     const { getActiveShowcaseTrack } = await import('@/services/showcaseService')
-    const track = await getActiveShowcaseTrack()
+    const result = await getActiveShowcaseTrack()
 
+    expect(result.success).toBe(true)
+    const track = result.success ? result.data : null
     expect(track).not.toBeNull()
     expect(track?.title).toBe('IGNITE')
     expect(track?.beforeUrl).toBe(mockSignedUrl)
@@ -123,7 +129,8 @@ describe('showcaseService (production, with storage paths)', () => {
     }))
 
     const { getActiveShowcaseTrack } = await import('@/services/showcaseService')
-    const track = await getActiveShowcaseTrack()
+    const result = await getActiveShowcaseTrack()
+    const track = result.success ? result.data : null
     expect(track).toBeNull()
   })
 
@@ -169,8 +176,10 @@ describe('showcaseService (production, with storage paths)', () => {
     }))
 
     const { getAllShowcaseTracks } = await import('@/services/showcaseService')
-    const tracks = await getAllShowcaseTracks()
+    const result = await getAllShowcaseTracks()
 
+    expect(result.success).toBe(true)
+    const tracks = result.success ? result.data : []
     expect(tracks).toHaveLength(1)
     expect(tracks[0].beforeUrl).toBe(mockSignedUrl)
     expect(tracks[0].afterUrl).toBe(mockSignedUrl)

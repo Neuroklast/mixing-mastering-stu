@@ -15,6 +15,8 @@ import { getAllGalleryImages } from '@/services/galleryService'
 import { getSiteContent } from '@/services/contentService'
 import { getActiveMembers } from '@/services/membersService'
 
+import { SITE_CONTENT_DEFAULTS } from '@/lib/schemas/siteContent'
+
 export const dynamic = 'force-dynamic'
 
 const CreditsSection = nextDynamic(() =>
@@ -42,7 +44,8 @@ function EmptyShowcaseNotice(): JSX.Element {
 }
 
 export default async function HomePage(): Promise<JSX.Element> {
-  const tracks = await getAllShowcaseTracks()
+  const tracksResult = await getAllShowcaseTracks()
+  const tracks = tracksResult.success ? tracksResult.data : []
 
   const creditsResult = await getAllCredits()
   const credits = creditsResult.success ? creditsResult.data : []
@@ -53,10 +56,12 @@ export default async function HomePage(): Promise<JSX.Element> {
   const galleryResult = await getAllGalleryImages()
   const gallery = galleryResult.success ? galleryResult.data : []
 
-  const [siteContent, members] = await Promise.all([
+  const [siteContentResult, membersResult] = await Promise.all([
     getSiteContent(),
     getActiveMembers(),
   ])
+  const siteContent = siteContentResult.success ? siteContentResult.data : SITE_CONTENT_DEFAULTS
+  const members = membersResult.success ? membersResult.data : []
 
   return (
     <ScrollProgressProvider>

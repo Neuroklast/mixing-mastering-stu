@@ -1,12 +1,19 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Play, Pause, SkipBack, SkipForward } from '@phosphor-icons/react'
+import { Play, Pause, CaretUpDown } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
 import { SpectrumAnalyser } from '@/components/features/SpectrumAnalyser'
 import { MultibandMeter } from '@/components/features/MultibandMeter'
@@ -16,12 +23,12 @@ import { cn } from '@/lib/utils'
 
 interface MasteringPlayerProps {
   track: ShowcaseTrack
-  /** Playlist navigation — provided by PlaylistPlayer when there are multiple tracks */
-  onPrev?: () => void
-  onNext?: () => void
-  /** Display hints for the track counter (e.g. 1/3) */
+  /** Full playlist — enables the track-selector dropdown */
+  tracks?: ShowcaseTrack[]
+  /** Called when the user picks a different track from the dropdown */
+  onSelectTrack?: (index: number) => void
+  /** Display index of the current track (0-based) */
   currentTrackIndex?: number
-  totalTracks?: number
 }
 
 const formatTime = (totalSeconds: number): string => {
@@ -59,10 +66,9 @@ const ErrorDisplay = ({ message }: { message: string | null }): JSX.Element => (
 
 export const MasteringPlayer = ({
   track,
-  onPrev,
-  onNext,
+  tracks,
+  onSelectTrack,
   currentTrackIndex,
-  totalTracks,
 }: MasteringPlayerProps): JSX.Element => {
   const validation = showcaseTrackSchema.safeParse(track)
 
@@ -82,26 +88,23 @@ export const MasteringPlayer = ({
   return (
     <MasteringPlayerInner
       track={validTrack}
-      onPrev={onPrev}
-      onNext={onNext}
+      tracks={tracks}
+      onSelectTrack={onSelectTrack}
       currentTrackIndex={currentTrackIndex}
-      totalTracks={totalTracks}
     />
   )
 }
 
 const MasteringPlayerInner = ({
   track,
-  onPrev,
-  onNext,
+  tracks,
+  onSelectTrack,
   currentTrackIndex,
-  totalTracks,
 }: {
   track: ShowcaseTrack
-  onPrev?: () => void
-  onNext?: () => void
+  tracks?: ShowcaseTrack[]
+  onSelectTrack?: (index: number) => void
   currentTrackIndex?: number
-  totalTracks?: number
 }): JSX.Element => {
   const engine = useAudioEngine(
     { before: { label: 'before', url: track.beforeUrl }, after: { label: 'after', url: track.afterUrl } },
@@ -226,16 +229,58 @@ const MasteringPlayerInner = ({
         <div className="px-6 md:px-8 pt-6 pb-4 border-b border-white/[0.08]">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
 
-            {/* Left – Track identity */}
+            {/* Left – Track selector dropdown (multiple tracks) or static title (single) */}
             <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-base font-bold tracking-tight font-heading truncate">{track.title}</h3>
-                {totalTracks !== undefined && totalTracks > 1 && (
-                  <span className="text-[10px] font-mono text-muted-foreground/60 shrink-0">
-                    {(currentTrackIndex ?? 0) + 1}/{totalTracks}
-                  </span>
-                )}
-              </div>
+              {tracks && tracks.length > 1 && onSelectTrack ? (
+                <Select
+                  value={String(currentTrackIndex ?? 0)}
+                  onValueChange={(val: string) => onSelectTrack(parseInt(val, 10))}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      'w-full max-w-xs h-auto py-1.5 px-0 border-0 border-b border-white/20',
+                      'bg-transparent rounded-none shadow-none',
+                      'hover:border-white/40 focus:ring-0 focus:ring-offset-0',
+                      'font-heading text-base font-bold tracking-tight text-foreground',
+                      '[&>span]:line-clamp-1 [&_svg]:hidden',
+                    )}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <SelectValue />
+                      <CaretUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" aria-hidden="true" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent
+                    className={cn(
+                      'bg-surface/95 backdrop-blur-md border-white/[0.12]',
+                      'text-foreground min-w-[280px]',
+                    )}
+                  >
+                    {tracks.map((t, i) => (
+                      <SelectItem
+                        key={t.title}
+                        value={String(i)}
+                        className={cn(
+                          'font-mono text-xs uppercase tracking-wide cursor-pointer',
+                          'focus:bg-accent/20 focus:text-accent',
+                          'data-[state=checked]:text-accent',
+                        )}
+                      >
+                        <span className="font-bold">{t.title}</span>
+                        {t.artist && (
+                          <span className="ml-2 text-muted-foreground font-normal normal-case">
+                            — {t.artist}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <h3 className="text-base font-bold tracking-tight font-heading truncate">{track.title}</h3>
+                </div>
+              )}
               {track.artist && (
                 <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest mt-0.5 truncate">
                   {track.artist}
@@ -330,24 +375,9 @@ const MasteringPlayerInner = ({
             )}
           </div>
 
-          {/* Transport: Prev + Play/Pause + Next + Progress Bar + Time */}
+          {/* Transport: Play/Pause + Progress Bar + Time */}
           <div className="flex items-center gap-3">
             <TooltipProvider>
-            {/* Previous button */}
-            {onPrev && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={onPrev}
-                    aria-label="Previous track"
-                    className="h-9 w-9 flex items-center justify-center rounded text-white/50 hover:text-white/90 transition-colors flex-shrink-0 hover:bg-white/5"
-                  >
-                    <SkipBack weight="fill" className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Previous track</TooltipContent>
-              </Tooltip>
-            )}
 
             {/* Play / Pause */}
             <Tooltip>
@@ -377,21 +407,6 @@ const MasteringPlayerInner = ({
               </TooltipContent>
             </Tooltip>
 
-            {/* Next button */}
-            {onNext && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={onNext}
-                    aria-label="Next track"
-                    className="h-9 w-9 flex items-center justify-center rounded text-white/50 hover:text-white/90 transition-colors flex-shrink-0 hover:bg-white/5"
-                  >
-                    <SkipForward weight="fill" className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Next track</TooltipContent>
-              </Tooltip>
-            )}
             </TooltipProvider>
 
             <div className="flex-1 space-y-1.5">
