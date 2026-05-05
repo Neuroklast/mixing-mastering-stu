@@ -33,6 +33,8 @@ export interface AudioEngineState {
   analyserAfter: AnalyserNode | null
   /** Phase correlation per frequency band (null until playback starts) */
   multibandCorrelation: { low: number; mid: number; high: number } | null
+  /** Load progress 0–1: how many of the two audio tracks have finished loading metadata */
+  loadProgress: number
 }
 
 interface AudioEngineTracks {
@@ -105,6 +107,7 @@ export function useAudioEngine(
   const [analyserBefore, setAnalyserBefore] = useState<AnalyserNode | null>(null)
   const [analyserAfter, setAnalyserAfter] = useState<AnalyserNode | null>(null)
   const [multibandCorrelation, setMultibandCorrelation] = useState<{ low: number; mid: number; high: number } | null>(null)
+  const [loadProgress, setLoadProgress] = useState(0)
 
   // ── Refs (audio graph) ──
   const analyserRef = useRef<AnalyserNode | null>(null)
@@ -277,6 +280,8 @@ export function useAudioEngine(
     // setting up all audio elements before React re-renders.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     updateStatus('loading')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadProgress(0)
     metadataLoadedRef.current = 0
     // Assign the initial generation for this load cycle
     loadGenerationRef.current++
@@ -305,6 +310,7 @@ export function useAudioEngine(
       if (loadGenerationRef.current !== generation) return
       if (v === 'before') setDuration(elements[v].duration)
       metadataLoadedRef.current++
+      setLoadProgress(metadataLoadedRef.current / 2)
       if (metadataLoadedRef.current >= 2) updateStatus('ready')
     }
 
@@ -406,6 +412,7 @@ export function useAudioEngine(
 
     // Reset playback state
     updateStatus('loading')
+    setLoadProgress(0)
     metadataLoadedRef.current = 0
     activeTrackRef.current = 'before'
     setActiveTrack('before')
@@ -433,6 +440,7 @@ export function useAudioEngine(
       if (loadGenerationRef.current !== generation) return
       if (v === 'before') setDuration(elements[v].duration)
       metadataLoadedRef.current++
+      setLoadProgress(metadataLoadedRef.current / 2)
       if (metadataLoadedRef.current >= 2) updateStatus('ready')
     }
 
@@ -658,6 +666,7 @@ export function useAudioEngine(
     analyserBefore,
     analyserAfter,
     multibandCorrelation,
+    loadProgress,
     play,
     pause,
     seek,
