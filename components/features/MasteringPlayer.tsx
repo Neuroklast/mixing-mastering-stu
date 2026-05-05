@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Play, Pause, CaretUpDown } from '@phosphor-icons/react'
+import { Play, Pause, CaretUpDown, SkipBack, SkipForward } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import {
@@ -12,7 +12,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
 import { SpectrumAnalyser } from '@/components/features/SpectrumAnalyser'
@@ -207,21 +206,13 @@ const MasteringPlayerInner = ({
           </span>
         ))}
 
-        {/* Loading overlay: shown while switching tracks (not on initial load) */}
-        {isBusy && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-surface/70 backdrop-blur-[2px]">
-            <div className="flex gap-1.5">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="block w-1.5 h-6 bg-accent rounded-full animate-pulse"
-                  style={{ animationDelay: `${i * 0.15}s` }}
-                />
-              ))}
-            </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-accent/70">
-              Loading track
-            </p>
+        {/* Loading progress bar: thin strip at the top, visible while loading */}
+        {engine.status === 'loading' && (
+          <div className="absolute top-0 left-0 right-0 z-20 h-0.5 bg-white/10 overflow-hidden">
+            <div
+              className="h-full bg-accent transition-[width] duration-300 ease-out"
+              style={{ width: `${Math.round(engine.loadProgress * 100)}%` }}
+            />
           </div>
         )}
 
@@ -242,11 +233,16 @@ const MasteringPlayerInner = ({
                       'bg-transparent rounded-none shadow-none',
                       'hover:border-white/40 focus:ring-0 focus:ring-offset-0',
                       'font-heading text-base font-bold tracking-tight text-foreground',
-                      '[&>span]:line-clamp-1 [&_svg]:hidden',
+                      '[&_svg]:hidden',
                     )}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <SelectValue />
+                      <span className="truncate font-bold">{track.title}</span>
+                      {track.artist && (
+                        <span className="shrink-0 text-muted-foreground font-normal font-mono text-sm normal-case">
+                          — {track.artist}
+                        </span>
+                      )}
                       <CaretUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" aria-hidden="true" />
                     </div>
                   </SelectTrigger>
@@ -258,20 +254,29 @@ const MasteringPlayerInner = ({
                   >
                     {tracks.map((t, i) => (
                       <SelectItem
-                        key={t.title}
+                        key={t.id ?? `track-${i}`}
                         value={String(i)}
                         className={cn(
-                          'font-mono text-xs uppercase tracking-wide cursor-pointer',
+                          'font-mono text-xs cursor-pointer',
                           'focus:bg-accent/20 focus:text-accent',
                           'data-[state=checked]:text-accent',
                         )}
                       >
-                        <span className="font-bold">{t.title}</span>
-                        {t.artist && (
-                          <span className="ml-2 text-muted-foreground font-normal normal-case">
-                            — {t.artist}
-                          </span>
-                        )}
+                        <div className="flex flex-col gap-0.5 py-0.5">
+                          <div>
+                            <span className="font-bold uppercase tracking-wide">{t.title}</span>
+                            {t.artist && (
+                              <span className="ml-1.5 text-muted-foreground font-normal normal-case">
+                                — {t.artist}
+                              </span>
+                            )}
+                          </div>
+                          {t.genre && (
+                            <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+                              {t.genre}
+                            </span>
+                          )}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -280,11 +285,6 @@ const MasteringPlayerInner = ({
                 <div className="flex items-baseline gap-2">
                   <h3 className="text-base font-bold tracking-tight font-heading truncate">{track.title}</h3>
                 </div>
-              )}
-              {track.artist && (
-                <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest mt-0.5 truncate">
-                  {track.artist}
-                </p>
               )}
             </div>
 
@@ -375,9 +375,30 @@ const MasteringPlayerInner = ({
             )}
           </div>
 
-          {/* Transport: Play/Pause + Progress Bar + Time */}
+          {/* Transport: Prev + Play/Pause + Next + Progress Bar + Time */}
           <div className="flex items-center gap-3">
             <TooltipProvider>
+
+            {/* Prev track */}
+            {tracks && tracks.length > 1 && onSelectTrack && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onSelectTrack(Math.max(0, (currentTrackIndex ?? 0) - 1))}
+                      disabled={isBusy || (currentTrackIndex ?? 0) === 0}
+                      aria-label="Previous track"
+                      className="h-9 w-9 min-h-[44px] min-w-[44px] rounded text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+                    >
+                      <SkipBack weight="fill" className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">Previous track</TooltipContent>
+              </Tooltip>
+            )}
 
             {/* Play / Pause */}
             <Tooltip>
@@ -406,6 +427,27 @@ const MasteringPlayerInner = ({
                 {engine.isPlaying ? 'Pause playback' : 'Start playback'}
               </TooltipContent>
             </Tooltip>
+
+            {/* Next track */}
+            {tracks && tracks.length > 1 && onSelectTrack && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onSelectTrack(Math.min(tracks.length - 1, (currentTrackIndex ?? 0) + 1))}
+                      disabled={isBusy || (currentTrackIndex ?? 0) >= tracks.length - 1}
+                      aria-label="Next track"
+                      className="h-9 w-9 min-h-[44px] min-w-[44px] rounded text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+                    >
+                      <SkipForward weight="fill" className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">Next track</TooltipContent>
+              </Tooltip>
+            )}
 
             </TooltipProvider>
 
