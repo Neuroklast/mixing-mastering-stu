@@ -98,16 +98,21 @@ export const getOrderById = async (orderId: string): Promise<ServiceResult<Order
     return ok(order)
   }
 
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('id', orderId)
-    .single()
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single()
 
-  if (error) return err(error.message)
-  // Cast needed due to @supabase/ssr generic type incompatibility (see lib/supabaseServer.ts)
-  return ok(data as Order)
+    if (error) return err(error.message)
+    // Cast needed due to @supabase/ssr generic type incompatibility (see lib/supabaseServer.ts)
+    return ok(data as Order)
+  } catch (e) {
+    console.error('[orderService] getOrderById failed:', e)
+    return err('Failed to fetch order')
+  }
 }
 
 export const updateOrderStatus = async (
@@ -121,12 +126,17 @@ export const updateOrderStatus = async (
     return ok(undefined)
   }
 
-  const supabase = await createClient()
-  const { error } = await supabase
-    .from('orders')
-    .update({ status })
-    .eq('id', orderId)
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId)
 
-  if (error) return err(error.message)
-  return ok(undefined)
+    if (error) return err(error.message)
+    return ok(undefined)
+  } catch (e) {
+    console.error('[orderService] updateOrderStatus failed:', e)
+    return err('Failed to update order status')
+  }
 }

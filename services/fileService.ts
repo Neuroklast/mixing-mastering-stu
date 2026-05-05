@@ -81,14 +81,19 @@ export const getFilesByOrderId = async (
     return ok(MOCK_FILES.filter((f) => f.order_id === orderId))
   }
 
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('files')
-    .select('*')
-    .eq('order_id', orderId)
-    .order('created_at', { ascending: true })
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('files')
+      .select('*')
+      .eq('order_id', orderId)
+      .order('created_at', { ascending: true })
 
-  if (error) return err(error.message)
-  // Cast needed due to @supabase/ssr generic type incompatibility (see lib/supabaseServer.ts)
-  return ok(data as AudioFile[])
+    if (error) return err(error.message)
+    // Cast needed due to @supabase/ssr generic type incompatibility (see lib/supabaseServer.ts)
+    return ok(data as AudioFile[])
+  } catch (e) {
+    console.error('[fileService] getFilesByOrderId failed:', e)
+    return err('Failed to load files')
+  }
 }

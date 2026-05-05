@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer'
 import { getStorageProvider } from '@/lib/storage'
 import { memberSchema, type Member } from '@/lib/schemas/member'
 import { isDev, hideDemoFallback } from '@/lib/devMode'
+import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 
 const MEDIA_BUCKET = process.env.R2_BUCKET_MEDIA ?? 'sonorativa-media'
 
@@ -30,8 +31,8 @@ const DEMO_MEMBERS: Member[] = [
   },
 ]
 
-export async function getActiveMembers(): Promise<Member[]> {
-  if (isDev) return DEMO_MEMBERS
+export async function getActiveMembers(): Promise<ServiceResult<Member[]>> {
+  if (isDev) return ok(DEMO_MEMBERS)
 
   try {
     const supabase = await createClient()
@@ -41,7 +42,7 @@ export async function getActiveMembers(): Promise<Member[]> {
       .eq('active', true)
       .order('display_order', { ascending: true })
 
-    if (error || !data) return hideDemoFallback ? [] : DEMO_MEMBERS
+    if (error || !data) return ok(hideDemoFallback ? [] : DEMO_MEMBERS)
 
     const storage = getStorageProvider()
     const members: Member[] = []
@@ -70,10 +71,10 @@ export async function getActiveMembers(): Promise<Member[]> {
       if (parsed.success) members.push(parsed.data)
     }
     // Fall back to demo data when the DB table is empty (unless explicitly disabled)
-    if (members.length === 0 && !hideDemoFallback) return DEMO_MEMBERS
-    return members
+    if (members.length === 0 && !hideDemoFallback) return ok(DEMO_MEMBERS)
+    return ok(members)
   } catch (e) {
     console.error('[membersService] getActiveMembers failed:', e)
-    return []
+    return err('Failed to load members')
   }
 }

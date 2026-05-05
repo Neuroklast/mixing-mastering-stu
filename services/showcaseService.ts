@@ -3,11 +3,12 @@ import { getStorageProvider } from '@/lib/storage'
 import { showcaseTrackSchema, type ShowcaseTrack } from '@/lib/schemas/showcase'
 import { MOCK_SHOWCASE_TRACK, MOCK_SHOWCASE_TRACKS } from '@/lib/mockData'
 import { isDev } from '@/lib/devMode'
+import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 
 const AUDIO_BUCKET = process.env.R2_BUCKET_AUDIO ?? 'sonorativa-audio'
 
-export async function getActiveShowcaseTrack(): Promise<ShowcaseTrack | null> {
-  if (isDev) return MOCK_SHOWCASE_TRACK
+export async function getActiveShowcaseTrack(): Promise<ServiceResult<ShowcaseTrack | null>> {
+  if (isDev) return ok(MOCK_SHOWCASE_TRACK)
 
   try {
     const supabase = await createClient()
@@ -19,7 +20,7 @@ export async function getActiveShowcaseTrack(): Promise<ShowcaseTrack | null> {
       .limit(1)
       .single()
 
-    if (error || !data) return null
+    if (error || !data) return ok(null)
 
     // Generate signed URLs for audio files via R2 (1h expiry)
     const storage = getStorageProvider()
@@ -42,7 +43,7 @@ export async function getActiveShowcaseTrack(): Promise<ShowcaseTrack | null> {
       )
     }
 
-    if (!beforeUrl || !afterUrl) return null
+    if (!beforeUrl || !afterUrl) return ok(null)
 
     const parsed = showcaseTrackSchema.safeParse({
       id: String(data.id),
@@ -58,15 +59,15 @@ export async function getActiveShowcaseTrack(): Promise<ShowcaseTrack | null> {
       afterUrl,
     })
 
-    return parsed.success ? parsed.data : null
+    return ok(parsed.success ? parsed.data : null)
   } catch (e) {
     console.error('[showcaseService] getActiveShowcaseTrack failed:', e)
-    return null
+    return err('Failed to load showcase track')
   }
 }
 
-export async function getAllShowcaseTracks(): Promise<ShowcaseTrack[]> {
-  if (isDev) return MOCK_SHOWCASE_TRACKS
+export async function getAllShowcaseTracks(): Promise<ServiceResult<ShowcaseTrack[]>> {
+  if (isDev) return ok(MOCK_SHOWCASE_TRACKS)
 
   try {
     const supabase = await createClient()
@@ -77,7 +78,7 @@ export async function getAllShowcaseTracks(): Promise<ShowcaseTrack[]> {
       .order('display_order', { ascending: true })
       .limit(100)
 
-    if (error || !data) return []
+    if (error || !data) return ok([])
 
     const storage = getStorageProvider()
     const tracks: ShowcaseTrack[] = []
@@ -119,9 +120,9 @@ export async function getAllShowcaseTracks(): Promise<ShowcaseTrack[]> {
 
       if (parsed.success) tracks.push(parsed.data)
     }
-    return tracks
+    return ok(tracks)
   } catch (e) {
     console.error('[showcaseService] getAllShowcaseTracks failed:', e)
-    return []
+    return err('Failed to load showcase tracks')
   }
 }

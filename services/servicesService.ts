@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabaseServer'
 import { serviceSchema, type Service } from '@/lib/schemas/service'
 import { SERVICES_CONFIG } from '@/lib/services-config'
 import { isDev } from '@/lib/devMode'
+import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 
 /** Convert legacy SERVICES_CONFIG entries to Service schema shape */
 function legacyToService(): Service[] {
@@ -19,8 +20,8 @@ function legacyToService(): Service[] {
   }))
 }
 
-export async function getActiveServices(): Promise<Service[]> {
-  if (isDev) return legacyToService()
+export async function getActiveServices(): Promise<ServiceResult<Service[]>> {
+  if (isDev) return ok(legacyToService())
 
   try {
     const supabase = await createClient()
@@ -30,7 +31,7 @@ export async function getActiveServices(): Promise<Service[]> {
       .eq('active', true)
       .order('display_order', { ascending: true })
 
-    if (error || !data) return legacyToService()
+    if (error || !data) return ok(legacyToService())
 
     const services: Service[] = []
     for (const row of data) {
@@ -49,9 +50,9 @@ export async function getActiveServices(): Promise<Service[]> {
       })
       if (parsed.success) services.push(parsed.data)
     }
-    return services.length > 0 ? services : legacyToService()
+    return ok(services.length > 0 ? services : legacyToService())
   } catch (e) {
     console.error('[servicesService] getActiveServices failed:', e)
-    return legacyToService()
+    return err('Failed to load services')
   }
 }

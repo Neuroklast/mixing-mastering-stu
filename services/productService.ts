@@ -12,16 +12,21 @@ export const getActiveProducts = async (): Promise<ServiceResult<Product[]>> => 
     return ok(MOCK_PRODUCTS)
   }
 
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('is_active', true)
-    .order('price_cents', { ascending: true })
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .order('price_cents', { ascending: true })
 
-  if (error) return err(error.message)
-  // Cast needed due to @supabase/ssr generic type incompatibility (see lib/supabaseServer.ts)
-  return ok(data as Product[])
+    if (error) return err(error.message)
+    // Cast needed due to @supabase/ssr generic type incompatibility (see lib/supabaseServer.ts)
+    return ok(data as Product[])
+  } catch (e) {
+    console.error('[productService] getActiveProducts failed:', e)
+    return err('Failed to load products')
+  }
 }
 
 export const getProductById = async (
@@ -37,15 +42,20 @@ export const getProductById = async (
       : err('Product not found')
   }
 
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('id', productId)
-    .eq('is_active', true)
-    .single()
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .eq('is_active', true)
+      .single()
 
-  if (error) return err(error.message)
-  // Cast needed due to @supabase/ssr generic type incompatibility (see lib/supabaseServer.ts)
-  return ok(data as Product)
+    if (error) return err(error.message)
+    // Cast needed due to @supabase/ssr generic type incompatibility (see lib/supabaseServer.ts)
+    return ok(data as Product)
+  } catch (e) {
+    console.error('[productService] getProductById failed:', e)
+    return err('Failed to load product')
+  }
 }

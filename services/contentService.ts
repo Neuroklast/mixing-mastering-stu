@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabaseServer'
 import { siteContentSchema, SITE_CONTENT_DEFAULTS, type SiteContent } from '@/lib/schemas/siteContent'
 import { isDev } from '@/lib/devMode'
+import { ok, err, type ServiceResult } from '@/lib/serviceResult'
 
-export async function getSiteContent(): Promise<SiteContent> {
-  if (isDev) return SITE_CONTENT_DEFAULTS
+export async function getSiteContent(): Promise<ServiceResult<SiteContent>> {
+  if (isDev) return ok(SITE_CONTENT_DEFAULTS)
 
   try {
     const supabase = await createClient()
@@ -11,7 +12,7 @@ export async function getSiteContent(): Promise<SiteContent> {
       .from('site_content')
       .select('key, value')
 
-    if (error || !data) return SITE_CONTENT_DEFAULTS
+    if (error || !data) return ok(SITE_CONTENT_DEFAULTS)
 
     const record: Record<string, string> = {}
     for (const row of data) {
@@ -19,12 +20,12 @@ export async function getSiteContent(): Promise<SiteContent> {
     }
 
     const parsed = siteContentSchema.safeParse(record)
-    if (!parsed.success) return SITE_CONTENT_DEFAULTS
+    if (!parsed.success) return ok(SITE_CONTENT_DEFAULTS)
 
     // Merge with defaults so missing keys always have a value
-    return { ...SITE_CONTENT_DEFAULTS, ...parsed.data }
+    return ok({ ...SITE_CONTENT_DEFAULTS, ...parsed.data })
   } catch (e) {
     console.error('[contentService] getSiteContent failed:', e)
-    return SITE_CONTENT_DEFAULTS
+    return err('Failed to load site content')
   }
 }
