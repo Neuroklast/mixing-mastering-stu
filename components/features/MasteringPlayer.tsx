@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Play, Pause } from '@phosphor-icons/react'
+import { Play, Pause, CaretUpDown } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import {
@@ -234,7 +234,7 @@ const MasteringPlayerInner = ({
               {tracks && tracks.length > 1 && onSelectTrack ? (
                 <Select
                   value={String(currentTrackIndex ?? 0)}
-                  onValueChange={(val: string) => onSelectTrack(Number(val))}
+                  onValueChange={(val: string) => onSelectTrack(parseInt(val, 10))}
                 >
                   <SelectTrigger
                     className={cn(
@@ -247,11 +247,7 @@ const MasteringPlayerInner = ({
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <SelectValue />
-                      <span className="shrink-0 text-muted-foreground/60">
-                        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-current" aria-hidden="true">
-                          <path d="M4 6l4-4 4 4H4zm0 4l4 4 4-4H4z" />
-                        </svg>
-                      </span>
+                      <CaretUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" aria-hidden="true" />
                     </div>
                   </SelectTrigger>
                   <SelectContent
@@ -262,7 +258,7 @@ const MasteringPlayerInner = ({
                   >
                     {tracks.map((t, i) => (
                       <SelectItem
-                        key={i}
+                        key={t.title}
                         value={String(i)}
                         className={cn(
                           'font-mono text-xs uppercase tracking-wide cursor-pointer',
