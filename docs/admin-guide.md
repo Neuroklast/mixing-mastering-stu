@@ -42,15 +42,19 @@ Showcase tracks are the before/after audio comparisons on the home page.
 
 1. Click **+ New**
 2. Fill in:
-   - **Title** — track name (e.g. "INCINERATE")
+   - **Title** *(required)* — track name (e.g. "INCINERATE")
    - **Artist** — artist name
+   - **Genre** — musical genre (optional)
+   - **Equipment** — gear used (optional)
    - **Label Before / Label After** — shown on the player toggle (default: "Demo" / "Final")
+   - **Start Marker (s)** — playback start time in seconds (default: 0)
+   - **LUFS Target** — target loudness in LUFS (default: -14)
    - **Display Order** — lower numbers appear first
-3. Upload the **before** and **after** audio files using the TUS upload fields
+   - **Active** — set to **Yes** to show on the public site
+3. Upload the **Before Audio** and **After Audio** files
    - Supported formats: WAV, MP3, FLAC
-   - Files up to 5 GB are supported
-4. Toggle **Active** to make the track visible on the public site
-5. Click **Save**
+   - Files are stored in Cloudflare R2
+4. Click **Create**
 
 ### Editing or deleting
 
@@ -65,13 +69,13 @@ The gallery section shows studio photos on the public site.
 ### Adding images
 
 1. Click **+ New**
-2. Upload an image (JPG or PNG, max 50 MB)
+2. Upload an image (JPG or PNG, max 100 MB)
 3. Add an **alt text** (description for accessibility)
 4. Add an optional **caption**
 5. Set **Display Order** and toggle **Active**
 6. Click **Save**
 
-> **Tip:** Images are served from Supabase Storage. No external CDN is required.
+> **Tip:** Images are stored in Cloudflare R2 (`sonorativa-media` bucket).
 
 ---
 
@@ -82,11 +86,14 @@ Manage the team profiles shown on the public site.
 ### Adding a team member
 
 1. Click **+ New**
-2. Fill in **Name**, **Role**, and **Bio**
+2. Fill in **Name** *(required)*, **Role** *(required)*, and **Bio**
 3. Upload a **profile photo** (square photos work best)
 4. Add **social links** (optional): Instagram, SoundCloud, Spotify
 5. Set **Display Order** and toggle **Active**
-6. Click **Save**
+6. Set **Featured**:
+   - **No** — member appears in the grid
+   - **Yes** — member appears as a full portrait with bio above the grid
+7. Click **Create**
 
 ---
 
@@ -98,13 +105,13 @@ Manage the service packages shown in the Services modal.
 
 | Field | Description |
 |---|---|
-| Slug | URL-safe identifier (e.g. `mixing`) |
+| Slug | URL-safe identifier (e.g. `mixing`) — must be unique |
 | Title | Displayed name (e.g. "Mixing") |
-| Description | Short tagline |
-| Price (cents) | Price in the smallest currency unit (e.g. 45000 = €450) |
-| Currency | `eur` or `usd` |
-| Duration | Turnaround time (e.g. "3–5 business days") |
-| Features | Comma-separated list of included features |
+| Description / Tagline | Short description shown under the title |
+| Price (cents) | Price in the smallest currency unit (e.g. 20000 = €200) |
+| Currency | `eur`, `usd`, etc. |
+| Duration | Turnaround time (e.g. "3–5 days") |
+| Features | One feature per line — only list what is included |
 | Display Order | Lower = shown first |
 | Active | Toggle visibility |
 
@@ -117,11 +124,16 @@ Manage client reviews shown on the public site.
 ### Adding a review manually
 
 1. Click **+ New**
-2. Fill in: **Client Name**, **Rating** (1–5), **Review Text**, **Service**, **Date**
-3. Toggle **Active** if you want it to appear immediately
-4. Click **Save**
+2. Fill in:
+   - **Client Name** *(required)*
+   - **Rating (1–5)** *(required)*
+   - **Text** *(required)* — the review body
+   - **Service** — Mix, Master, Mix & Master, or Producing
+   - **Date** — date of the review
+   - **Project Link** — optional URL to the project
+3. Click **Create**
 
-> **Note:** Email-based review invitations (invite a past client to submit a review) are planned for a future release.
+> **Note:** Reviews must be manually activated — toggle **Active** in the edit view if you want them visible immediately.
 
 ---
 
@@ -132,9 +144,12 @@ Credits are the discography / client list shown on the site.
 ### Adding a credit
 
 1. Click **+ New**
-2. Fill in **Artist/Band Name**, **Role** (e.g. "Mix & Master"), **Year**
-3. Optionally add a **Spotify URL** and upload a **cover image**
-4. Toggle **Featured** to highlight the credit
+2. Fill in **Name** *(required)* (artist or band)
+3. Select **Role** *(required)*: Mix, Master, Mix & Master, or Producing
+4. Add **Year** (optional)
+5. Optionally add a **Spotify URL** and upload a **cover image**
+6. Toggle **Featured** to highlight the credit
+7. Click **Create**
 
 ---
 
@@ -150,7 +165,12 @@ Edit the Impressum and Datenschutzerklärung pages.
 
 ## Media Browser (`/admin/media`)
 
-Browse all files uploaded to Supabase Storage. You can see files in both the `media` (images) and `audio-files` (audio) buckets. Use this page to verify uploads and copy storage paths if needed.
+Browse all files stored in Cloudflare R2. Two buckets are shown:
+
+- **sonorativa-media** — images (gallery, member photos, credit covers)
+- **sonorativa-audio** — audio files (showcase before/after tracks)
+
+Use this page to verify uploads and copy storage paths if needed.
 
 ---
 
