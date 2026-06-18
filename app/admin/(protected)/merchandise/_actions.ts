@@ -38,7 +38,7 @@ export async function createMerchandise(formData: FormData) {
     image_url: input.data.image_url || null,
     image_storage_path: input.data.image_storage_path || null,
     shop_url: input.data.shop_url || null,
-    in_stock: input.data.in_stock !== 'false',
+    in_stock: input.data.in_stock === 'true',
     display_order: input.data.display_order,
     active: input.data.active === 'true',
   })
@@ -71,7 +71,7 @@ export async function updateMerchandise(id: string, formData: FormData) {
       image_url: input.data.image_url || null,
       image_storage_path: input.data.image_storage_path || null,
       shop_url: input.data.shop_url || null,
-      in_stock: input.data.in_stock !== 'false',
+      in_stock: input.data.in_stock === 'true',
       display_order: input.data.display_order,
       active: input.data.active === 'true',
     })
