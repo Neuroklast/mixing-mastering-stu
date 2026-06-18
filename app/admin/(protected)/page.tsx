@@ -13,12 +13,12 @@ async function getCounts(): Promise<CountCard[]> {
   const supabase = createAdminClient()
 
   const tables = [
-    { table: 'showcase', label: 'Showcase Tracks',  href: '/admin/showcase', newHref: '/admin/showcase/new', description: 'Before/after audio tracks' },
-    { table: 'gallery',  label: 'Gallery Images',   href: '/admin/gallery',  newHref: '/admin/gallery/new',  description: 'Studio photos' },
-    { table: 'members',  label: 'Team Members',     href: '/admin/members',  newHref: '/admin/members/new',  description: 'Engineer profiles' },
-    { table: 'reviews',  label: 'Reviews',          href: '/admin/reviews',  newHref: '/admin/reviews/new',  description: 'Client testimonials' },
-    { table: 'credits',  label: 'Credits',          href: '/admin/credits',  newHref: '/admin/credits/new',  description: 'Discography credits' },
-    { table: 'services', label: 'Services',         href: '/admin/services', newHref: '/admin/services/new', description: 'Pricing packages' },
+    { table: 'releases',          label: 'Releases',         href: '/admin/releases',         newHref: '/admin/releases/new',         description: 'Albums, EPs & singles' },
+    { table: 'gigs',              label: 'Gigs',             href: '/admin/gigs',             newHref: '/admin/gigs/new',             description: 'Live shows & events' },
+    { table: 'merchandise',       label: 'Merchandise',      href: '/admin/merchandise',      newHref: '/admin/merchandise/new',      description: 'Merch items' },
+    { table: 'soundpacks',        label: 'Soundpacks',       href: '/admin/soundpacks',       newHref: '/admin/soundpacks/new',       description: 'Sample & sound packs' },
+    { table: 'music_highlights',  label: 'Highlights',       href: '/admin/music-highlights', newHref: '/admin/music-highlights/new', description: 'Featured tracks' },
+    { table: 'partners',          label: 'Partners',         href: '/admin/partners',         newHref: '/admin/partners/new',         description: 'Sponsors & partners' },
   ]
 
   const results = await Promise.all(
@@ -77,17 +77,20 @@ export default async function AdminDashboard() {
       <div className="mt-8">
         <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
-          <Link href="/admin/content" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm font-medium transition-colors">
-            Edit Hero Copy
+          <Link href="/admin/bio" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm font-medium transition-colors">
+            Edit Bio
           </Link>
-          <Link href="/admin/showcase/new" className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded text-sm font-medium transition-colors text-white">
-            + Showcase Track
+          <Link href="/admin/releases/new" className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded text-sm font-medium transition-colors text-white">
+            + Release
           </Link>
-          <Link href="/admin/members/new" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm font-medium transition-colors">
-            + Team Member
+          <Link href="/admin/gigs/new" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm font-medium transition-colors">
+            + Gig
           </Link>
-          <Link href="/admin/gallery/new" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm font-medium transition-colors">
-            + Gallery Photo
+          <Link href="/admin/merchandise/new" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm font-medium transition-colors">
+            + Merch
+          </Link>
+          <Link href="/admin/site-config" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded text-sm font-medium transition-colors">
+            Site Config
           </Link>
         </div>
       </div>

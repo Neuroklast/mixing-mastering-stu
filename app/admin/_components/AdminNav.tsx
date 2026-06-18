@@ -5,14 +5,15 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
   House,
-  TextAlignLeft,
-  Waveform,
-  Images,
-  Users,
-  Briefcase,
-  Star,
-  Trophy,
-  Scales,
+  IdentificationCard,
+  VinylRecord,
+  CalendarBlank,
+  ShoppingBag,
+  SpeakerHigh,
+  Lightning,
+  Handshake,
+  Gear,
+  ShareNetwork,
   FolderOpen,
   SignOut,
   List,
@@ -20,16 +21,17 @@ import {
 } from '@phosphor-icons/react'
 
 const NAV = [
-  { href: '/admin',          label: 'Dashboard',   icon: House,        exact: true },
-  { href: '/admin/content',  label: 'Content',     icon: TextAlignLeft },
-  { href: '/admin/showcase', label: 'Showcase',    icon: Waveform },
-  { href: '/admin/gallery',  label: 'Gallery',     icon: Images },
-  { href: '/admin/members',  label: 'Members',     icon: Users },
-  { href: '/admin/services', label: 'Services',    icon: Briefcase },
-  { href: '/admin/reviews',  label: 'Reviews',     icon: Star },
-  { href: '/admin/credits',  label: 'Credits',     icon: Trophy },
-  { href: '/admin/legal',    label: 'Legal',       icon: Scales },
-  { href: '/admin/media',    label: 'Media',       icon: FolderOpen },
+  { href: '/admin',                   label: 'Dashboard',        icon: House,             exact: true },
+  { href: '/admin/bio',               label: 'Bio',              icon: IdentificationCard },
+  { href: '/admin/releases',          label: 'Releases',         icon: VinylRecord },
+  { href: '/admin/gigs',              label: 'Gigs',             icon: CalendarBlank },
+  { href: '/admin/merchandise',       label: 'Merchandise',      icon: ShoppingBag },
+  { href: '/admin/soundpacks',        label: 'Soundpacks',       icon: SpeakerHigh },
+  { href: '/admin/music-highlights',  label: 'Highlights',       icon: Lightning },
+  { href: '/admin/partners',          label: 'Partners',         icon: Handshake },
+  { href: '/admin/site-config',       label: 'Site Config',      icon: Gear },
+  { href: '/admin/social-links',      label: 'Social Links',     icon: ShareNetwork },
+  { href: '/admin/media',             label: 'Media',            icon: FolderOpen },
 ]
 
 export default function AdminNav() {
@@ -70,7 +72,7 @@ export default function AdminNav() {
       <aside className="hidden md:flex flex-col w-56 shrink-0 bg-zinc-950 border-r border-zinc-800 min-h-screen sticky top-0 h-screen">
         <div className="p-4 border-b border-zinc-800">
           <span className="font-heading font-bold tracking-widest text-sm text-white uppercase">
-            Sonorativa
+            Zardonic
           </span>
           <span className="ml-2 text-[10px] text-zinc-500 font-mono uppercase tracking-widest">Admin</span>
         </div>
@@ -91,7 +93,7 @@ export default function AdminNav() {
       {/* ── Mobile top bar + drawer ───────────────────────────────────── */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 bg-zinc-950 border-b border-zinc-800 sticky top-0 z-50">
         <span className="font-heading font-bold tracking-widest text-sm text-white uppercase">
-          Sonorativa <span className="text-zinc-500 text-[10px] font-mono">Admin</span>
+          Zardonic <span className="text-zinc-500 text-[10px] font-mono">Admin</span>
         </span>
         <button
           type="button"

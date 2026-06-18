@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabaseServer'
 import { Toaster } from 'sonner'
 import AdminNav from '@/app/admin/_components/AdminNav'
 
-export const metadata = { title: 'Admin – SONORATIVA' }
+export const metadata = { title: 'Admin – ZARDONIC' }
 
 export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
