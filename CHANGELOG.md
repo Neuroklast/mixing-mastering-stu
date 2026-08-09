@@ -9,8 +9,9 @@ Agents: add bullets under `[Unreleased]` when product behavior changes (see `doc
 
 ### Added
 
-- **Partners & Endorsements** public homepage section only (logo grids by category; optional white-silhouette processing)
-- `getAllPartners()` service + demo data; optional `partners` table in `init_all.sql` for DB-backed logos (no admin CMS UI)
+- **Partners & Endorsements** public homepage section (logo grids by category; optional white-silhouette processing)
+- Admin CMS for partners (`/admin/partners`) — list, create, edit, delete, logo upload
+- `getAllPartners()` service + demo data; `partners` table in `init_all.sql`
 - Agent documentation suite (`docs/agent/*`, root living docs, PR template)
 
 ### Changed

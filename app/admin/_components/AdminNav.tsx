@@ -12,6 +12,7 @@ import {
   Briefcase,
   Star,
   Trophy,
+  Handshake,
   Scales,
   FolderOpen,
   SignOut,
@@ -28,6 +29,7 @@ const NAV = [
   { href: '/admin/services', label: 'Services',    icon: Briefcase },
   { href: '/admin/reviews',  label: 'Reviews',     icon: Star },
   { href: '/admin/credits',  label: 'Credits',     icon: Trophy },
+  { href: '/admin/partners', label: 'Partners',    icon: Handshake },
   { href: '/admin/legal',    label: 'Legal',       icon: Scales },
   { href: '/admin/media',    label: 'Media',       icon: FolderOpen },
 ]

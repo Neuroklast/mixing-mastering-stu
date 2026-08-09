@@ -23,8 +23,7 @@ Living product-status snapshot. Architecture and agent rules: `AGENTS.md` + `doc
 
 | Area | Status |
 |------|--------|
-| CMS sections (content, showcase, gallery, members, services, reviews, credits, legal) | ✅ |
-| Partners admin UI | ❌ intentionally none (public section + service only) |
+| CMS sections (content, showcase, gallery, members, services, reviews, credits, partners, legal) | ✅ |
 | Image signed upload → R2 | ✅ |
 | Audio multipart → R2 | ✅ |
 | Review invites | ✅ |

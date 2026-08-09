@@ -30,6 +30,7 @@ Living inventory of product surfaces. For operator how-to see [ADMIN.md](../../A
 | `/admin/services` | Pricing packages |
 | `/admin/reviews` | Testimonials + invite flow |
 | `/admin/credits` | Discography credits |
+| `/admin/partners` | Endorsements / partner logos |
 | `/admin/legal` | Legal documents |
 | `/admin/media` | Media browser helpers |
 | `/admin/login` | Supabase email/password |
@@ -42,7 +43,7 @@ Living inventory of product surfaces. For operator how-to see [ADMIN.md](../../A
 | `endorsement` | Endorsements |
 | `partner` / `label` / `sponsor` | Partners |
 
-**No admin CRUD.** Data: demo fallback or `partners` table rows. `logo_white` (default true) runs canvas white-silhouette processing on the public site.
+Admin CRUD at `/admin/partners`. Data: demo fallback or `partners` table rows. `logo_white` (default true) runs canvas white-silhouette processing on the public site.
 
 ### Reviews invites
 

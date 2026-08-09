@@ -29,10 +29,10 @@ Use before production deploys or major PRs. Agents: add items when user-testable
 - [ ] Login / logout
 - [ ] Non-admin cannot access `/admin`
 - [ ] Dashboard counts load
-- [ ] CRUD smoke: content, showcase, gallery, members, services, reviews, credits, legal
+- [ ] CRUD smoke: content, showcase, gallery, members, services, reviews, credits, partners, legal
 - [ ] Image upload → path stored → preview URL works
 - [ ] Audio multipart upload completes; paths saved on showcase
-- [ ] No Partners item in admin nav (public section only)
+- [ ] Partners admin: create logo entry, appears on public section when active
 - [ ] Delete confirms and removes row
 
 ## Security

@@ -18,6 +18,7 @@ async function getCounts(): Promise<CountCard[]> {
     { table: 'members',  label: 'Team Members',     href: '/admin/members',  newHref: '/admin/members/new',  description: 'Engineer profiles' },
     { table: 'reviews',  label: 'Reviews',          href: '/admin/reviews',  newHref: '/admin/reviews/new',  description: 'Client testimonials' },
     { table: 'credits',  label: 'Credits',          href: '/admin/credits',  newHref: '/admin/credits/new',  description: 'Discography credits' },
+    { table: 'partners', label: 'Partners',         href: '/admin/partners', newHref: '/admin/partners/new', description: 'Endorsements & partner logos' },
     { table: 'services', label: 'Services',         href: '/admin/services', newHref: '/admin/services/new', description: 'Pricing packages' },
   ]
 
