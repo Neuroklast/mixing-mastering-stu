@@ -2,6 +2,34 @@
 
 Professional audio engineering studio — mixing & mastering services.
 
+**Stack:** Next.js App Router · React 19 · Supabase · Cloudflare R2 · Vercel · Tailwind v4  
+**Schema SSOT:** [`supabase/init_all.sql`](supabase/init_all.sql) · **Agents:** [`AGENTS.md`](AGENTS.md)
+
+---
+
+## Documentation map
+
+Living docs (same strictness as sister repos — update at end of every agent session):
+
+| Doc | Purpose |
+|-----|---------|
+| [PRD.md](PRD.md) | Product requirements |
+| [INTEGRATION-SUMMARY.md](INTEGRATION-SUMMARY.md) | Feature status snapshot |
+| [ADMIN.md](ADMIN.md) | Operator guide for `/admin` |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Vercel + Supabase + R2 |
+| [SECURITY.md](SECURITY.md) | Security policy & practices |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes (`[Unreleased]`) |
+| [QA_CHECKLIST.md](QA_CHECKLIST.md) | Pre-release QA |
+| [LESSONS_LEARNED.md](LESSONS_LEARNED.md) | Recurring pitfalls |
+| [AGENTS.md](AGENTS.md) | AI agent rules + checks |
+| [docs/agent/](docs/agent/) | Topic specs (architecture, data, frontend, …) |
+| [supabase/DB_REQUIREMENTS.md](supabase/DB_REQUIREMENTS.md) | Schema rules (3NF, idempotency) |
+| [supabase/SETUP.md](supabase/SETUP.md) | How to apply the database |
+| [docs/development.md](docs/development.md) | Local development |
+| [docs/cloudflare-r2.md](docs/cloudflare-r2.md) | R2 deep dive |
+| [docs/operations.md](docs/operations.md) | Backups & ops |
+| [docs/admin-guide.md](docs/admin-guide.md) | Extended admin guide |
+
 ---
 
 ## Tech Stack
@@ -18,6 +46,20 @@ Professional audio engineering studio — mixing & mastering services.
 | Email | Resend |
 | Validation | Zod (all inputs and service boundaries) |
 | Testing | Vitest (integration) + Playwright (E2E) |
+
+---
+
+## Quick Start
+
+```bash
+cp .env.local.example .env.local   # fill Supabase + R2
+npm ci
+# apply supabase/init_all.sql (see supabase/SETUP.md)
+npm run dev
+# http://localhost:3000 · /admin
+```
+
+Full setup continues below. Deployment details: [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 
@@ -237,26 +279,32 @@ The [Supabase Vercel Integration](https://vercel.com/integrations/supabase) auto
 │       ├── gallery/           # Gallery CRUD
 │       ├── members/           # Team member CRUD
 │       ├── reviews/           # Reviews CRUD + invite email sender
-│       ├── credits/           # Credits CRUD
+│       ├── credits/           # Discography credits CRUD
 │       ├── legal/             # Legal pages CRUD
 │       └── media/             # File browser
+├── components/features/       # Public sections (player, credits, partners, …)
 ├── hooks/
 │   ├── useAudioEngine.ts      # FSM audio engine (before/after player)
 │   └── useR2MultipartUpload.ts # S3 multipart upload hook (large WAV files)
 ├── lib/
 │   ├── devMode.ts             # Single source of truth for NEXT_PUBLIC_DEV_MODE
 │   ├── serviceResult.ts       # ServiceResult<T> type + ok/err helpers
+│   ├── partner-logo-white.ts  # Canvas white-silhouette for partner logos
 │   ├── supabaseServer.ts      # Supabase server client (cookie-based auth)
 │   ├── supabaseAdmin.ts       # Supabase admin client (service role)
 │   ├── email/                 # Email service (Resend) + HTML templates
-│   ├── storage/               # Storage abstraction (Cloudflare R2)
+│   ├── storage/               # Storage abstraction (Cloudflare R2 only)
 │   └── schemas/               # Zod schemas (single source of truth for data shapes)
 ├── services/                  # Data access layer (Supabase, no UI logic)
 │   ├── showcaseService.ts     # Generates signed URLs for audio files
+│   ├── partnersService.ts     # Active partners / endorsements
 │   ├── reviewsService.ts      # Fetches active (approved) reviews only
 │   └── ...
+├── docs/agent/                # Agent topic guidelines (architecture, data, …)
 ├── supabase/
-│   └── init_all.sql           # Idempotent schema + RLS policies
+│   ├── init_all.sql           # Idempotent schema + RLS policies
+│   ├── DB_REQUIREMENTS.md     # Schema rules
+│   └── SETUP.md               # How to apply schema
 └── tests/
     ├── integration/           # Vitest – service + schema tests
     ├── unit/                  # Vitest – hook unit tests

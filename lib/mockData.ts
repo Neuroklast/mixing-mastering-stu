@@ -3,6 +3,7 @@ import type { Credit } from '@/lib/schemas/credits'
 import type { Review } from '@/lib/schemas/review'
 import type { GalleryImage } from '@/lib/schemas/gallery'
 import type { LegalPage } from '@/lib/schemas/legal'
+import type { Partner } from '@/lib/schemas/partner'
 import type { Order, AudioFile, Product } from '@/types'
 
 export const MOCK_SHOWCASE_TRACK: ShowcaseTrack = {
@@ -114,6 +115,76 @@ export const DEMO_REVIEWS: Review[] = [
  * Add real images via the Payload CMS Gallery collection.
  */
 export const DEMO_GALLERY: GalleryImage[] = []
+
+/** Demo partners & endorsements (logo URLs optional — names render as text fallback). */
+export const DEMO_PARTNERS: Partner[] = [
+  {
+    id: 'partner-1',
+    name: 'FabFilter',
+    url: 'https://www.fabfilter.com',
+    logoUrl: null,
+    logoStoragePath: null,
+    category: 'endorsement',
+    displayOrder: 0,
+    logoWhite: true,
+    active: true,
+  },
+  {
+    id: 'partner-2',
+    name: 'iZotope',
+    url: 'https://www.izotope.com',
+    logoUrl: null,
+    logoStoragePath: null,
+    category: 'endorsement',
+    displayOrder: 1,
+    logoWhite: true,
+    active: true,
+  },
+  {
+    id: 'partner-3',
+    name: 'Plugin Alliance',
+    url: 'https://www.plugin-alliance.com',
+    logoUrl: null,
+    logoStoragePath: null,
+    category: 'endorsement',
+    displayOrder: 2,
+    logoWhite: true,
+    active: true,
+  },
+  {
+    id: 'partner-4',
+    name: 'Nuclear Blast',
+    url: 'https://www.nuclearblast.com',
+    logoUrl: null,
+    logoStoragePath: null,
+    category: 'partner',
+    displayOrder: 0,
+    logoWhite: true,
+    active: true,
+  },
+  {
+    id: 'partner-5',
+    name: 'Napalm Records',
+    url: 'https://www.napalmrecords.com',
+    logoUrl: null,
+    logoStoragePath: null,
+    category: 'partner',
+    displayOrder: 1,
+    logoWhite: true,
+    active: true,
+  },
+  {
+    id: 'partner-6',
+    name: 'Neuroklast',
+    url: null,
+    logoUrl: null,
+    logoStoragePath: null,
+    category: 'credit',
+    displayOrder: 0,
+    logoWhite: true,
+    active: true,
+  },
+]
 
 export const MOCK_ORDERS: Order[] = [
   {

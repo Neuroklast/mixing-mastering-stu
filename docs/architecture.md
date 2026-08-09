@@ -10,13 +10,17 @@ SONORATIVA is a Next.js (App Router) application backed entirely by Supabase. Th
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 16 (App Router) + React 19 |
+| Frontend | Next.js (App Router) + React 19 |
 | Styling | Tailwind CSS v4 + Shadcn/UI primitives |
-| Backend | Supabase (PostgreSQL + Storage + Auth) |
+| Backend | Supabase (PostgreSQL + Auth) — **no** Payload CMS |
+| Storage | **Cloudflare R2 only** (images public; audio private/signed) |
 | Email | Resend |
 | Validation | Zod |
 | Testing | Vitest (unit/integration) + Playwright (E2E) |
 | Deployment | Vercel |
+
+> Agent-oriented architecture rules live in [docs/agent/architecture.md](agent/architecture.md).  
+> This file is a human overview; if conflict, prefer `AGENTS.md` + `docs/agent/*`.
 
 ---
 
@@ -26,36 +30,37 @@ SONORATIVA is a Next.js (App Router) application backed entirely by Supabase. Th
 graph TD
     Browser["Browser"]
     NextJS["Next.js (Vercel)"]
-    Supabase["Supabase"]
+    Supabase["Supabase (Postgres + Auth)"]
+    R2["Cloudflare R2"]
     Resend["Resend (email)"]
 
     Browser -- "Page request" --> NextJS
     NextJS -- "Supabase JS (server)" --> Supabase
     NextJS -- "Resend API" --> Resend
-    Browser -- "TUS audio upload" --> Supabase
-    Browser -- "Signed image upload PUT" --> Supabase
+    Browser -- "Signed image PUT" --> R2
+    Browser -- "S3 multipart audio" --> R2
+    NextJS -- "Sign / complete multipart" --> R2
 ```
 
 ---
 
 ## Audio Upload Flow
 
-Large audio files (WAV, up to 5 GB) bypass Next.js entirely:
+Large audio files (WAV, up to multi-GB) bypass Next.js as a data plane — R2 S3 Multipart only (**not** TUS / Supabase Storage):
 
 ```
 Admin Browser
   │
-  ├─ 1. Call server action: getTusUploadCredentials(bucket, path)
-  │     └─ Returns: { uploadUrl, authToken }
+  ├─ 1. Server actions: createMultipartUpload / signMultipartPart
+  │     └─ (app/admin/_actions/r2Multipart.ts)
   │
-  ├─ 2. useTusUpload hook uploads directly to Supabase Storage
-  │     └─ TUS protocol, 6 MB chunks
+  ├─ 2. useR2MultipartUpload uploads 6 MB chunks browser → R2
   │
-  └─ 3. On completion, server action saves the storage path to the DB
-        └─ supabase.from('showcase').update({ before_storage_path: path })
+  └─ 3. completeMultipartUpload → save object path on showcase
+        └─ before_storage_path / after_storage_path
 ```
 
-Key rule: **database fields store only the `objectPath`** (e.g. `track-id/before.wav`). The signed URL is generated at render time with a 1-hour expiry.
+Key rule: **database fields store only the `objectPath`** (e.g. `track-id/before.wav`). The signed URL is generated at render time.
 
 ---
 
@@ -101,6 +106,7 @@ The fallback is implemented inside each service (`services/*.ts`). The page comp
 | `profiles` | One row per Supabase Auth user. `role` column: `admin` / `user`. |
 | `showcase` | Before/after audio tracks for the mastering player. |
 | `credits` | Discography / client credits. |
+| `partners` | Endorsement / partner logos (public logo grids). |
 | `reviews` | Client reviews / testimonials. |
 | `gallery` | Studio photo gallery. |
 | `members` | Team member profiles. |
@@ -109,7 +115,7 @@ The fallback is implemented inside each service (`services/*.ts`). The page comp
 | `legal` | Legal pages (Impressum, Privacy, etc.). |
 | `orders` | Order submissions from the contact form. |
 
-All tables use Supabase Row-Level Security (RLS). Public read policies are enabled where appropriate. Write operations require an authenticated admin.
+All tables use Supabase Row-Level Security (RLS). Public read policies are enabled where appropriate. Write operations use the service-role admin client after `requireAdmin()`.
 
 ---
 
@@ -117,5 +123,5 @@ All tables use Supabase Row-Level Security (RLS). Public read policies are enabl
 
 | Bucket | Access | Used for |
 |---|---|---|
-| `audio-files` | Private (signed URLs) | Showcase before/after WAVs |
-| `media` | Public | Gallery images, credit covers, member photos |
+| `sonorativa-audio` | Private (signed URLs) | Showcase before/after WAVs |
+| `sonorativa-media` | Public (`R2_PUBLIC_HOST`) | Gallery, credit covers, member photos, partner logos |
