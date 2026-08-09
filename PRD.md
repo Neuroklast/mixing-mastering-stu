@@ -52,6 +52,7 @@ A professional audio engineering brand site that combines:
 | Content | Hero/footer/site strings |
 | Showcase | Tracks + multipart audio upload to R2 |
 | Gallery / Members / Credits | Image CMS |
+| Partners | Endorsement / partner logos + visibility |
 | Reviews | CRUD + invite emails |
 | Services | Pricing packages |
 | Legal | Legal page bodies |

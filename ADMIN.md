@@ -40,12 +40,18 @@ Create Auth user → ensure profile role `admin` → login at `/admin/login`.
 | Services | `/admin/services` | Packages, prices, features |
 | Reviews | `/admin/reviews` | Testimonials; send invite links |
 | Credits | `/admin/credits` | Discography cards (cover, role, year, Spotify) |
+| Partners | `/admin/partners` | Endorsement / partner logos for the public grids |
 | Legal | `/admin/legal` | Legal page content |
 | Media | `/admin/media` | Media browser helpers |
 
-## Partners & endorsements (public only)
+## Partners & endorsements
 
-There is **no** Partners admin menu. Logos are loaded by `partnersService` (demo data in dev / empty-table fallback; live rows from the optional `partners` table via Supabase if configured). Manage rows in the Supabase SQL/Table editor if needed — not via `/admin`.
+1. **Admin → Partners → + New**
+2. Name, optional website URL
+3. **Section**: Credit | Endorsement | Partner | Label | Sponsor (controls which public grid)
+4. Upload logo (PNG/WebP with transparency preferred)
+5. **White logo fill**: Yes for dark-site silhouette (recommended)
+6. Active = visible on public homepage
 
 ## Showcase audio
 
