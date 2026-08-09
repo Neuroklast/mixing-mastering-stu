@@ -587,6 +587,47 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS idx_services_active_order ON services(active, display_order);
 
+-- ── Partners & Endorsements (logo grids on public site) ───────────────────────
+CREATE TABLE IF NOT EXISTS partners (
+  id                 UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  name               TEXT        NOT NULL,
+  url                TEXT,
+  logo_storage_path  TEXT,
+  logo_url           TEXT,
+  category           TEXT        NOT NULL DEFAULT 'partner'
+    CHECK (category IN ('credit', 'endorsement', 'partner', 'label', 'sponsor')),
+  display_order      INTEGER     NOT NULL DEFAULT 0,
+  active             BOOLEAN     NOT NULL DEFAULT true,
+  logo_white         BOOLEAN     NOT NULL DEFAULT true
+);
+ALTER TABLE partners ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE partners ADD COLUMN IF NOT EXISTS logo_storage_path TEXT;
+ALTER TABLE partners ADD COLUMN IF NOT EXISTS logo_url TEXT;
+ALTER TABLE partners ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'partner';
+ALTER TABLE partners ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
+ALTER TABLE partners ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
+ALTER TABLE partners ADD COLUMN IF NOT EXISTS logo_white BOOLEAN DEFAULT true;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'partners' AND policyname = 'Public can read active partners'
+  ) THEN
+    CREATE POLICY "Public can read active partners" ON partners FOR SELECT USING (active = true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'partners' AND policyname = 'Service role can manage partners'
+  ) THEN
+    CREATE POLICY "Service role can manage partners" ON partners FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_partners_active_order ON partners(active, display_order);
+
 -- ── Seed site_content defaults ────────────────────────────────────────────────
 INSERT INTO site_content (key, value) VALUES
   ('hero_badge',          'Professional Audio Engineering'),

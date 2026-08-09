@@ -14,6 +14,7 @@ import { getAllReviews } from '@/services/reviewsService'
 import { getAllGalleryImages } from '@/services/galleryService'
 import { getSiteContent } from '@/services/contentService'
 import { getActiveMembers } from '@/services/membersService'
+import { getAllPartners } from '@/services/partnersService'
 
 import { SITE_CONTENT_DEFAULTS } from '@/lib/schemas/siteContent'
 
@@ -30,6 +31,9 @@ const GallerySection = nextDynamic(() =>
 )
 const MembersSection = nextDynamic(() =>
   import('@/components/features/MembersSection').then((m) => ({ default: m.MembersSection }))
+)
+const PartnersSection = nextDynamic(() =>
+  import('@/components/features/PartnersSection').then((m) => ({ default: m.PartnersSection }))
 )
 
 /** Shown when no showcase tracks have been published yet. */
@@ -56,12 +60,14 @@ export default async function HomePage(): Promise<JSX.Element> {
   const galleryResult = await getAllGalleryImages()
   const gallery = galleryResult.success ? galleryResult.data : []
 
-  const [siteContentResult, membersResult] = await Promise.all([
+  const [siteContentResult, membersResult, partnersResult] = await Promise.all([
     getSiteContent(),
     getActiveMembers(),
+    getAllPartners(),
   ])
   const siteContent = siteContentResult.success ? siteContentResult.data : SITE_CONTENT_DEFAULTS
   const members = membersResult.success ? membersResult.data : []
+  const partners = partnersResult.success ? partnersResult.data : []
 
   return (
     <ScrollProgressProvider>
@@ -83,6 +89,9 @@ export default async function HomePage(): Promise<JSX.Element> {
             </ErrorBoundary>
             <ErrorBoundary>
               <CreditsSection credits={credits} />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <PartnersSection partners={partners} />
             </ErrorBoundary>
             <ErrorBoundary>
               <MembersSection members={members} />
