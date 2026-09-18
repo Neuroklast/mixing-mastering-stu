@@ -18,6 +18,20 @@ Living list of known debt. Update when cleaning or discovering items.
 | Supabase Storage provider for app media | Removed — R2 only |
 | TUS upload hooks | Removed — R2 multipart for audio |
 | Payload CMS | Never reintroduce |
+| Sentry stub configs (`sentry.*.config.ts`) | Removed — SDK never installed; privacy processor list corrected |
+| `components/ui/demo-badge.tsx` + `NEXT_PUBLIC_SHOW_DEMO_BADGE` | Removed — component was never rendered |
+
+## Unused (candidates, kept)
+
+Grep-verified unused as of 2026-09-18. Kept intentionally (product decisions pending) — delete when the corresponding surface is dropped.
+
+| Item | Why kept | Notes |
+|------|----------|-------|
+| Client upload chain: `components/features/UploadZone.tsx`, `hooks/useUpload.ts`, `app/actions/uploadAudio.ts`, `services/fileService.ts` (+ test) | No UI links it; the `orders` flow is alive via `ContactDialog`/`orderService` | Delete once a client-upload surface is definitively out of scope |
+| Legacy player: `components/features/AudioPlayer.tsx`, `FrequencyVisualizer.tsx`, `hooks/useAudioPlayer.ts` | Superseded by `MasteringPlayer` + `useAudioEngine` | Safe to delete |
+| Deprecated leftovers: `components/features/ProfileSection.tsx`, `components/features/HeroScene3D.tsx` (shim), `hooks/useScrollProgress.ts`, `lib/supabase.ts` | No callers | Safe to delete |
+| `services/productService.ts` + `MOCK_PRODUCTS` + `Product`/`License` types | Stripe-ready scaffolding; DB tables reserved | Keep until the storefront decision is made |
+| `services/servicesService.ts` + `lib/schemas/service.ts` | Only DB bridge for the `services` table, but the public modal uses static `SERVICES_CONFIG` | Wire the public UI to the DB or delete |
 
 ## Hardcode / config hotspots
 

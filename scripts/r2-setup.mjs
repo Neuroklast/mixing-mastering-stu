@@ -12,7 +12,7 @@
  * What it does:
  *   1. Creates sonorativa-media (public images bucket)
  *   2. Creates sonorativa-audio (private audio bucket)
- *   3. Applies CORS policy to sonorativa-media
+ *   3. Applies CORS policy to both buckets (browser uploads + Web Audio playback)
  *   4. Prints next steps for custom domain and lifecycle rules
  */
 
@@ -113,12 +113,39 @@ async function ensureBucket(name) {
   }
 }
 
-// ── Helper: apply CORS to media bucket ───────────────────────────────────────
+// ── Helper: build the CORS origin allow-list ─────────────────────────────────
+/**
+ * R2 origins match exactly (scheme + host + optional port). Add the www/apex
+ * counterpart of NEXT_PUBLIC_SITE_URL so both host variants work, plus the
+ * local dev origin.
+ */
+function corsOrigins() {
+  const base = SITE_URL.replace(/\/+$/, '')
+  const origins = new Set([base, 'http://localhost:3000'])
+
+  try {
+    const url = new URL(base)
+    if (url.hostname.startsWith('www.')) {
+      origins.add(`${url.protocol}//${url.hostname.slice(4)}`)
+    } else if (url.hostname !== 'localhost' && !/^\d+\.\d+\.\d+\.\d+$/.test(url.hostname)) {
+      origins.add(`${url.protocol}//www.${url.hostname}`)
+    }
+  } catch {
+    // SITE_URL is not a valid URL — fall back to the verbatim value + localhost
+  }
+
+  return [...origins]
+}
+
+// ── Helper: apply CORS to a bucket ───────────────────────────────────────────
 async function applyCors(bucket) {
   const corsRule = {
-    AllowedOrigins: [SITE_URL, 'http://localhost:3000'],
+    AllowedOrigins: corsOrigins(),
     AllowedMethods: ['GET', 'PUT', 'POST', 'HEAD', 'DELETE'],
     AllowedHeaders: ['*'],
+    // ETag is required for multipart audio uploads (the client reads it from
+    // the PUT response); the range headers are used by the audio player.
+    ExposeHeaders: ['ETag', 'Content-Length', 'Content-Range', 'Accept-Ranges', 'Content-Type'],
     MaxAgeSeconds: 3600,
   }
 
@@ -139,6 +166,7 @@ async function applyCors(bucket) {
 await ensureBucket(BUCKET_MEDIA)
 await ensureBucket(BUCKET_AUDIO)
 await applyCors(BUCKET_MEDIA)
+await applyCors(BUCKET_AUDIO)
 
 console.log('')
 console.log(`${c.bold}Next steps:${c.reset}`)

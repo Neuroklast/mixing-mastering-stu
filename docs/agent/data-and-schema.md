@@ -94,7 +94,6 @@ Store **only** the object path in Postgres. Resolve URLs in services via `getSto
 |------|--------|
 | `NEXT_PUBLIC_DEV_MODE=true` | Services return mock data; no network |
 | `NEXT_PUBLIC_HIDE_DEMO_FALLBACK=true` | Empty DB → empty UI (no demo) |
-| `NEXT_PUBLIC_SHOW_DEMO_BADGE=true` | Badge on seed content sections |
 
 Mocks live in `lib/mockData.ts` (and some service-local `DEMO_*` arrays).
 

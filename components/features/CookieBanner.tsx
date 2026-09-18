@@ -1,48 +1,36 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { COOKIE_CONSENT_KEY } from '@/lib/site'
+import { useConsentStatus } from '@/hooks/useConsent'
 
 /**
  * CookieBanner – GDPR-compliant cookie notice.
  *
  * Displays a dismissible banner at the bottom of the viewport on first visit.
- * Consent is persisted in localStorage. The banner is not rendered during SSR.
- *
- * Hydration safety: visible starts false on both server and client. The
- * useEffect runs after mount (client-only) and flips it to true when no
- * consent has been stored. This avoids the React #418 hydration mismatch that
- * arises when a lazy useState initialiser reads localStorage synchronously.
+ * Consent is persisted in localStorage. The banner is not rendered during SSR:
+ * `useConsentStatus()` returns `unknown` on the server and during hydration,
+ * then flips to `missing` on the client when no choice has been stored.
  */
 export const CookieBanner = (): JSX.Element | null => {
-  const [visible, setVisible] = useState(false)
+  const consentStatus = useConsentStatus()
+  const [dismissed, setDismissed] = useState(false)
 
-  useEffect(() => {
+  const storeConsent = (value: 'accepted' | 'declined'): void => {
     try {
-      if (!localStorage.getItem(COOKIE_CONSENT_KEY)) setVisible(true)
+      window.localStorage.setItem(COOKIE_CONSENT_KEY, value)
     } catch {
-      // localStorage blocked (private browsing) — show banner
-      setVisible(true)
+      // localStorage blocked (private browsing) — hide the banner anyway
     }
-  }, [])
-
-  const accept = (): void => {
-    try { localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted') } catch { /* ignore */ }
     window.dispatchEvent(new Event('ConsentChanged'))
-    setVisible(false)
+    setDismissed(true)
   }
 
-  const decline = (): void => {
-    try { localStorage.setItem(COOKIE_CONSENT_KEY, 'declined') } catch { /* ignore */ }
-    window.dispatchEvent(new Event('ConsentChanged'))
-    setVisible(false)
-  }
-
-  if (!visible) return null
+  if (consentStatus !== 'missing' || dismissed) return null
 
   return (
     <div
@@ -72,7 +60,7 @@ export const CookieBanner = (): JSX.Element | null => {
         <div className="flex items-center gap-2 flex-shrink-0">
           <Button
             size="sm"
-            onClick={accept}
+            onClick={() => storeConsent('accepted')}
             className="font-mono uppercase tracking-wider min-h-[44px]"
           >
             Accept
@@ -80,13 +68,13 @@ export const CookieBanner = (): JSX.Element | null => {
           <Button
             size="sm"
             variant="outline"
-            onClick={decline}
+            onClick={() => storeConsent('declined')}
             className="font-mono uppercase tracking-wider min-h-[44px]"
           >
             Decline
           </Button>
           <button
-            onClick={decline}
+            onClick={() => storeConsent('declined')}
             aria-label="Close cookie notice"
             className="ml-1 flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
           >

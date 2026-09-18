@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 }
 
 export default function PrivacyPage(): JSX.Element {
-  const lastUpdated = '2026-05-01'
+  const lastUpdated = '2026-09-18'
 
   return (
     <article className="prose-legal">
@@ -54,8 +54,8 @@ export default function PrivacyPage(): JSX.Element {
 
         <h3 className="text-base font-bold mt-4 mb-2 font-heading">2.3 Audio Samples</h3>
         <p>
-          Demo audio files played through the on-site player are streamed from our servers.
-          No audio data is recorded from your microphone.
+          Demo audio files played through the on-site player are streamed from our storage
+          provider (Cloudflare R2). No audio data is recorded from your microphone.
         </p>
       </Section>
 
@@ -86,8 +86,9 @@ export default function PrivacyPage(): JSX.Element {
             security and fraud prevention.
           </li>
           <li>
-            <strong>Consent</strong> (Art. 6(1)(a) GDPR) — for any non-essential cookies
-            (currently none are used).
+            <strong>Consent</strong> (Art. 6(1)(a) GDPR) — for consent-gated, cookieless
+            analytics (Vercel Analytics / Speed Insights) and any non-essential cookies
+            (currently no non-essential cookies are used).
           </li>
         </ul>
       </Section>
@@ -105,9 +106,18 @@ export default function PrivacyPage(): JSX.Element {
           We use the following sub-processors to operate the Site:
         </p>
         <ul>
-          <li><strong>Supabase</strong> — database and file storage (EU region).</li>
+          <li><strong>Supabase</strong> — database and authentication (EU region).</li>
           <li>
-            <strong>Sentry</strong> — error monitoring (data is anonymised where possible).
+            <strong>Cloudflare R2</strong> — storage of images and audio files served on the
+            Site.
+          </li>
+          <li>
+            <strong>Vercel</strong> — website hosting and consent-gated, cookieless analytics
+            (Vercel Analytics and Speed Insights).
+          </li>
+          <li>
+            <strong>Resend</strong> — delivery of transactional emails (contact replies,
+            review invites).
           </li>
           <li>
             <strong>Fonts</strong> — all typefaces (Inter, Space Grotesk, JetBrains Mono) are

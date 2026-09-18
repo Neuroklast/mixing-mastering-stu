@@ -45,7 +45,7 @@ Full detail: [docs/cloudflare-r2.md](docs/cloudflare-r2.md)
 3. Attach custom domain / r2.dev public access for media bucket → set `R2_PUBLIC_HOST`
 4. Optional: `npm run r2:setup`
 
-CORS: browser PUT for signed uploads must be allowed on the buckets (see R2 docs / setup script).
+CORS: required on **both** buckets for browser uploads (PUT) and audio playback (GET/HEAD + `ETag`); `npm run r2:setup` applies it (see [docs/cloudflare-r2.md](docs/cloudflare-r2.md) §4).
 
 ## Environment variables
 
@@ -59,7 +59,6 @@ CORS: browser PUT for signed uploads must be allowed on the buckets (see R2 docs
 | `NEXT_PUBLIC_SERVER_URL` | Optional | Local default `http://localhost:3000` |
 | `NEXT_PUBLIC_DEV_MODE` | Optional | `true` = mocks (**never in production**) |
 | `NEXT_PUBLIC_HIDE_DEMO_FALLBACK` | Optional | `true` = no demo content when empty |
-| `NEXT_PUBLIC_SHOW_DEMO_BADGE` | Optional | Badge demo sections |
 
 ### Server-only (never `NEXT_PUBLIC_`)
 
@@ -75,7 +74,6 @@ CORS: browser PUT for signed uploads must be allowed on the buckets (see R2 docs
 | `RESEND_API_KEY` | Optional | Transactional email |
 | `CONTACT_TO_EMAIL` / `CONTACT_FROM_EMAIL` | Optional | Contact routing |
 | `DATABASE_URL` | Optional | `pg_dump` backups |
-| Sentry DSN vars | Optional | Error tracking |
 
 Template: `.env.local.example`.
 
@@ -106,7 +104,6 @@ See [docs/operations.md](docs/operations.md).
 
 - Vercel deployment logs
 - Supabase Auth / API logs
-- Optional Sentry
 
 ### Secret rotation
 

@@ -81,21 +81,41 @@ R2_BUCKET_AUDIO=sonorativa-audio
 
 ## 4. CORS Configuration
 
-Apply to `sonorativa-media` (needed for the admin image upload flow):
+Browser requests to R2 fail without a CORS policy, even when presigned URLs are
+valid. Apply a policy to **both** buckets:
+
+- `sonorativa-media` — admin image uploads (`PUT` to presigned URLs).
+- `sonorativa-audio` — showcase playback (`GET`/`HEAD` via
+  `<audio crossOrigin="anonymous">` and `fetch` for Web Audio/LUFS analysis)
+  and admin multipart uploads (`PUT` parts; the client reads the `ETag`
+  response header).
 
 ```json
 [
   {
-    "AllowedOrigins": ["https://your-domain.com", "http://localhost:3000"],
+    "AllowedOrigins": [
+      "https://your-domain.com",
+      "https://www.your-domain.com",
+      "http://localhost:3000"
+    ],
     "AllowedMethods": ["GET", "PUT", "POST", "HEAD", "DELETE"],
     "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag", "Content-Length", "Content-Range", "Accept-Ranges", "Content-Type"],
     "MaxAgeSeconds": 3600
   }
 ]
 ```
 
-The `r2-setup.mjs` script applies this automatically. For manual setup:
-Cloudflare Dashboard → R2 → `sonorativa-media` → **Settings** → **CORS policy**.
+> **Origins match exactly.** `https://your-domain.com` and
+> `https://www.your-domain.com` are different origins — include every hostname
+> the site is served from (Vercel preview URLs are not covered by this policy).
+> `ExposeHeaders` must include `ETag`, otherwise multipart audio uploads abort
+> with “Part N returned no ETag”.
+
+The `r2-setup.mjs` script derives the origins from `NEXT_PUBLIC_SITE_URL`
+(adding the www/apex counterpart) and applies this policy to both buckets. For
+manual setup: Cloudflare Dashboard → R2 → `<bucket>` → **Settings** →
+**CORS policy**.
 
 ---
 
