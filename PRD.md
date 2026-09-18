@@ -63,7 +63,7 @@ A professional audio engineering brand site that combines:
 - R2 public media + private audio (signed URLs)
 - Resend email (contact / invites) when configured
 - Dev mocks + production demo-fallback flags
-- Optional Sentry / analytics
+- Consent-gated Vercel Analytics / Speed Insights (cookieless)
 
 ---
 

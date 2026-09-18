@@ -359,7 +359,6 @@ Optional:
   RESEND_API_KEY                         (contact form + review invites)
   CONTACT_TO_EMAIL
   CONTACT_FROM_EMAIL
-  NEXT_PUBLIC_SHOW_DEMO_BADGE=false      (hide "Demo" badge in production)
 
 Forbidden in production:
   NEXT_PUBLIC_DEV_MODE=true              (must be false or unset)

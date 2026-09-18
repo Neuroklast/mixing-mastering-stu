@@ -191,4 +191,3 @@ tests/                # Vitest unit + integration tests
 | `CONTACT_TO_EMAIL` | ✅ | Email address that receives contact form submissions |
 | `CONTACT_FROM_EMAIL` | ✅ | Sender address for outgoing emails |
 | `NEXT_PUBLIC_DEV_MODE` | Optional | Set `true` to use mock data locally |
-| `NEXT_PUBLIC_SHOW_DEMO_BADGE` | Optional | Set `true` to show "Demo content" badges |

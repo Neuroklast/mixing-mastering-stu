@@ -19,6 +19,16 @@ Agents: add bullets under `[Unreleased]` when product behavior changes (see `doc
 ### Changed
 
 - Homepage renders `PartnersSection` after discography credits
+- Privacy policy processor list corrected (Supabase = database/auth; added Cloudflare R2, Vercel, Resend; removed Sentry); audio streaming wording + last-updated date
+
+### Fixed
+
+- Showcase audio playback/analysis no longer blocked by CORS: `r2-setup.mjs` applies a CORS policy (incl. `ExposeHeaders: ETag`) to `sonorativa-audio` as well and derives www/apex origins from `NEXT_PUBLIC_SITE_URL`
+
+### Removed
+
+- Sentry stub configs (`sentry.client.config.ts`, `sentry.server.config.ts`) — SDK was never installed
+- Unused `DemoBadge` component and `NEXT_PUBLIC_SHOW_DEMO_BADGE` env var
 
 ## [0.1.0]
 

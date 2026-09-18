@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    setupFiles: ['tests/setup/localStorage.ts'],
     include: ['tests/integration/**/*.test.ts', 'tests/unit/**/*.test.{ts,tsx}', 'tests/build/**/*.test.ts'],
     coverage: {
       provider: 'v8',

@@ -90,7 +90,7 @@ Chunks (~6 MB) go browser → R2. Next.js only signs. Persist path on `showcase.
 
 ## Error logging
 
-Optional Sentry (`sentry.client.config.ts` / `sentry.server.config.ts`). Prefer structured `console.error('[area] …')` with context when Sentry is off.
+Prefer structured `console.error('[area] …')` with context. No external error-tracking SDK is installed; add one only via a dedicated PR with env + privacy updates.
 
 ## Forbidden patterns
 

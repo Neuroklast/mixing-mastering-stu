@@ -19,6 +19,7 @@ Rules:
 - Every new service: cover **dev mode** path and **empty DB + demo fallback** (and hide-fallback when applicable)
 - Schema tests under `tests/unit/schemas/`
 - Prefer `vi.resetModules()` when reading `process.env` flags (`isDev`, `hideDemoFallback`)
+- `tests/setup/localStorage.ts` shims an in-memory `Storage` when Node ≥ 25 shadows jsdom's `localStorage` — no `NODE_OPTIONS` flags needed
 
 ## E2E (Playwright)
 

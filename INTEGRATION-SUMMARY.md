@@ -64,6 +64,10 @@ Do **not** restore:
 - Supabase Storage provider for media
 - TUS upload path (`useTusUpload`, `getTusUploadCredentials`)
 - Payload CMS
+- Sentry stub configs (no error-tracking SDK is installed)
+- `components/ui/demo-badge.tsx` / `NEXT_PUBLIC_SHOW_DEMO_BADGE`
+
+Known-unused modules that are intentionally kept are tracked in `docs/agent/debt-inventory.md` → "Unused (candidates, kept)".
 
 ## Quick start
 

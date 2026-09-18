@@ -92,7 +92,6 @@ app/page.tsx (Server Component)
         ├─ Data found → render real content
         │
         └─ Table empty → fall back to demo/mock data
-              └─ DemoBadge shown if NEXT_PUBLIC_SHOW_DEMO_BADGE=true
 ```
 
 The fallback is implemented inside each service (`services/*.ts`). The page component does not need to know whether data is real or demo — it always receives a non-empty array.

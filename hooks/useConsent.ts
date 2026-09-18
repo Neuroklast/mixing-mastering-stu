@@ -1,49 +1,97 @@
 'use client'
 
 /**
- * useConsent hook – reads cookie consent from localStorage and listens for
- * ConsentChangedEvent dispatched by CookieBanner when the user accepts/declines.
+ * Cookie-consent store – reads the persisted choice from localStorage and
+ * notifies subscribers when it changes (same tab via `ConsentChanged`, other
+ * tabs via `storage`).
+ *
+ * Implemented with `useSyncExternalStore` so both hooks are hydration-safe:
+ * the server snapshot is always "no analytics / unknown", and React re-renders
+ * with the real value after hydration. Reading localStorage inside an effect
+ * with setState is intentionally avoided (react-hooks/set-state-in-effect).
  *
  * Usage:
  *   const { analytics } = useConsent()
  *   if (analytics) { ... }
  */
 
-import { useState, useEffect } from 'react'
+import { useSyncExternalStore } from 'react'
 import { COOKIE_CONSENT_KEY } from '@/lib/site'
 
 export interface ConsentState {
   analytics: boolean
 }
 
-function readConsent(): ConsentState {
-  if (typeof window === 'undefined') return { analytics: false }
+/** `unknown` during SSR/hydration, then `stored` or `missing` on the client. */
+export type ConsentStatus = 'unknown' | 'stored' | 'missing'
+
+const NO_CONSENT: ConsentState = { analytics: false }
+
+// ── Snapshot caches (referential stability for useSyncExternalStore) ──────────
+
+let cachedConsentRaw: string | null | undefined
+let cachedConsent: ConsentState = NO_CONSENT
+
+let cachedStatusRaw: string | null | undefined
+let cachedStatus: ConsentStatus = 'unknown'
+
+function readRaw(): string | null {
+  if (typeof window === 'undefined') return null
   try {
-    const value = localStorage.getItem(COOKIE_CONSENT_KEY)
-    return { analytics: value === 'accepted' }
+    // Use window.localStorage explicitly: Node >= 25 exposes a global
+    // localStorage that can shadow jsdom's implementation in tests.
+    return window.localStorage.getItem(COOKIE_CONSENT_KEY)
   } catch {
-    return { analytics: false }
+    // localStorage blocked (private browsing) — treat as no stored consent
+    return null
   }
 }
 
+function getConsentSnapshot(): ConsentState {
+  const raw = readRaw()
+  if (raw !== cachedConsentRaw) {
+    cachedConsentRaw = raw
+    cachedConsent = { analytics: raw === 'accepted' }
+  }
+  return cachedConsent
+}
+
+function getServerConsentSnapshot(): ConsentState {
+  return NO_CONSENT
+}
+
+function getStatusSnapshot(): ConsentStatus {
+  const raw = readRaw()
+  if (raw !== cachedStatusRaw) {
+    cachedStatusRaw = raw
+    cachedStatus = raw === null ? 'missing' : 'stored'
+  }
+  return cachedStatus
+}
+
+function getServerStatusSnapshot(): ConsentStatus {
+  return 'unknown'
+}
+
+function subscribe(onStoreChange: () => void): () => void {
+  const onStorage = (event: StorageEvent): void => {
+    if (event.key !== null && event.key !== COOKIE_CONSENT_KEY) return
+    onStoreChange()
+  }
+  window.addEventListener('ConsentChanged', onStoreChange)
+  window.addEventListener('storage', onStorage)
+  return () => {
+    window.removeEventListener('ConsentChanged', onStoreChange)
+    window.removeEventListener('storage', onStorage)
+  }
+}
+
+/** Analytics consent — false until the stored choice is known on the client. */
 export function useConsent(): ConsentState {
-  // Start with analytics:false on both server and client to avoid a hydration
-  // mismatch: the server always renders AnalyticsProvider as null, and the
-  // first client render must match. The useEffect then reads the real value.
-  const [consent, setConsent] = useState<ConsentState>({ analytics: false })
+  return useSyncExternalStore(subscribe, getConsentSnapshot, getServerConsentSnapshot)
+}
 
-  useEffect(() => {
-    // Read localStorage only after mount (client-only), then subscribe.
-    setConsent(readConsent())
-    const handler = () => setConsent(readConsent())
-    window.addEventListener('ConsentChanged', handler)
-    // Also check on storage changes from other tabs
-    window.addEventListener('storage', handler)
-    return () => {
-      window.removeEventListener('ConsentChanged', handler)
-      window.removeEventListener('storage', handler)
-    }
-  }, [])
-
-  return consent
+/** Whether a consent choice has been persisted (see `ConsentStatus`). */
+export function useConsentStatus(): ConsentStatus {
+  return useSyncExternalStore(subscribe, getStatusSnapshot, getServerStatusSnapshot)
 }

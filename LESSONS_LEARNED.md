@@ -56,6 +56,18 @@ Agents: append dated entries under **Session additions** when a reusable lesson 
 
 ## Session additions
 
+### 2026-09-18 — Cookie consent via useSyncExternalStore
+
+- Reading `localStorage` in `useEffect` + `setState` trips `react-hooks/set-state-in-effect`; `useSyncExternalStore` with a server snapshot is the hydration-safe replacement (no cascading renders).
+- Node ≥ 25 exposes a global `localStorage` that shadows jsdom's and has no methods unless `--localstorage-file` is valid. `tests/setup/localStorage.ts` installs an in-memory `Storage` shim so `npm test` works on Node 24/25 without CLI flags.
+
+### 2026-09-18 — R2 audio CORS, Sentry stub, dead-code audit
+
+- Presigned R2 URLs are not enough for browser media: `<audio crossOrigin="anonymous">`, Web Audio (`createMediaElementSource`) and `fetch` for LUFS all need a **bucket CORS policy**. Provisioning scripts must cover **every** bucket (the audio bucket was missed while uploads to it also need `ExposeHeaders: ETag`).
+- Origins match exactly — add both apex and `www.` variants; a policy for one host does not cover the other.
+- A privacy policy must not list processors that are not actually installed (Sentry was only a commented stub). Align legal text whenever dependencies change.
+- Redesign leftovers accumulate silently (`AudioPlayer`, `UploadZone`, `ProfileSection`, `DemoBadge`, …). Grep-verify usage, delete or track them explicitly in `docs/agent/debt-inventory.md` instead of leaving them undocumented.
+
 ### 2026-09-18 — Recovery emails pointed at localhost
 
 - Root cause was Supabase config, not app code: the project's **Site URL** was still `http://localhost:3000`, and no reset flow existed in the app.
