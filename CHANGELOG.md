@@ -13,6 +13,8 @@ Agents: add bullets under `[Unreleased]` when product behavior changes (see `doc
 - Admin CMS for partners (`/admin/partners`) — list, create, edit, delete, logo upload
 - `getAllPartners()` service + demo data; `partners` table in `init_all.sql`
 - Agent documentation suite (`docs/agent/*`, root living docs, PR template)
+- Password recovery flow: `/auth/forgot-password`, `/auth/callback` (PKCE), `/auth/reset-password`; login page links to it
+- Auth schemas (`lib/schemas/auth.ts`) + unit/E2E coverage for the reset flow
 
 ### Changed
 

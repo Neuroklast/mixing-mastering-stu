@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Suspense, useState } from 'react'
 import { createClient } from '@/lib/supabaseClient'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -11,7 +12,12 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState(
     params.get('error') === 'forbidden'
-      ? 'Du hast keine Admin-Rechte. Logge dich mit einem Admin-Account ein.'
+      ? 'You do not have admin access. Sign in with an admin account.'
+      : '',
+  )
+  const [notice] = useState(
+    params.get('reset') === 'success'
+      ? 'Password updated. Sign in with your new password.'
       : '',
   )
   const [loading, setLoading] = useState(false)
@@ -41,6 +47,7 @@ function LoginForm() {
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: '380px', padding: '2rem', background: '#111', border: '1px solid #222', borderRadius: '12px' }}>
       <h1 style={{ marginBottom: '1.5rem', color: '#fff', fontSize: '1.5rem' }}>Admin Login</h1>
+      {notice && <p style={{ color: '#4ade80', marginBottom: '1rem', fontSize: '0.9rem' }}>{notice}</p>}
       {error && <p style={{ color: '#f87171', marginBottom: '1rem', fontSize: '0.9rem' }}>{error}</p>}
       <label style={{ display: 'block', marginBottom: '0.5rem', color: '#aaa', fontSize: '0.85rem' }}>Email</label>
       <input
@@ -65,6 +72,9 @@ function LoginForm() {
       >
         {loading ? 'Signing in…' : 'Sign in'}
       </button>
+      <p style={{ marginTop: '1.25rem', marginBottom: 0, fontSize: '0.85rem', textAlign: 'center' }}>
+        <Link href="/auth/forgot-password" style={{ color: '#a78bfa' }}>Forgot password?</Link>
+      </p>
     </form>
   )
 }

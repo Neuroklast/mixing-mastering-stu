@@ -156,6 +156,7 @@ Apply by pasting into the Supabase SQL Editor or via `psql`.
 ```
 app/
   admin/(protected)/  # Admin CRUD pages (requires auth)
+  auth/               # Password recovery (forgot-password, callback, reset-password)
   _actions/           # Server actions (public, no auth)
   actions/            # Server actions (public forms)
   page.tsx            # Public home page

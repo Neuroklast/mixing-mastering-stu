@@ -35,6 +35,16 @@ Use before production deploys or major PRs. Agents: add items when user-testable
 - [ ] Partners admin: create logo entry, appears on public section when active
 - [ ] Delete confirms and removes row
 
+### Password reset
+
+- [ ] Login page shows **Forgot password?** and links to `/auth/forgot-password`
+- [ ] Forgot-password submit always shows a generic success message (no account enumeration)
+- [ ] App-sent reset link goes through `/auth/callback` and lands on `/auth/reset-password`
+- [ ] Dashboard-sent recovery link (Site URL) lands on `/auth/reset-password` with a valid form
+- [ ] Invalid/expired link shows the safe error state with a "request a new link" option
+- [ ] Password update signs the user out and `/admin/login?reset=success` shows the notice
+- [ ] New password works for the next admin login
+
 ## Security
 
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` not present in client bundles

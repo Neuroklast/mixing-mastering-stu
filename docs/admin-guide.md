@@ -12,6 +12,15 @@ This guide is written for the **site owner** — no technical knowledge required
 
 If you see "Forbidden", ask your developer to grant your account the `admin` role in the Supabase database.
 
+### Forgot your password?
+
+1. On the login page, click **Forgot password?**
+2. Enter your admin email — you will receive a reset link
+3. Open the link and choose a new password
+4. You will be signed out; log in again with the new password
+
+If the link says it is invalid or expired, request a new one. A developer can also send a recovery email from Supabase → Authentication → Users.
+
 ---
 
 ## Dashboard

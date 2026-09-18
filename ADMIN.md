@@ -28,6 +28,13 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) and `.env.local.example`. Minimum for admin m
 
 Create Auth user → ensure profile role `admin` → login at `/admin/login`.
 
+### 4. Password reset
+
+- In-app: `/admin/login` → **Forgot password?** → email with a reset link → set a new password.
+- Dashboard: Supabase → Authentication → Users → **Send recovery**. Links follow the project's Site URL, which must be `https://sonorativa.com/auth/reset-password` (see [DEPLOYMENT.md](DEPLOYMENT.md)).
+- Redirect allowlist must include `https://sonorativa.com/**` and `http://localhost:3000/**`.
+- After a successful reset you are signed out and redirected to `/admin/login?reset=success`.
+
 ## Modules
 
 | Module | Route | What to manage |

@@ -30,6 +30,11 @@
 2. Apply schema — [supabase/SETUP.md](supabase/SETUP.md) (`init_all.sql`)
 3. Create admin Auth user + `profiles.role = 'admin'`
 4. Copy URL, anon key, service role key into Vercel
+5. Authentication → URL Configuration (required for password reset emails):
+   - **Site URL**: `https://sonorativa.com/auth/reset-password`
+   - **Redirect URLs**: `https://sonorativa.com/**`, `http://localhost:3000/**`
+
+   Dashboard-triggered recovery links follow the Site URL; app-triggered links use `/auth/callback` (PKCE). See `docs/agent/backend.md` → Password recovery.
 
 ## Cloudflare R2 setup
 
@@ -79,6 +84,7 @@ Template: `.env.local.example`.
 - [ ] Homepage 200; no console spam
 - [ ] `R2_PUBLIC_HOST` set; sample gallery/member image loads via `next/image`
 - [ ] Admin login + role check
+- [ ] Password reset email arrives and its link opens `/auth/reset-password` on the production domain (not localhost)
 - [ ] Upload one image to R2 via admin; path stored; public URL works
 - [ ] Upload small showcase audio (or verify multipart credentials)
 - [ ] `NEXT_PUBLIC_DEV_MODE` is **not** `true` in production

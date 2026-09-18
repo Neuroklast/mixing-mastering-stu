@@ -26,7 +26,7 @@ Rules:
 npm run test:e2e
 ```
 
-Specs: `tests/e2e/` (homepage, contact, admin CMS). Config: `playwright.config.ts`.
+Specs: `tests/e2e/` (homepage, contact, admin CMS, password reset). Config: `playwright.config.ts`.
 
 - `baseURL` from `NEXT_PUBLIC_SITE_URL` or `http://localhost:3000`
 - Skip gracefully when credentials missing for authenticated flows
