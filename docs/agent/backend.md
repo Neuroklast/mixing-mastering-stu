@@ -16,11 +16,33 @@ Public site does not require auth. Contact/order flows are public server actions
 
 | Client | Module | Use |
 |--------|--------|-----|
-| Server (user session) | `lib/supabaseServer.ts` | RSC services, middleware-compatible cookies |
-| Browser | `lib/supabaseClient.ts` | Client auth (login) |
+| Server (user session) | `lib/supabaseServer.ts` | RSC services, route handlers, middleware-compatible cookies |
+| Browser | `lib/supabaseClient.ts` | Client auth (login, password reset) |
 | Admin (service role) | `lib/supabaseAdmin.ts` | Admin mutations only |
 
 Never expose `SUPABASE_SERVICE_ROLE_KEY` to the browser.
+
+## Password recovery
+
+Public routes (not behind `middleware.ts`, which only matches `/admin/:path*`):
+
+| Route | File | Role |
+|-------|------|------|
+| `/auth/forgot-password` | `app/auth/forgot-password/page.tsx` | Email form → `resetPasswordForEmail` with `redirectTo` |
+| `/auth/callback` | `app/auth/callback/route.ts` | PKCE `code` → `exchangeCodeForSession`; validates `next` (no `//`) |
+| `/auth/reset-password` | `app/auth/reset-password/page.tsx` | `updateUser({ password })`, then sign out → `/admin/login?reset=success` |
+
+Two link styles must keep working:
+
+1. **App-sent** (forgot-password page): PKCE flow, `redirectTo` = `<origin>/auth/callback?next=/auth/reset-password`.
+2. **Dashboard-sent** (Supabase → Users → Send recovery): implicit flow, tokens in the URL hash. `@supabase/ssr` is PKCE-only and rejects implicit callbacks, so the reset page parses the hash and calls `setSession` manually.
+
+Supabase Dashboard → Authentication → URL Configuration:
+
+- Site URL: `https://sonorativa.com/auth/reset-password` (dashboard links land directly on the form)
+- Redirect URLs: `https://sonorativa.com/**`, `http://localhost:3000/**`
+
+Schemas: `lib/schemas/auth.ts` (`forgotPasswordSchema`, `resetPasswordSchema`).
 
 ## Image uploads (admin)
 

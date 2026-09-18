@@ -44,6 +44,8 @@ Agents: append dated entries under **Session additions** when a reusable lesson 
 |--------|--------|
 | Dual gate | Middleware + `requireAdmin` on actions |
 | Role source | `profiles.role = 'admin'` — Auth alone is not enough |
+| Site URL drives recovery | Dashboard-sent recovery links follow Supabase Auth → URL Configuration → Site URL; a leftover localhost default leaks into emails |
+| PKCE-only SSR client | `@supabase/ssr` browser client forces `flowType: 'pkce'` and rejects implicit hash callbacks — parse the hash and call `setSession` manually |
 
 ## Documentation
 
@@ -53,6 +55,13 @@ Agents: append dated entries under **Session additions** when a reusable lesson 
 | English only | No German in code/admin UI; translated guides may live under `docs/` as human extras |
 
 ## Session additions
+
+### 2026-09-18 — Recovery emails pointed at localhost
+
+- Root cause was Supabase config, not app code: the project's **Site URL** was still `http://localhost:3000`, and no reset flow existed in the app.
+- Fix: `/auth/forgot-password` + PKCE `/auth/callback` + `/auth/reset-password`; Supabase Site URL → `https://sonorativa.com/auth/reset-password` and redirect allowlist for prod + localhost.
+- Dashboard "Send recovery" uses the implicit flow (hash tokens). The `@supabase/ssr` browser client is PKCE-only and silently ignores it — the reset page must parse `access_token`/`refresh_token` and call `setSession`.
+- Forgot-password always returns a generic success message to avoid account enumeration.
 
 ### 2026-08-09 — Partners section only (not full Zardonic admin)
 

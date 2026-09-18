@@ -43,6 +43,7 @@ Include:
 | Signed URL sharing | URL valid until expiry | Short TTL; private bucket |
 | Third-party logo proxy (`wsrv.nl`) | Canvas CORS for white logos | Fail open; only for public logo assets |
 | Untyped Supabase rows | No generated `database.types.ts` required | Zod parse at boundaries; `String(row.x ?? '')` |
+| Password reset | Public `/auth/*` routes | PKCE code exchange; `next` must start with `/` (no `//`, no open redirect); generic forgot-password response (no account enumeration); single-use Supabase tokens |
 
 Debt tracking: [docs/agent/debt-inventory.md](docs/agent/debt-inventory.md).
 
@@ -65,6 +66,7 @@ Server Actions in App Router enforce same-origin checks via `Origin`. Do not add
 | No session on `/admin/*` | Redirect `/admin/login` |
 | Session but non-admin | Redirect forbidden |
 | Missing Supabase env in middleware | Fail closed → login |
+| Invalid/expired recovery link | `/auth/reset-password` shows safe error, no session created |
 
 ## Related
 

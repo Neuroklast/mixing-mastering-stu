@@ -129,6 +129,6 @@ Admin uses denser utilitarian chrome (zinc), not public immersion.
 | Admin CMS | `app/admin/*`, `ADMIN.md` |
 | Schema / services | `supabase/init_all.sql`, `services/*` |
 | Storage | `lib/storage/*`, `docs/cloudflare-r2.md` |
-| Auth | `middleware.ts`, `app/admin/_actions/auth.ts` |
+| Auth | `middleware.ts`, `app/admin/_actions/auth.ts`, `app/auth/*` (password recovery) |
 | QA | `QA_CHECKLIST.md` |
 | History | `CHANGELOG.md` `[Unreleased]` |

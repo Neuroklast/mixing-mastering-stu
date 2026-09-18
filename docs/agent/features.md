@@ -34,6 +34,9 @@ Living inventory of product surfaces. For operator how-to see [ADMIN.md](../../A
 | `/admin/legal` | Legal documents |
 | `/admin/media` | Media browser helpers |
 | `/admin/login` | Supabase email/password |
+| `/auth/forgot-password` | Request password reset email |
+| `/auth/callback` | PKCE code exchange for reset links |
+| `/auth/reset-password` | Set a new password (PKCE + dashboard hash links) |
 
 ### Partners & endorsements (public section only)
 
