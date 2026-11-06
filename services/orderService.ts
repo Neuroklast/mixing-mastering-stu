@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { createClient } from '@/lib/supabaseServer'
 import { z } from 'zod'
 import type { Order } from '@/types'
@@ -37,9 +38,13 @@ export const createOrder = async (
   }
 
   const supabase = await createClient()
-  const { data, error } = await supabase
+  // The public form can INSERT orders, but RLS does not allow an anonymous SELECT.
+  // Generate the ID server-side so an INSERT does not need a RETURNING/SELECT.
+  const orderId = randomUUID()
+  const { error } = await supabase
     .from('orders')
     .insert({
+      id: orderId,
       client_name: parsed.data.clientName,
       client_email: parsed.data.clientEmail,
       service_type: parsed.data.serviceType,
@@ -48,12 +53,8 @@ export const createOrder = async (
       total_price: parsed.data.totalPrice,
       status: 'pending',
     })
-    .select('id')
-    .single()
 
   if (error) return err(error.message)
-
-  const orderId = data.id
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ''
   const adminEmail = process.env.ADMIN_EMAIL?.trim() || process.env.CONTACT_TO_EMAIL?.trim()
 
