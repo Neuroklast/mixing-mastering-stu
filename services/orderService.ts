@@ -55,7 +55,7 @@ export const createOrder = async (
 
   const orderId = data.id
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ''
-  const adminEmail = process.env.ADMIN_EMAIL ?? process.env.CONTACT_FROM_EMAIL
+  const adminEmail = process.env.ADMIN_EMAIL?.trim() || process.env.CONTACT_TO_EMAIL?.trim()
 
   // Send confirmation to client and notification to admin (best-effort)
   try {
