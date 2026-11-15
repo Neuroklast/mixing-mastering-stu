@@ -1,3 +1,7 @@
+## 2026-11-15 — Logout is a mutation, not a GET page
+
+The admin navigation linked to a route whose Server Component revoked sessions during GET rendering. Prefetch or direct navigation could therefore log users out unintentionally. A shared server action fixes the root cause; both sidebar buttons POST directly, while the old page URL is now read-only and offers an explicit action. Normal and recovery sign-out are scoped locally so separate integration sessions remain valid. Regression contracts guard the no-GET-write behavior.
+
 # Lessons Learned
 
 Recurring anti-patterns and non-obvious failure modes.  

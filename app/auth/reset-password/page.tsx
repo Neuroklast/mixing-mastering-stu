@@ -89,7 +89,12 @@ function ResetPasswordForm() {
         setLoading(false)
         return
       }
-      await supabase.auth.signOut()
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' })
+      if (signOutError) {
+        setError('Password changed, but signing out failed. Please try signing out again.')
+        setLoading(false)
+        return
+      }
       router.push('/admin/login?reset=success')
       router.refresh()
     } catch (err) {
