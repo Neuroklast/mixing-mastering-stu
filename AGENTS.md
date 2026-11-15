@@ -91,3 +91,11 @@ After introducing new patterns, update the relevant `docs/agent/*.md` file.
 ## External docs
 
 [PRD.md](PRD.md) · [README.md](README.md) · [DEPLOYMENT.md](DEPLOYMENT.md) · [ADMIN.md](ADMIN.md) · [SECURITY.md](SECURITY.md) · [INTEGRATION-SUMMARY.md](INTEGRATION-SUMMARY.md) · [CHANGELOG.md](CHANGELOG.md) · [LESSONS_LEARNED.md](LESSONS_LEARNED.md) · [QA_CHECKLIST.md](QA_CHECKLIST.md) · [supabase/DB_REQUIREMENTS.md](supabase/DB_REQUIREMENTS.md) · [supabase/SETUP.md](supabase/SETUP.md) · [docs/development.md](docs/development.md) · [docs/cloudflare-r2.md](docs/cloudflare-r2.md) · [docs/operations.md](docs/operations.md) · [docs/admin-guide.md](docs/admin-guide.md)
+
+## Mandatory root-cause and failure-state engineering rules
+
+- Never ship lazy/dirty quick fixes, empty stubs, no-op handlers, fake success or error-message-based schema-guessing. Investigate the original fault, all affected pages/actions and the canonical module.
+- Supabase read errors are not absent content. Do not display editable empty defaults after a backend failure, or overwrite persisted data as a side effect of failed reads.
+- Mutations (including logout, migration, reconcile and data cleanup) cannot run during GET, render, cold starts or imports. Use explicit authorized actions with optional preview/dry-run where appropriate.
+- Routine logout revokes only the current Supabase session. Check returned errors and preserve other device/OAuth refresh tokens.
+- Prove fixes with negative and authorization tests, migrations/rollback for schema changes, and explicit reporting of CI, browser and production checks. No claimed build or deploy without evidence.

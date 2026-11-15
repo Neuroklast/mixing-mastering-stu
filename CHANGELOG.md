@@ -1,3 +1,9 @@
+## 2026-11-15 — Admin logout safety
+
+- Removed Supabase sign-out side effects from the GET `/admin/logout` page. Desktop/mobile navigation now uses explicit POST Server Actions and legacy URL displays a confirmation form.
+- Routine and password recovery logout now use `scope: 'local'`; remote errors are checked instead of silently claiming logout.
+- Documented root-cause and failure-state policy; added contract regression tests.
+
 # Changelog
 
 All notable changes to this project are documented in this file.

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { logoutAdmin } from '@/app/admin/_actions/logout'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
@@ -79,13 +80,14 @@ export default function AdminNav() {
         <div className="flex flex-col flex-1 p-3 overflow-y-auto">
           {navLinks}
           <div className="mt-4 pt-4 border-t border-zinc-800">
-            <Link
-              href="/admin/logout"
+            <form action={logoutAdmin}>
+              <button type="submit"
               className="flex items-center gap-3 rounded px-3 py-2 text-sm font-medium text-red-400 hover:bg-zinc-800 hover:text-red-300 border border-transparent transition-colors"
             >
               <SignOut className="h-4 w-4 shrink-0" />
               Logout
-            </Link>
+              </button>
+            </form>
           </div>
         </div>
       </aside>
@@ -135,14 +137,15 @@ export default function AdminNav() {
         <div className="flex flex-col flex-1 p-3 overflow-y-auto">
           {navLinks}
           <div className="mt-4 pt-4 border-t border-zinc-800">
-            <Link
-              href="/admin/logout"
+            <form action={logoutAdmin}>
+              <button type="submit"
               onClick={() => setMobileOpen(false)}
               className="flex items-center gap-3 rounded px-3 py-2 text-sm font-medium text-red-400 hover:bg-zinc-800 hover:text-red-300 border border-transparent transition-colors"
             >
               <SignOut className="h-4 w-4 shrink-0" />
               Logout
-            </Link>
+              </button>
+            </form>
           </div>
         </div>
       </aside>

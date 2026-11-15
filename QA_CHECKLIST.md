@@ -109,3 +109,11 @@ Use before production deploys or major PRs. Agents: add items when user-testable
 
 - [ ] Live Supabase has tables from `init_all.sql` including `partners`
 - [ ] Admin profile role is `admin`
+
+## 2026-11-15 session safety
+
+- [ ] Hover/prefetch or GET `/admin/logout`: user stays logged in and confirmation appears.
+- [ ] Desktop and mobile Logout buttons: one explicit POST logs out and redirects to `/admin/login`.
+- [ ] A simultaneous browser/OAuth session remains authenticated when one session logs out.
+- [ ] Simulate Supabase sign-out error: do not show successful logout.
+- [ ] Password reset keeps other sessions intact and reports sign-out failures.
