@@ -1,0 +1,10 @@
+{
+  "journal": "docs/QUALITY_JOURNAL.md",
+  "architecture": "docs/architecture.md",
+  "security": "SECURITY.md",
+  "data": "docs/agent/data-and-schema.md",
+  "operations": "docs/operations.md",
+  "quality": "docs/ARCHITECTURE_QUALITY.md",
+  "qa": "QA_CHECKLIST.md",
+  "changelog": "CHANGELOG.md"
+}

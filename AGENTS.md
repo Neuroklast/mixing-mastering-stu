@@ -99,3 +99,7 @@ After introducing new patterns, update the relevant `docs/agent/*.md` file.
 - Mutations (including logout, migration, reconcile and data cleanup) cannot run during GET, render, cold starts or imports. Use explicit authorized actions with optional preview/dry-run where appropriate.
 - Routine logout revokes only the current Supabase session. Check returned errors and preserve other device/OAuth refresh tokens.
 - Prove fixes with negative and authorization tests, migrations/rollback for schema changes, and explicit reporting of CI, browser and production checks. No claimed build or deploy without evidence.
+
+## Enforced living documentation
+
+All code/config/workflow PRs must append a dated evidence entry to docs/QUALITY_JOURNAL.md and update the canonical owners listed in docs/living-docs.json. docs/ARCHITECTURE_QUALITY.md defines measurable acceptance evidence. The new independent Node-only Living docs gate compares the actual PR diff and must be required by branch protection. Documentation truth and real integration outcomes remain human-review duties.

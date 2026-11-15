@@ -24,7 +24,9 @@
     "r2:migrate": "node scripts/migrate-supabase-to-r2.mjs",
     "backup:db": "node scripts/backup-db.mjs",
     "db:types": "npx supabase gen types typescript --local > lib/database.types.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check:living-docs": "node scripts/check-living-docs.mjs",
+    "test:living-docs": "node --test scripts/verify-living-docs.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1041.0",
