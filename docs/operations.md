@@ -149,3 +149,7 @@ node scripts/migrate-supabase-to-r2.mjs --write  # apply
 - **Vercel Analytics** — available on the Vercel dashboard for the project.
 - **Supabase** — monitor DB usage at app.supabase.com → Project → Reports.
 - **Cloudflare** — R2 metrics in the Cloudflare Dashboard under R2.
+
+## Living docs CI quality gate
+
+The non-build Living docs gate validates PR source changes against project-specific document owners and checks a newly-added structured quality journal entry. Run npm run test:living-docs and npm run check:living-docs. Require the GitHub status before merge, and keep migration and deployment execution separate from this job.

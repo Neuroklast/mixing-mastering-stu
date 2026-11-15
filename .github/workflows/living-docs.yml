@@ -1,0 +1,31 @@
+name: Living documentation
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  living-docs:
+    name: Living docs gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test the documentation contract
+        run: node --test scripts/verify-living-docs.mjs
+      - name: Verify documentation and pull request diff
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node scripts/check-living-docs.mjs --diff
+          else
+            node scripts/check-living-docs.mjs
+          fi
